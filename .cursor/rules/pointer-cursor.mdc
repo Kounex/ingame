@@ -1,0 +1,63 @@
+---
+description: All interactive/clickable widgets must show pointer cursor on desktop — use Tappable widget
+globs: ["lib/**/*.dart"]
+---
+
+# Pointer Cursor on Clickable Elements
+
+Every tappable widget MUST show `SystemMouseCursors.click` on hover for desktop/web.
+
+## Use the `Tappable` Widget
+
+Instead of raw `GestureDetector`, always use the reusable `Tappable` widget (`lib/shared/widgets/tappable.dart`). It wraps `MouseRegion` + `GestureDetector` together:
+
+```dart
+import '../../shared/widgets/tappable.dart';
+
+Tappable(
+  onTap: () => ...,
+  child: MyWidget(),
+)
+```
+
+`Tappable` automatically shows a pointer cursor when `onTap` or `onLongPress` is set, and falls back to the default cursor when null.
+
+## Exception: Hover-Tracking Widgets
+
+If you need stateful hover tracking (e.g., `onEnter`/`onExit` for hover animations), you still need a raw `MouseRegion` — but MUST include `cursor: SystemMouseCursors.click`:
+
+```dart
+MouseRegion(
+  cursor: SystemMouseCursors.click,
+  onEnter: (_) => setState(() => _hovering = true),
+  onExit: (_) => setState(() => _hovering = false),
+  child: GestureDetector(onTap: ..., child: ...),
+)
+```
+
+## Already Handled (don't duplicate)
+
+These core components have pointer cursor built in — no extra wrapping needed:
+
+- `GlassCard` (via `Tappable` internally, when `onTap` is set)
+- `GlassButton` (via `MouseRegion` internally, when `onPressed` is set)
+- `GlassBottomNav` items (via `Tappable`)
+- `_SidebarItem` in `AdaptiveShell` (via `Tappable`)
+
+## Root-Level Overlays
+
+Since detail routes live inside `StatefulShellRoute`, all `showModalBottomSheet` and `showDialog` calls MUST include `useRootNavigator: true` so they render above the persistent navigation bar — not beneath it.
+
+```dart
+showModalBottomSheet(
+  context: context,
+  useRootNavigator: true,
+  ...
+);
+
+showDialog(
+  context: context,
+  useRootNavigator: true,
+  ...
+);
+```

@@ -1,0 +1,87 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ingame-prod
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Deployment
+      name: ingame-api
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ingame-api
+      spec:
+        replicas: 3
+        template:
+          spec:
+            containers:
+              - name: ingame-api
+                resources:
+                  requests:
+                    memory: "256Mi"
+                    cpu: "200m"
+                  limits:
+                    memory: "512Mi"
+                    cpu: "500m"
+
+  - target:
+      kind: Deployment
+      name: ingame-api-web
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ingame-api-web
+      spec:
+        replicas: 2
+        template:
+          spec:
+            containers:
+              - name: ingame-web
+                resources:
+                  requests:
+                    memory: "128Mi"
+                    cpu: "100m"
+                  limits:
+                    memory: "256Mi"
+                    cpu: "250m"
+
+  - target:
+      kind: ConfigMap
+      name: ingame-api
+    patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: ingame-api
+      data:
+        INGAME_DEBUG: "false"
+        INGAME_CORS_ALLOW_ORIGINS: "https://in-game.app"
+        INGAME_LOG_LEVEL: "warning"
+
+  - target:
+      kind: Route
+      name: ingame-api
+    patch: |
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: ingame-api
+      spec:
+        host: api.in-game.app
+
+  - target:
+      kind: Route
+      name: ingame-api-web
+    patch: |
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: ingame-api-web
+      spec:
+        host: in-game.app

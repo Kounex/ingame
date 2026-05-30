@@ -1,0 +1,359 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../core/routing/route_names.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_components.dart';
+import '../../../../core/theme/spacing.dart';
+import '../../../../shared/widgets/error_display.dart';
+import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/widgets/loading_indicator.dart';
+import '../providers/group_detail_provider.dart';
+import '../providers/groups_provider.dart';
+import '../widgets/invite_link_share.dart';
+import '../widgets/member_list.dart';
+
+class GroupDetailScreen extends ConsumerWidget {
+  const GroupDetailScreen({super.key, required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detailAsync = ref.watch(groupDetailNotifierProvider(groupId));
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.background, AppColors.backgroundLight],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: GlassAppBar(
+          title: detailAsync.valueOrNull?.group.name ?? 'Group',
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => context.pop(),
+          ),
+          actions: detailAsync.valueOrNull != null
+              ? [
+                  PopupMenuButton<_GroupAction>(
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: AppColors.textSecondary,
+                    ),
+                    color: AppColors.backgroundLight,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.glassBorder),
+                    ),
+                    onSelected: (action) => _onMenuAction(
+                      context,
+                      ref,
+                      action,
+                      detailAsync.valueOrNull!.group.inviteCode,
+                    ),
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: _GroupAction.invite,
+                        child: _MenuRow(
+                          icon: Icons.person_add_outlined,
+                          label: 'Invite',
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: _GroupAction.settings,
+                        child: _MenuRow(
+                          icon: Icons.settings_outlined,
+                          label: 'Settings',
+                          badgeCount:
+                              detailAsync.valueOrNull?.pendingRequests.length ??
+                                  0,
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem(
+                        value: _GroupAction.leave,
+                        child: _MenuRow(
+                          icon: Icons.logout,
+                          label: 'Leave Group',
+                          isDestructive: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ]
+              : null,
+        ),
+        body: detailAsync.when(
+          loading: () => const LoadingIndicator(),
+          error: (error, _) => ErrorDisplay(
+            message: error.toString(),
+            onRetry: () =>
+                ref.read(groupDetailNotifierProvider(groupId).notifier).refresh(),
+          ),
+          data: (detail) => RefreshIndicator(
+            color: AppColors.primary,
+            backgroundColor: AppColors.backgroundLight,
+            onRefresh: () =>
+                ref.read(groupDetailNotifierProvider(groupId).notifier).refresh(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (detail.group.description != null &&
+                      detail.group.description!.isNotEmpty)
+                    GlassCard(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'About',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            detail.group.description!,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.md),
+                  GlassCard(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Row(
+                      children: [
+                        _InfoChip(
+                          icon: Icons.people,
+                          label: '${detail.members.length} members',
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        _InfoChip(
+                          icon: detail.group.isDiscoverable
+                              ? Icons.public
+                              : Icons.lock,
+                          label: detail.group.isDiscoverable
+                              ? 'Public'
+                              : 'Private',
+                        ),
+                        if (detail.group.isDiscoverable) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          _InfoChip(
+                            icon: detail.group.joinMode == 'open'
+                                ? Icons.open_in_new
+                                : Icons.approval,
+                            label: detail.group.joinMode == 'open'
+                                ? 'Open'
+                                : 'Approval',
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text(
+                    'Members',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  MemberList(groupId: groupId, members: detail.members),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onMenuAction(
+    BuildContext context,
+    WidgetRef ref,
+    _GroupAction action,
+    String inviteCode,
+  ) {
+    switch (action) {
+      case _GroupAction.invite:
+        _showInviteSheet(context, inviteCode);
+      case _GroupAction.settings:
+        context.goNamed(
+          RouteNames.groupSettings,
+          pathParameters: {'id': groupId},
+        );
+      case _GroupAction.leave:
+        _showLeaveDialog(context, ref);
+    }
+  }
+
+  void _showInviteSheet(BuildContext context, String inviteCode) {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.backgroundLight,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border(
+            top: BorderSide(color: AppColors.glassBorder),
+            left: BorderSide(color: AppColors.glassBorder),
+            right: BorderSide(color: AppColors.glassBorder),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.xl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            InviteLinkShare(inviteCode: inviteCode),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLeaveDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.backgroundLight,
+        title: const Text(
+          'Leave Group',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: const Text(
+          'Are you sure you want to leave this group?',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref
+                  .read(groupsNotifierProvider.notifier)
+                  .leaveGroup(groupId);
+              if (context.mounted) context.pop();
+            },
+            child: const Text(
+              'Leave',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _GroupAction { invite, settings, leave }
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    this.isDestructive = false,
+    this.badgeCount = 0,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isDestructive;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? AppColors.error : AppColors.textPrimary;
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: AppSpacing.sm + 4),
+        Text(
+          label,
+          style: TextStyle(color: color, fontSize: 14),
+        ),
+        if (badgeCount > 0) ...[
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$badgeCount',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: AppColors.textTertiary),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+}

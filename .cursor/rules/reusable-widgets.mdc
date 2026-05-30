@@ -1,0 +1,45 @@
+---
+description: Always evaluate whether new UI patterns should be extracted into reusable widgets
+globs: ["lib/**/*.dart"]
+---
+
+# Reusable Widget Check — MANDATORY
+
+Before writing or duplicating any UI pattern, ask: **"Will this pattern appear more than once?"**
+
+## When to Extract
+
+Extract a reusable widget when ANY of these are true:
+
+- The same widget tree (3+ widgets deep) appears in **2 or more places**
+- You're wrapping a Flutter primitive with project-specific defaults (e.g., `GestureDetector` + `MouseRegion` → `Tappable`)
+- A widget encapsulates a **brand element** (logo, color scheme, typography pattern)
+- A widget combines **behavior + styling** that would need to stay consistent (e.g., glass card, status indicator)
+- You're about to copy-paste and tweak — stop and extract instead
+
+## Where to Put Reusable Widgets
+
+- `lib/shared/widgets/` — cross-feature widgets (e.g., `Tappable`, `InGameLogo`, `StatusIndicator`)
+- `lib/core/theme/` — design system primitives (e.g., `GlassCard`, `GlassButton`, `GlassInput`)
+- `lib/features/<feature>/presentation/widgets/` — feature-scoped widgets reused within that feature only
+
+## Checklist (run mentally before writing UI code)
+
+1. Does a similar widget already exist in `shared/widgets/` or `core/theme/`? → **Use it**
+2. Am I repeating a pattern from another screen/widget? → **Extract it**
+3. Am I wrapping a Flutter primitive with the same config every time? → **Create a project wrapper**
+4. Does this widget represent a brand/design element? → **Make it reusable from the start**
+
+## Existing Reusable Widgets (check before creating new ones)
+
+- `Tappable` — pointer cursor + tap handler (replaces raw `GestureDetector`)
+- `InGameLogo` — brand logo with gradient, 3 sizes
+- `AppToast` — shared glass-styled success/error/info/warning feedback
+- `GlassCard`, `GlassButton`, `GlassInput` — design system primitives
+- `GlassAppBar`, `GlassBottomNav` — navigation components
+- `AdaptiveShell` — responsive layout shell
+- `StatusIndicator` — user status dot with pulse animation
+- `UserAvatar` — avatar with fallback initials
+- `AvatarPicker` — tappable avatar with camera overlay
+- `SocialLoginButtons` — platform-styled Steam/Apple buttons
+- `LoadingIndicator`, `ErrorDisplay` — feedback states

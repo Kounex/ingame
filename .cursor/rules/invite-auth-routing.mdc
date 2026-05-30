@@ -1,0 +1,22 @@
+---
+description: Invite links, auth redirects, and join-flow routing conventions
+globs:
+  - lib/core/routing/**
+  - lib/features/auth/presentation/screens/**
+  - lib/features/groups/presentation/screens/join_group_screen.dart
+  - lib/features/groups/presentation/screens/group_directory_screen.dart
+  - lib/features/groups/presentation/widgets/invite_link_share.dart
+alwaysApply: false
+---
+
+# Invite And Auth Routing
+
+- Canonical invite/deep-link route is `/join/:code`.
+- Canonical public invite-link domain is `https://in-game.app`; native iOS/Android link verification should target that host.
+- Keep `/groups/join/:code` only as a legacy redirect target; new links and navigation should point to `/join/:code`.
+- If auth blocks a deep link, preserve the original destination in `from` and return there after successful login/register/Steam auth.
+- Invite links should be shareable app/web URLs plus the raw invite code, not just a custom scheme string.
+- When platform link verification is needed, keep the hosted `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` aligned with the current bundle/package identifiers.
+- Join screens should preview the target group before joining when backend metadata is available.
+- After joining from an invite or discover flow, refresh the groups list/provider before navigating to group detail.
+- Routing or user-flow changes here require matching updates in `docs/specs/2026-05-30-core-platform-design.md`.

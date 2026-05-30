@@ -1,0 +1,72 @@
+name: Release Images
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release-images:
+    name: Build And Push Release Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tagged commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          echo "owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=$(python -m scripts.release.stack_version print-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release tag and aligned metadata
+        run: |
+          python -m scripts.release.stack_version validate-tag \
+            --tag "${{ steps.meta.outputs.tag }}" \
+            --check-aligned
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-api:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-api:sha-${{ github.sha }}
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.web
+          push: true
+          build-args: |
+            INGAME_API_BASE_URL=https://api.in-game.app/api/v1
+            INGAME_APP_BASE_URL=https://in-game.app
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:sha-${{ github.sha }}

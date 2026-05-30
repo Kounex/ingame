@@ -1,0 +1,27 @@
+---
+description: Release version source-of-truth and stack alignment rules
+globs:
+  - pubspec.yaml
+  - backend/app/main.py
+  - deploy/helm/ingame-api/Chart.yaml
+  - deploy/helm/ingame-api/values.yaml
+  - .github/workflows/**
+  - scripts/release/**
+alwaysApply: false
+---
+
+# Release Versioning
+
+- `pubspec.yaml` is the canonical source of truth for stack release versions.
+- Prepare releases on `dev`: bump `pubspec.yaml`, then sync backend metadata, Helm chart metadata, and tracked deploy image refs before merging to `main`.
+- Release git tags must use the format `vX.Y.Z` and must match the semver portion of `pubspec.yaml`.
+- Keep these files aligned for each release:
+  - `pubspec.yaml`
+  - `backend/app/main.py`
+  - `deploy/helm/ingame-api/Chart.yaml`
+  - `deploy/helm/ingame-api/values.yaml`
+  - release workflows under `.github/workflows/`
+- Use `python -m scripts.release.stack_version` for validation and sync logic instead of duplicating version parsing in workflows.
+- Use `python -m scripts.release.stack_version prepare-release --owner <owner> --write` during release prep to synchronize backend, Helm, and tracked image refs to the `pubspec.yaml` version.
+- Release image tags should use the canonical semver plus immutable SHA tags, following the GHCR image conventions rule.
+- Release workflows should publish images from an already-aligned commit; they should not commit version or deploy-ref changes back to the repo.

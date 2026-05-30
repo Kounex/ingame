@@ -1,0 +1,36 @@
+---
+description: Prefer Cue for non-trivial Flutter animation work
+globs: ["lib/**/*.dart"]
+---
+
+# Cue Animation Default
+
+When adding or changing animation in Flutter UI, prefer the `cue` package over hand-wired `AnimationController` code, ad-hoc implicit animations, or one-off animation wrappers.
+
+## Use Cue For
+
+- coordinated entrance/exit scenes
+- hover, toggle, focus, and scroll-driven motion
+- staggered child animations
+- reusable motion patterns that should stay consistent
+- page/detail/modal transitions that need polish beyond a simple one-off fade
+
+## Default Pattern
+
+- one `Cue` high enough to own the scene trigger
+- `Actor` for each animated child or delay group
+- shorthand acts like `.fadeIn()`, `.slideY()`, `.scale()`
+- explicit `motion:` on the `Cue`
+- stagger with `Actor.delay`, not multiple separate triggers
+
+## Don’t Reach For Cue
+
+- no-motion layout changes
+- trivial built-in Material interactions already covered by core widgets
+- animation-free state management or routing work
+
+## Project Guidance
+
+- Read `.agents/skills/cue-animations/SKILL.md` before implementing non-trivial animation work
+- Prefer Cue for new animation systems instead of wiring imperative controllers manually
+- Keep animation reusable: if a motion pattern appears in multiple places, extract it into a shared widget or scene pattern

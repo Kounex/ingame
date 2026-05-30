@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  flutter:
+    name: Flutter Analyze And Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.0
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter code
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        run: flutter test
+
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+
+      - name: Run backend tests
+        run: python -m pytest backend/tests
+
+  contracts:
+    name: Spec And Contract Checks
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.0
+          channel: stable
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          python -m pip install -r backend/requirements.txt
+
+      - name: Check spec freshness
+        run: bash scripts/ci/check-spec-freshness.sh
+
+      - name: Validate stack version alignment
+        run: python -m scripts.release.stack_version check-aligned
+
+      - name: Validate Flutter model alignment
+        run: bash scripts/ci/validate-flutter-models.sh
+
+      - name: Validate API contract
+        env:
+          INGAME_DATABASE_URL: sqlite+aiosqlite:///./ci.db
+          INGAME_REDIS_URL: redis://localhost:6379/0
+        run: |
+          python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 &
+          for i in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/api/v1/openapi.json >/dev/null; then
+              python scripts/ci/validate-api-contract.py --api-url http://127.0.0.1:8000/api/v1
+              exit $?
+            fi
+            sleep 1
+          done
+          echo "Backend did not start in time"
+          exit 1

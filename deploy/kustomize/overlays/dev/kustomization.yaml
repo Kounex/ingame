@@ -1,0 +1,66 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ingame-dev
+
+resources:
+  - ../../base
+
+patches:
+  # Scale to 1 replica, enable debug, relax resource limits
+  - target:
+      kind: Deployment
+      name: ingame-api
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ingame-api
+      spec:
+        replicas: 1
+        template:
+          spec:
+            containers:
+              - name: ingame-api
+                resources:
+                  requests:
+                    memory: "64Mi"
+                    cpu: "50m"
+                  limits:
+                    memory: "256Mi"
+                    cpu: "200m"
+
+  - target:
+      kind: Deployment
+      name: ingame-api-web
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ingame-api-web
+      spec:
+        replicas: 1
+        template:
+          spec:
+            containers:
+              - name: ingame-web
+                resources:
+                  requests:
+                    memory: "64Mi"
+                    cpu: "50m"
+                  limits:
+                    memory: "128Mi"
+                    cpu: "200m"
+
+  - target:
+      kind: ConfigMap
+      name: ingame-api
+    patch: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: ingame-api
+      data:
+        INGAME_DEBUG: "true"
+        INGAME_CORS_ALLOW_ORIGINS: "*"
+        INGAME_LOG_LEVEL: "debug"

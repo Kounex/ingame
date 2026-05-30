@@ -1,0 +1,75 @@
+---
+description: MANDATORY spec-sync gate — every code change must check and update the design spec
+alwaysApply: true
+---
+
+# Spec-Driven Development — MANDATORY
+
+## Active Specs
+
+- `docs/specs/roadmap.md` — **Product Roadmap** (high-level sub-project breakdown, dependencies, status)
+- `docs/specs/2026-05-30-core-platform-design.md` — SP1: Core Platform (auth, profiles, groups) -- COMPLETE
+- `docs/specs/2026-05-30-real-time-coordination-design.md` — SP2: Real-Time Coordination (WebSocket transport, presence, Redis fan-out, session/event contracts) -- PLANNED
+
+## BLOCKER: Spec Update Gate
+
+> **This is a BLOCKER, not a nice-to-have. You MUST NOT finish a response that contains code changes without also updating specs if applicable. Treat a missing spec update the same as a compilation error — the task is NOT done.**
+
+### Pre-flight (BEFORE writing any code)
+
+1. Read the relevant spec section(s) to understand the current contract
+2. If no spec exists for the feature area, tell the user and create one before coding
+3. When starting a new sub-project, read `docs/specs/roadmap.md` for scope and dependencies
+4. When working on realtime transport, presence, session scheduling, Redis pub/sub, or WS event contracts, read the SP2 realtime spec before coding
+
+### Post-flight (BEFORE saying "done", restarting app, or ending your response)
+
+Run this checklist on EVERY response that touches code:
+
+1. **Did I change any of these?**
+   - API endpoint (added, removed, renamed, changed method/params)
+   - Database column or table
+   - Freezed model field (added, removed, renamed)
+   - Pydantic schema field
+   - Navigation structure or routing (routes added, moved, nested)
+   - User flow (new screen, changed flow order, new interaction pattern)
+   - UI component (new shared widget, changed component behavior/API)
+   - Architecture pattern (storage strategy, auth flow, state management)
+   - Config or infrastructure
+
+2. **If YES to any → update specs in THIS SAME response:**
+   - Bump `version` in the spec front-matter
+   - Update the relevant section(s)
+   - Add a Change Log entry: `| date | section | what changed | why |`
+   - If the change affects the roadmap (sub-project status, new deliverables), update `roadmap.md` too
+
+3. **If NO to all → no spec update needed** (pure bug fix, style-only tweak, lint fix, test addition)
+
+### Enforcement Triggers
+
+If you are about to write code that touches ANY of these, STOP and plan the spec update alongside:
+
+- `models/`, `schemas.py` → data model change
+- `routes.py`, `app_router.dart`, `route_names.dart` → navigation/API change
+- `*_screen.dart`, `*_provider.dart` → user flow change
+- `shared/widgets/` → new/changed shared component
+- `glass_components.dart`, `app_theme.dart` → design system change
+- `*_repository.dart` → data layer contract change
+- `deploy/`, `docker-compose.yml` → infrastructure change
+
+### What Does NOT Require a Spec Update
+
+- Bug fixes that don't change the API contract, data model, or navigation
+- Internal refactors that don't affect the public interface
+- Dependency version bumps
+- Test additions
+- Pure styling changes (colors, spacing, font sizes) that don't add new components
+- Lint fixes
+
+## Spec File Conventions
+
+- One spec per sub-project, named `docs/specs/YYYY-MM-DD-<name>.md`
+- Front-matter: `spec`, `version`, `status`, `last_updated`, `sub_project`
+- Bump version on every update (semver patch for small changes, minor for structural)
+- Change Log at the bottom, newest entries last
+- Cross-reference the roadmap from each spec and vice versa

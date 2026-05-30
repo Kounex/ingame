@@ -1,0 +1,60 @@
+services:
+  api:
+    image: ghcr.io/kounex/ingame-api:local
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      INGAME_DATABASE_URL: postgresql+asyncpg://ingame:ingame@postgres:5432/ingame
+      INGAME_REDIS_URL: redis://redis:6379
+      INGAME_DEBUG: "true"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  web:
+    image: ghcr.io/kounex/ingame-web:local
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        INGAME_API_BASE_URL: http://localhost:8000/api/v1
+        INGAME_APP_BASE_URL: http://localhost:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ingame
+      POSTGRES_PASSWORD: ingame
+      POSTGRES_DB: ingame
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ingame"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

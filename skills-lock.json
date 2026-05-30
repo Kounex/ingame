@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "cue-animations": {
+      "source": "Milad-Akarie/cue",
+      "sourceType": "github",
+      "skillPath": "skills/cue-animations/SKILL.md",
+      "computedHash": "c17543daa4c53e364b628f5b8510dc9f9f19020e4a7990c079554bd1c4594446"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Authenticating...</title>
+</head>
+<body>
+  <p>Authenticating... Please wait.</p>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage(window.location.href, '*');
+      window.close();
+    } else {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(window.location.href, '*');
+      }
+      document.body.innerText = 'Authentication complete. You can close this window.';
+    }
+  </script>
+</body>
+</html>

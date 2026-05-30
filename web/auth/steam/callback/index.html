@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Authenticating...</title>
+</head>
+<body>
+  <p>Authenticating... Please wait.</p>
+  <script>
+    // flutter_web_auth_2 on web: the callback page must send the full URL
+    // (including query params from Steam) back to the opener window.
+    // The opener's Dart code resolves its Future with this URL.
+    if (window.opener) {
+      window.opener.postMessage(window.location.href, '*');
+      window.close();
+    } else {
+      // Fallback: if opened as a redirect (not popup), try parent
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(window.location.href, '*');
+      }
+      document.body.innerText = 'Authentication complete. You can close this window.';
+    }
+  </script>
+</body>
+</html>

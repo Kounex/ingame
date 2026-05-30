@@ -1,0 +1,39 @@
+---
+description: Enforces API contract alignment between backend schemas, Flutter models, and the design spec
+globs:
+  - backend/app/api/**
+  - backend/app/db/models/**
+  - lib/features/*/data/**
+  - lib/features/*/domain/**
+---
+
+# API Contract Rules
+
+These files define the API contract between backend and frontend. Changes here have cross-cutting impact.
+
+## Backend (Pydantic Schemas + SQLAlchemy Models)
+
+- Pydantic schemas in `backend/app/api/v1/*/schemas.py` are the **single source of truth** for the OpenAPI spec.
+- SQLAlchemy models in `backend/app/db/models/` must match the spec's PostgreSQL table definitions.
+- When adding or modifying a field:
+  1. Update the SQLAlchemy model
+  2. Create an Alembic migration (`alembic revision --autogenerate`)
+  3. Update the Pydantic request/response schemas
+  4. Update the spec's Data Models section and Change Log
+  5. Update the corresponding Freezed model in Flutter
+
+## Flutter (Repositories + Freezed Models)
+
+- Freezed domain models in `lib/features/*/domain/` must have fields matching the backend's response schemas.
+- Field naming: Dart uses camelCase, backend returns snake_case. The `build.yaml` config (`field_rename: snake`) handles this automatically — do NOT add manual `@JsonKey` annotations unless a field name truly differs from the snake_case convention.
+- Repositories in `lib/features/*/data/` parse API responses into Freezed models. When the backend response shape changes, update both the repository and the Freezed model.
+- After modifying a Freezed model, regenerate code: `dart run build_runner build --delete-conflicting-outputs`
+
+## Checklist for API Changes
+
+- [ ] SQLAlchemy model updated
+- [ ] Alembic migration created
+- [ ] Pydantic schema updated
+- [ ] Freezed model updated + code regenerated
+- [ ] Spec's Data Models section updated
+- [ ] Spec's Change Log entry added
