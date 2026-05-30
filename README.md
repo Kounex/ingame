@@ -200,4 +200,4 @@ Useful project-local agent assets:
 ## Current release
 
 - Repository: [github.com/Kounex/ingame](https://github.com/Kounex/ingame)
-- Latest release: `v0.1.1`
+- Latest release: `v0.1.2`
