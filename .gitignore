@@ -46,6 +46,7 @@ app.*.map.json
 
 # Local test/runtime artifacts
 /test.db
+/backend/test.db
 backend/.pytest_cache/
 
 # Generated platform environment files
