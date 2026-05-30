@@ -41,6 +41,7 @@ IGNORED_SPEC_COLUMNS: dict[str, set[str]] = {
 }
 
 KNOWN_ROUTE_PREFIXES = {
+    "/health",
     "/api/v1/health",
     "/api/v1/auth/",
     "/api/v1/users/",
@@ -113,7 +114,7 @@ def check_routes(openapi: dict, spec_text: str) -> list[str]:
             documented_modules.add(module.replace("_", "-"))
 
     for path in openapi_paths:
-        if path == "/api/v1/health":
+        if path in {"/health", "/api/v1/health"}:
             continue
 
         matched = False

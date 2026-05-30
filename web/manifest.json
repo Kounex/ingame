@@ -1,6 +1,6 @@
 {
-    "name": "ingame",
-    "short_name": "ingame",
+    "name": "InGame",
+    "short_name": "InGame",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

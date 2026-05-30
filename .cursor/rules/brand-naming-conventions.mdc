@@ -1,0 +1,19 @@
+---
+description: Product naming conventions for user-visible versus internal identifiers
+alwaysApply: true
+---
+
+# Brand Naming
+
+- Use `ingame` only for internal identifiers and technical slugs:
+  - repo/package names
+  - bundle IDs, package IDs, URL schemes
+  - image/chart/runtime names like `ingame-api` and `ingame-web`
+- Use `InGame` for every user-visible product name:
+  - app titles
+  - launcher labels
+  - browser tab titles
+  - window titles
+  - README/docs/product copy
+- Use `in-game` only in domain and host contexts such as `https://in-game.app`.
+- Do not rename internal identifiers just to match display branding.

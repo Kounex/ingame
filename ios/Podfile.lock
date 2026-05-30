@@ -1,0 +1,28 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_web_auth_2 (3.0.0):
+    - Flutter
+  - sign_in_with_apple (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_web_auth_2 (from `.symlinks/plugins/flutter_web_auth_2/ios`)
+  - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_web_auth_2:
+    :path: ".symlinks/plugins/flutter_web_auth_2/ios"
+  sign_in_with_apple:
+    :path: ".symlinks/plugins/sign_in_with_apple/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_web_auth_2: 5c8d9dcd7848b5a9efb086d24e7a9adcae979c80
+  sign_in_with_apple: c5dcc141574c8c54d5ac99dd2163c0c72ad22418
+
+PODFILE CHECKSUM: f8c2dcdfb50bb67645580d28a6bf814fca30bdec
+
+COCOAPODS: 1.16.2
