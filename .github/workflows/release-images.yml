@@ -55,8 +55,8 @@ jobs:
           file: backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-api:${{ steps.meta.outputs.version }}
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-api:sha-${{ github.sha }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-api:${{ steps.meta.outputs.version }}
 
       - name: Build and push web image
         uses: docker/build-push-action@v6
@@ -68,5 +68,5 @@ jobs:
             INGAME_API_BASE_URL=https://api.in-game.app/api/v1
             INGAME_APP_BASE_URL=https://in-game.app
           tags: |
-            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:${{ steps.meta.outputs.version }}
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:sha-${{ github.sha }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:${{ steps.meta.outputs.version }}

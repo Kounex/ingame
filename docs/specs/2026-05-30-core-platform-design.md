@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "2.20"
+version: "2.21"
 status: complete
 last_updated: "2026-05-31"
 sub_project: 1
@@ -574,12 +574,13 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 Docker Compose: PostgreSQL 16 + Redis 7 + FastAPI API server, plus a dedicated static web container for Flutter web. The web container serves the built SPA and `/.well-known/*` verification files so invite links and native app-link validation can be exercised end-to-end in the same deployment shape used later in CI/CD images.
 
 ### Production
-OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gitops` project). Helm chart at `deploy/helm/ingame-api/` with Kustomize overlays at `deploy/kustomize/overlays/{dev,staging,prod}`. OpenShift Routes with TLS edge termination. PostgreSQL and Redis via operators or managed services.
+OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gitops` project). Separate Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/` with Kustomize overlays at `deploy/kustomize/overlays/{dev,staging,prod}`. OpenShift Routes with TLS edge termination. PostgreSQL and Redis via operators or managed services.
 
 **Invite links:** Production invite links use `https://in-game.app/join/:code`. The dedicated web runtime must serve `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` on that same host so installed mobile apps open invite links natively before falling back to web. The Android asset links file must use the final release signing certificate fingerprint.
 
 **Deploy directory structure:**
-- `deploy/helm/ingame-api/` -- Helm chart with deployment, service, route, configmap, secret templates
+- `deploy/helm/ingame-api/` -- Helm chart for the FastAPI runtime (deployment, service, route, configmap, secret)
+- `deploy/helm/ingame-web/` -- Helm chart for the static web runtime (deployment, service, route)
 - `deploy/kustomize/base/` -- base Kustomization referencing Helm output
 - `deploy/kustomize/overlays/dev/` -- 1 replica, debug, open CORS
 - `deploy/kustomize/overlays/staging/` -- 2 replicas, staging host
@@ -650,3 +651,4 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-05-31 | Invite Links / Platform Config | Added `in-game.app` native deep-link configuration scaffolding | Invite links now have a canonical public domain, iOS associated domains, Android App Links manifest wiring, and hosted `/.well-known/` files; Android release cert fingerprint still needs final replacement |
 | 2026-05-31 | Deployment | Added a dedicated web deployment surface for Compose and OpenShift | The Flutter web app and `/.well-known/*` verification files are now expected to ship from a separate web image/runtime so future GHCR-tagged backend/frontend images can be deployed independently |
 | 2026-05-31 | CI/CD Pipeline / Release Versioning | Added pubspec-driven release version contract and tag-triggered GHCR image publishing | `pubspec.yaml` is now the canonical stack release version, release prep aligns backend/Helm/deploy refs on `dev`, and release tags on `main` publish images from an already-aligned commit |
+| 2026-05-31 | Deployment / Helm | Split the deployment charts into `ingame-api` and `ingame-web` | The API and web runtimes now have separate Helm ownership boundaries instead of one backend-branded chart containing both |

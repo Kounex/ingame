@@ -4,7 +4,9 @@ globs:
   - pubspec.yaml
   - backend/app/main.py
   - deploy/helm/ingame-api/Chart.yaml
+  - deploy/helm/ingame-web/Chart.yaml
   - deploy/helm/ingame-api/values.yaml
+  - deploy/helm/ingame-web/values.yaml
   - .github/workflows/**
   - scripts/release/**
 alwaysApply: false
@@ -20,6 +22,8 @@ alwaysApply: false
   - `backend/app/main.py`
   - `deploy/helm/ingame-api/Chart.yaml`
   - `deploy/helm/ingame-api/values.yaml`
+  - `deploy/helm/ingame-web/Chart.yaml`
+  - `deploy/helm/ingame-web/values.yaml`
   - release workflows under `.github/workflows/`
 - Use `python -m scripts.release.stack_version` for validation and sync logic instead of duplicating version parsing in workflows.
 - Use `python -m scripts.release.stack_version prepare-release --owner <owner> --write` during release prep to synchronize backend, Helm, and tracked image refs to the `pubspec.yaml` version.

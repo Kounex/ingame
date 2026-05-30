@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.8"
+version: "1.9"
 status: active
 last_updated: "2026-05-31"
 ---
@@ -75,7 +75,7 @@ graph LR
 - Helm chart + Kustomize overlays for OpenShift deployment
 - 34 backend tests (auth, users, groups, WebSocket)
 
-**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.20)
+**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.21)
 
 ---
 
@@ -190,7 +190,7 @@ These patterns and practices apply across all sub-projects:
 
 **Testing strategy:** Each sub-project adds tests covering its scope. Backend uses pytest + httpx AsyncClient + SQLite test DB. Flutter uses Riverpod test utilities for providers and widget tests. CI runs all tests on PR.
 
-**Deployment:** All backend changes deploy via the Helm chart at `deploy/helm/ingame-api/` with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo.
+**Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo.
 
 **API contract:** Backend Pydantic schemas are the source of truth. Flutter Freezed models must match the API response shapes. CI validates this alignment.
 
@@ -209,3 +209,4 @@ These patterns and practices apply across all sub-projects:
 | 2026-05-31 | Native invite-link setup | Switched the canonical invite domain to `in-game.app` and documented the iOS/Android app-link scaffolding plus remaining Android release-cert verification step |
 | 2026-05-31 | Web deployment surfaces | Added a dedicated web runtime to the deployment shape so Compose and OpenShift can serve the Flutter web app plus `/.well-known/*` and later consume separately built GHCR images |
 | 2026-05-31 | Release image workflows | Standardized on `pubspec.yaml` as the stack version source and added a release-prep-on-dev plus tag-publish-on-main workflow for GHCR images |
+| 2026-05-31 | Split Helm charts | Separated the backend and web deployment charts so `ingame-api` and `ingame-web` each own their own runtime manifests |

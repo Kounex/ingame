@@ -1,15 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "ingame-api.name" -}}
+{{- define "ingame-web.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited.
 */}}
-{{- define "ingame-api.fullname" -}}
+{{- define "ingame-web.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -25,16 +24,16 @@ We truncate at 63 chars because some Kubernetes name fields are limited.
 {{/*
 Create chart name and version for the chart label.
 */}}
-{{- define "ingame-api.chart" -}}
+{{- define "ingame-web.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels.
 */}}
-{{- define "ingame-api.labels" -}}
-helm.sh/chart: {{ include "ingame-api.chart" . }}
-{{ include "ingame-api.selectorLabels" . }}
+{{- define "ingame-web.labels" -}}
+helm.sh/chart: {{ include "ingame-web.chart" . }}
+{{ include "ingame-web.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -44,7 +43,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels.
 */}}
-{{- define "ingame-api.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "ingame-api.name" . }}
+{{- define "ingame-web.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "ingame-web.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

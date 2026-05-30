@@ -61,6 +61,8 @@ python3 -m scripts.release.stack_version prepare-release --owner kounex --write
    - `backend/app/main.py`
    - `deploy/helm/ingame-api/Chart.yaml`
    - `deploy/helm/ingame-api/values.yaml`
+   - `deploy/helm/ingame-web/Chart.yaml`
+   - `deploy/helm/ingame-web/values.yaml`
 
 ## Guidance
 

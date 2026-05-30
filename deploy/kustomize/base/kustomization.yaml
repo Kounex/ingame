@@ -1,23 +1,25 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Base manifests are rendered from the Helm chart.
+# Base manifests are rendered from the Helm charts.
 # Generate them with:
-#   helm template ingame-api ../helm/ingame-api -f ../helm/ingame-api/values.yaml > base/all.yaml
+#   helm template ingame-api ../helm/ingame-api -f ../helm/ingame-api/values.yaml > base/api.yaml
+#   helm template ingame-web ../helm/ingame-web -f ../helm/ingame-web/values.yaml > base/web.yaml
 # Then list the output file(s) here.
-#
-# The rendered chart now includes both:
-# - the FastAPI API runtime
-# - the static web runtime that serves the Flutter web build and `/.well-known/*`
 
 resources: []
-# - all.yaml
+# - api.yaml
+# - web.yaml
 
 # Alternatively, use the Helm chart inflator (Kustomize 4.1+):
 # helmCharts:
 #   - name: ingame-api
 #     releaseName: ingame-api
 #     valuesFile: ../../helm/ingame-api/values.yaml
+#     version: 0.1.0
+#   - name: ingame-web
+#     releaseName: ingame-web
+#     valuesFile: ../../helm/ingame-web/values.yaml
 #     version: 0.1.0
 
 commonLabels:

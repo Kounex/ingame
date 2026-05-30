@@ -31,12 +31,12 @@ patches:
 
   - target:
       kind: Deployment
-      name: ingame-api-web
+      name: ingame-web
     patch: |
       apiVersion: apps/v1
       kind: Deployment
       metadata:
-        name: ingame-api-web
+        name: ingame-web
       spec:
         replicas: 2
         template:
@@ -77,11 +77,11 @@ patches:
 
   - target:
       kind: Route
-      name: ingame-api-web
+      name: ingame-web
     patch: |
       apiVersion: route.openshift.io/v1
       kind: Route
       metadata:
-        name: ingame-api-web
+        name: ingame-web
       spec:
         host: staging.in-game.app

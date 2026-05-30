@@ -7,8 +7,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PUBSPEC_PATH = REPO_ROOT / "pubspec.yaml"
 BACKEND_MAIN_PATH = REPO_ROOT / "backend" / "app" / "main.py"
-HELM_CHART_PATH = REPO_ROOT / "deploy" / "helm" / "ingame-api" / "Chart.yaml"
-HELM_VALUES_PATH = REPO_ROOT / "deploy" / "helm" / "ingame-api" / "values.yaml"
+API_HELM_CHART_PATH = REPO_ROOT / "deploy" / "helm" / "ingame-api" / "Chart.yaml"
+WEB_HELM_CHART_PATH = REPO_ROOT / "deploy" / "helm" / "ingame-web" / "Chart.yaml"
+API_HELM_VALUES_PATH = REPO_ROOT / "deploy" / "helm" / "ingame-api" / "values.yaml"
+WEB_HELM_VALUES_PATH = REPO_ROOT / "deploy" / "helm" / "ingame-web" / "values.yaml"
 
 
 def read_pubspec_semver(content: str) -> str:
@@ -57,13 +59,12 @@ def sync_chart_versions(content: str, version: str) -> str:
     return updated
 
 
-def sync_values_image_refs(content: str, owner: str, version: str) -> str:
+def sync_api_values_image_refs(content: str, owner: str, version: str) -> str:
     owner = owner.strip().lower()
     if not owner:
         raise ValueError("GHCR owner cannot be empty")
 
     api_repo = f"ghcr.io/{owner}/ingame-api"
-    web_repo = f"ghcr.io/{owner}/ingame-web"
 
     updated, api_repo_count = re.subn(
         r"(^image:\n\s+repository:\s*).+$",
@@ -79,22 +80,34 @@ def sync_values_image_refs(content: str, owner: str, version: str) -> str:
         count=1,
         flags=re.M,
     )
-    updated, web_repo_count = re.subn(
-        r"(^web:\n(?:\s+.+\n)*?\s+image:\n\s+repository:\s*).+$",
-        rf"\g<1>{web_repo}",
-        updated,
+    if api_repo_count != 1 or api_tag_count != 1:
+        raise ValueError("Unable to update API Helm image references in values.yaml")
+    return updated
+
+
+def sync_web_values_image_refs(content: str, owner: str, version: str) -> str:
+    owner = owner.strip().lower()
+    if not owner:
+        raise ValueError("GHCR owner cannot be empty")
+
+    web_repo = f"ghcr.io/{owner}/ingame-web"
+
+    updated, repo_count = re.subn(
+        r"(^image:\n\s+repository:\s*).+$",
+        rf"\1{web_repo}",
+        content,
         count=1,
         flags=re.M,
     )
-    updated, web_tag_count = re.subn(
-        r"(^web:\n(?:\s+.+\n)*?\s+image:\n(?:\s+.+\n)*?\s+tag:\s*).+$",
+    updated, tag_count = re.subn(
+        r"(^image:\n(?:\s+.+\n)*?\s+tag:\s*).+$",
         rf"\g<1>{version}",
         updated,
         count=1,
         flags=re.M,
     )
-    if api_repo_count != 1 or api_tag_count != 1 or web_repo_count != 1 or web_tag_count != 1:
-        raise ValueError("Unable to update Helm image references in values.yaml")
+    if repo_count != 1 or tag_count != 1:
+        raise ValueError("Unable to update web Helm image references in values.yaml")
     return updated
 
 
@@ -112,52 +125,74 @@ def cmd_validate_tag(tag: str, check_aligned: bool) -> int:
         )
     if check_aligned:
         backend_content = BACKEND_MAIN_PATH.read_text()
-        chart_content = HELM_CHART_PATH.read_text()
+        api_chart_content = API_HELM_CHART_PATH.read_text()
+        web_chart_content = WEB_HELM_CHART_PATH.read_text()
         if sync_fastapi_version(backend_content, pubspec_version) != backend_content:
             raise ValueError("backend/app/main.py is not aligned with pubspec.yaml")
-        if sync_chart_versions(chart_content, pubspec_version) != chart_content:
+        if sync_chart_versions(api_chart_content, pubspec_version) != api_chart_content:
             raise ValueError("deploy/helm/ingame-api/Chart.yaml is not aligned with pubspec.yaml")
+        if sync_chart_versions(web_chart_content, pubspec_version) != web_chart_content:
+            raise ValueError("deploy/helm/ingame-web/Chart.yaml is not aligned with pubspec.yaml")
     return 0
 
 
 def cmd_sync_metadata(write: bool) -> int:
     version = read_pubspec_semver(PUBSPEC_PATH.read_text())
     backend_content = sync_fastapi_version(BACKEND_MAIN_PATH.read_text(), version)
-    chart_content = sync_chart_versions(HELM_CHART_PATH.read_text(), version)
+    api_chart_content = sync_chart_versions(API_HELM_CHART_PATH.read_text(), version)
+    web_chart_content = sync_chart_versions(WEB_HELM_CHART_PATH.read_text(), version)
     if write:
         _write_if_changed(BACKEND_MAIN_PATH, backend_content)
-        _write_if_changed(HELM_CHART_PATH, chart_content)
+        _write_if_changed(API_HELM_CHART_PATH, api_chart_content)
+        _write_if_changed(WEB_HELM_CHART_PATH, web_chart_content)
     return 0
 
 
 def cmd_check_aligned() -> int:
     version = read_pubspec_semver(PUBSPEC_PATH.read_text())
     backend_content = BACKEND_MAIN_PATH.read_text()
-    chart_content = HELM_CHART_PATH.read_text()
+    api_chart_content = API_HELM_CHART_PATH.read_text()
+    web_chart_content = WEB_HELM_CHART_PATH.read_text()
     if sync_fastapi_version(backend_content, version) != backend_content:
         raise ValueError("backend/app/main.py is not aligned with pubspec.yaml")
-    if sync_chart_versions(chart_content, version) != chart_content:
+    if sync_chart_versions(api_chart_content, version) != api_chart_content:
         raise ValueError("deploy/helm/ingame-api/Chart.yaml is not aligned with pubspec.yaml")
+    if sync_chart_versions(web_chart_content, version) != web_chart_content:
+        raise ValueError("deploy/helm/ingame-web/Chart.yaml is not aligned with pubspec.yaml")
     return 0
 
 
 def cmd_set_image_refs(owner: str, version: str | None, write: bool) -> int:
     release_version = version or read_pubspec_semver(PUBSPEC_PATH.read_text())
-    values_content = sync_values_image_refs(HELM_VALUES_PATH.read_text(), owner=owner, version=release_version)
+    api_values_content = sync_api_values_image_refs(
+        API_HELM_VALUES_PATH.read_text(), owner=owner, version=release_version
+    )
+    web_values_content = sync_web_values_image_refs(
+        WEB_HELM_VALUES_PATH.read_text(), owner=owner, version=release_version
+    )
     if write:
-        _write_if_changed(HELM_VALUES_PATH, values_content)
+        _write_if_changed(API_HELM_VALUES_PATH, api_values_content)
+        _write_if_changed(WEB_HELM_VALUES_PATH, web_values_content)
     return 0
 
 
 def cmd_prepare_release(owner: str, write: bool) -> int:
     version = read_pubspec_semver(PUBSPEC_PATH.read_text())
     backend_content = sync_fastapi_version(BACKEND_MAIN_PATH.read_text(), version)
-    chart_content = sync_chart_versions(HELM_CHART_PATH.read_text(), version)
-    values_content = sync_values_image_refs(HELM_VALUES_PATH.read_text(), owner=owner, version=version)
+    api_chart_content = sync_chart_versions(API_HELM_CHART_PATH.read_text(), version)
+    web_chart_content = sync_chart_versions(WEB_HELM_CHART_PATH.read_text(), version)
+    api_values_content = sync_api_values_image_refs(
+        API_HELM_VALUES_PATH.read_text(), owner=owner, version=version
+    )
+    web_values_content = sync_web_values_image_refs(
+        WEB_HELM_VALUES_PATH.read_text(), owner=owner, version=version
+    )
     if write:
         _write_if_changed(BACKEND_MAIN_PATH, backend_content)
-        _write_if_changed(HELM_CHART_PATH, chart_content)
-        _write_if_changed(HELM_VALUES_PATH, values_content)
+        _write_if_changed(API_HELM_CHART_PATH, api_chart_content)
+        _write_if_changed(WEB_HELM_CHART_PATH, web_chart_content)
+        _write_if_changed(API_HELM_VALUES_PATH, api_values_content)
+        _write_if_changed(WEB_HELM_VALUES_PATH, web_values_content)
     return 0
 
 
