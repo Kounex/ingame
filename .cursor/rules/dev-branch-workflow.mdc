@@ -1,0 +1,12 @@
+---
+description: Default branch and commit cadence for ongoing work
+alwaysApply: true
+---
+
+# Dev Branch Workflow
+
+- Default to working on `dev` unless the user explicitly asks to use a different branch.
+- Before starting implementation, check the current branch and switch to `dev` if needed.
+- Keep changes in small, traceable commits during substantial work so history is easy to backtrack.
+- Prefer multiple focused commits over one large commit when the work naturally breaks into reviewable steps.
+- Use `main` for release integration only after `dev` work is ready.
