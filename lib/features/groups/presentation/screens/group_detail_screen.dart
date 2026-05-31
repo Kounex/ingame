@@ -113,7 +113,7 @@ class GroupDetailScreen extends ConsumerWidget {
                         children: [
                           Text(
                             l10n.groupDetailSectionAbout,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -165,7 +165,7 @@ class GroupDetailScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     l10n.groupDetailSectionMembers,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -251,11 +251,11 @@ class GroupDetailScreen extends ConsumerWidget {
         backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupDetailLeaveTitle,
-          style: TextStyle(color: AppColors.textPrimary),
+          style: const TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
           context.l10n.groupDetailLeaveMessage,
-          style: TextStyle(color: AppColors.textSecondary),
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -272,7 +272,7 @@ class GroupDetailScreen extends ConsumerWidget {
             },
             child: Text(
               context.l10n.groupDetailMenuLeave,
-              style: TextStyle(color: AppColors.error),
+              style: const TextStyle(color: AppColors.error),
             ),
           ),
         ],

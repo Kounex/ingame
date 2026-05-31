@@ -78,7 +78,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     Text(
                       context.l10n.joinGroupInvitedTitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w600,

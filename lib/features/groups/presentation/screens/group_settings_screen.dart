@@ -92,7 +92,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
         backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupSettingsRemoveMemberTitle,
-          style: TextStyle(color: AppColors.textPrimary),
+          style: const TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
           context.l10n.groupSettingsRemoveMemberMessage(displayName),
@@ -158,7 +158,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
         backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupSettingsDenyRequestTitle,
-          style: TextStyle(color: AppColors.textPrimary),
+          style: const TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
           context.l10n.groupSettingsDenyRequestMessage(displayName),
@@ -204,11 +204,11 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
         backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupSettingsDeleteTitle,
-          style: TextStyle(color: AppColors.textPrimary),
+          style: const TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
           context.l10n.groupSettingsDeleteMessage,
-          style: TextStyle(color: AppColors.textSecondary),
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -278,7 +278,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       )
                     : Text(
                         l10n.commonSave,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -451,7 +451,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       children: [
                         Text(
                           l10n.groupSettingsDangerDescription,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 13,
                           ),
@@ -462,7 +462,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                           variant: GlassButtonVariant.ghost,
                           child: Text(
                             l10n.groupSettingsDeleteTitle,
-                            style: TextStyle(color: AppColors.error),
+                            style: const TextStyle(color: AppColors.error),
                           ),
                         ),
                       ],

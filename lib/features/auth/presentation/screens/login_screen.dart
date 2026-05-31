@@ -200,7 +200,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           child: Text(
             l10n.loginRegister,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.primary,
               fontSize: 14,
               fontWeight: FontWeight.w600,

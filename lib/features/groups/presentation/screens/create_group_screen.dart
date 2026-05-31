@@ -157,7 +157,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                         const Divider(color: AppColors.glassBorder, height: 24),
                         Text(
                           l10n.createGroupJoinModeLabel,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

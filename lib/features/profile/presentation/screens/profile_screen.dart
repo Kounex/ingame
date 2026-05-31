@@ -126,7 +126,7 @@ class ProfileScreen extends ConsumerWidget {
                     },
                     child: Text(
                       context.l10n.profileLogout,
-                      style: TextStyle(color: AppColors.error),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
@@ -303,7 +303,7 @@ class _GamingHoursCard extends StatelessWidget {
         days.every((d) => ['saturday', 'sunday'].contains(d))) {
       return l10n.profileWeekends;
     }
-    return days.map((d) => _dayLabel(d)).join(', ');
+    return days.map(_dayLabel).join(', ');
   }
 
   String _dayLabel(String day) {
@@ -372,7 +372,7 @@ class _GamingHoursCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.md),
                 Text(
                   context.l10n.profileNoSchedule,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 14,
                   ),
@@ -503,7 +503,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               l10n.profileDisconnectTitle(provider),
-              style: TextStyle(color: AppColors.error),
+              style: const TextStyle(color: AppColors.error),
             ),
           ),
         ],
@@ -805,7 +805,7 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: l10n.loginEmailLabel,
-                prefixIcon: Icon(Icons.email_outlined),
+                prefixIcon: const Icon(Icons.email_outlined),
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
@@ -843,7 +843,7 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
               obscureText: _obscure,
               decoration: InputDecoration(
                 labelText: l10n.registerConfirmPasswordLabel,
-                prefixIcon: Icon(Icons.lock_outline),
+                prefixIcon: const Icon(Icons.lock_outline),
               ),
               validator: (v) {
                 if (v != _passwordController.text) {

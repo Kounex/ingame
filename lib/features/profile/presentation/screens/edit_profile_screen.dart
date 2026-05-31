@@ -115,9 +115,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     label: context.l10n.registerDisplayNameLabel,
                     hint: context.l10n.editProfileDisplayNameHint,
                     prefixIcon: Icons.person_outline,
-                    validator: (value) {
-                      return FormValidators.displayName(value);
-                    },
+                    validator: FormValidators.displayName,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   GlassInput(

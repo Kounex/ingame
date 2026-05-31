@@ -328,7 +328,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ).createShader(bounds),
           child: Text(
             context.l10n.registerTitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -338,7 +338,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         const SizedBox(height: AppSpacing.sm),
         Text(
           context.l10n.registerSubtitle,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 16,
           ),
@@ -368,7 +368,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           child: Text(
             l10n.registerLogin,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.primary,
               fontSize: 14,
               fontWeight: FontWeight.w600,

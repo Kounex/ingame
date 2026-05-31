@@ -95,7 +95,7 @@ class _SteamButton extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Actor(
                 acts: [
-                  .textStyle(
+                  const .textStyle(
                     from: TextStyle(
                       color: Color(0xFFE1E8ED),
                       fontSize: 15,
@@ -204,7 +204,7 @@ class _SocialDivider extends StatelessWidget {
       children: [
         const Expanded(child: Divider(color: AppColors.glassBorder)),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
             l10n.socialDividerOr,
             style: const TextStyle(color: AppColors.textTertiary, fontSize: 14),

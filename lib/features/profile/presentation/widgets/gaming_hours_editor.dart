@@ -103,7 +103,7 @@ class _GamingHoursEditorState extends State<GamingHoursEditor> {
       children: [
         Text(
           l10n.gamingHoursTitle,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w600,

@@ -103,7 +103,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authNotifierProvider.overrideWith(
-            () => _FakeAuthNotifier(AuthState.unauthenticated()),
+            () => _FakeAuthNotifier(const AuthState.unauthenticated()),
           ),
           preferencesProvider.overrideWithValue(PreferencesService(prefs)),
         ],

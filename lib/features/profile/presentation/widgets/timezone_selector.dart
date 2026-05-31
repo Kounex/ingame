@@ -40,7 +40,7 @@ class TimezoneSelector extends StatelessWidget {
       children: [
         Text(
           context.l10n.timezoneLabel,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w600,

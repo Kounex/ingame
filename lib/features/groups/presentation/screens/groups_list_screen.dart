@@ -106,7 +106,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             Text(
               context.l10n.groupsEmptyTitle,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -115,7 +115,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               context.l10n.groupsEmptySubtitle,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 14,
               ),

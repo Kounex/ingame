@@ -79,7 +79,7 @@ void main() {
         overrides: [
           groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
           groupsNotifierProvider.overrideWith(
-            () => _EmptyGroupsNotifier(),
+            _EmptyGroupsNotifier.new,
           ),
           profileNotifierProvider.overrideWith(
             () => _FakeProfileNotifier(_profileUser()),
@@ -123,11 +123,11 @@ void main() {
     expect(find.text('Gruppe erstellen'), findsOneWidget);
 
     await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('de'),
+      const MaterialApp(
+        locale: Locale('de'),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: const Scaffold(
+        home: Scaffold(
           body: InviteLinkShare(inviteCode: 'ABC123'),
         ),
       ),
@@ -145,14 +145,14 @@ void main() {
             (ref, key) => UserStatus.ready,
           ),
         ],
-        child: MaterialApp(
-          locale: const Locale('de'),
+        child: const MaterialApp(
+          locale: Locale('de'),
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: Scaffold(
             body: MemberList(
               groupId: 'group-1',
-              members: const [
+              members: [
                 GroupMember(
                   id: 'membership-1',
                   userId: 'user-1',

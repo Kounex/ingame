@@ -309,7 +309,7 @@ class _WelcomePage extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           Text(
             context.l10n.onboardingWelcomeTitle,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -319,7 +319,7 @@ class _WelcomePage extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             context.l10n.onboardingWelcomeSubtitle,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const Spacer(flex: 2),
@@ -366,7 +366,7 @@ class _ProfileSetupPage extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
             Text(
               context.l10n.onboardingProfileTitle,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -375,7 +375,7 @@ class _ProfileSetupPage extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               context.l10n.onboardingProfileSubtitle,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: AppSpacing.xl),
             GlassCard(
@@ -463,7 +463,7 @@ class _GamingPreferencesPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.xl),
           Text(
             context.l10n.onboardingGamingTitle,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -472,7 +472,7 @@ class _GamingPreferencesPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             context.l10n.onboardingGamingSubtitle,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: AppSpacing.xl),
           GlassCard(
@@ -518,16 +518,16 @@ class _GamingPreferencesPage extends StatelessWidget {
                     children: [
                       Text(
                         context.l10n.onboardingConnectSteamTitle,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         context.l10n.onboardingConnectSteamSubtitle,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textTertiary,
                           fontSize: 13,
                         ),

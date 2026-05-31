@@ -29,7 +29,7 @@ class InviteLinkShare extends StatelessWidget {
         children: [
           Text(
             l10n.inviteCodeTitle,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w500,
