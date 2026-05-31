@@ -84,7 +84,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: _error != null ? _buildError() : _buildLoading(),
+              child: _error != null ? _buildError(_error!) : _buildLoading(),
             ),
           ),
         ),
@@ -93,23 +93,19 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
   }
 
   Widget _buildLoading() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const LoadingIndicator(),
-        const SizedBox(height: AppSpacing.lg),
-        Text(
-          context.l10n.steamAuthConnecting,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 16,
-          ),
-        ),
-      ],
+    return SteamAuthLoadingView(
+      onCancel: () => context.go(
+        Uri(
+          path: RoutePaths.login,
+          queryParameters: widget.redirectTo == null
+              ? null
+              : {'from': widget.redirectTo!},
+        ).toString(),
+      ),
     );
   }
 
-  Widget _buildError() {
+  Widget _buildError(String message) {
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
@@ -122,7 +118,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            _error!,
+            message,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 16,
@@ -135,30 +131,90 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
             variant: GlassButtonVariant.secondary,
             child: Text(context.l10n.steamAuthTryAgain),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Tappable(
-                onTap: () => context.go(
-                  Uri(
-                    path: RoutePaths.login,
-                    queryParameters: widget.redirectTo == null
-                        ? null
-                        : {'from': widget.redirectTo!},
-                  ).toString(),
-                ),
-                child: Text(
-                  context.l10n.steamAuthBackToLogin,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: AppSpacing.md),
+          SteamAuthBackToLoginRow(
+            onTap: () => context.go(
+              Uri(
+                path: RoutePaths.login,
+                queryParameters: widget.redirectTo == null
+                    ? null
+                    : {'from': widget.redirectTo!},
+              ).toString(),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class SteamAuthBackToLoginRow extends StatelessWidget {
+  const SteamAuthBackToLoginRow({
+    required this.onTap,
+    super.key,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          context.l10n.steamAuthBackToPrefix,
+          style: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
+        ),
+        const SizedBox(width: 4),
+        Tappable(
+          onTap: onTap,
+          child: Text(
+            context.l10n.registerLogin,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class SteamAuthLoadingView extends StatelessWidget {
+  const SteamAuthLoadingView({
+    required this.onCancel,
+    super.key,
+  });
+
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const LoadingIndicator(),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            context.l10n.steamAuthConnecting,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          GlassButton(
+            onPressed: onCancel,
+            variant: GlassButtonVariant.secondary,
+            child: Text(context.l10n.commonCancel),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SteamAuthBackToLoginRow(onTap: onCancel),
         ],
       ),
     );

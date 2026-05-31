@@ -223,7 +223,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${group.memberCount}',
+                          context.l10n.joinGroupMembers(group.memberCount),
                           style: const TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 13,

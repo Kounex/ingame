@@ -8,6 +8,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/language_switcher.dart';
 import '../../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
 import '../../../../shared/widgets/ingame_logo.dart';
@@ -93,6 +94,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const LanguageSwitcher(
+                        mode: LanguageSwitcherMode.compact,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
                       _buildHeader(),
                       const SizedBox(height: AppSpacing.xxl),
                       GlassInput(

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/localization/locale_controller.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../data/auth_repository.dart';
@@ -85,8 +86,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state = const AsyncValue.data(AuthState.unauthenticated());
         return;
       }
-      state = const AsyncValue.data(
-        AuthState.error('Apple sign-in failed. Please try again.'),
+      state = AsyncValue.data(
+        AuthState.error(currentAppLocalizations().authAppleSignInFailed),
       );
     } catch (e) {
       state = AsyncValue.data(AuthState.error(ApiError.userMessage(e)));
@@ -96,6 +97,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> logout() async {
     final repo = ref.read(authRepositoryProvider);
     await repo.logout();
+    ref.read(logoutRedirectPendingProvider.notifier).state = true;
     state = const AsyncValue.data(AuthState.unauthenticated());
   }
 }

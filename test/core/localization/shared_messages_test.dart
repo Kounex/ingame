@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
+import 'package:ingame/core/localization/locale_controller.dart';
 import 'package:ingame/core/networking/api_error.dart';
 import 'package:ingame/core/utils/validators.dart';
+import 'package:ingame/features/auth/data/oauth_launcher.dart';
 
 void main() {
   setUp(() {
@@ -18,7 +20,7 @@ void main() {
     expect(FormValidators.email(''), 'E-Mail ist erforderlich');
     expect(
       FormValidators.email('not-an-email'),
-      'Gib eine gueltige E-Mail-Adresse ein',
+      'Gib eine gültige E-Mail-Adresse ein',
     );
   });
 
@@ -35,7 +37,33 @@ void main() {
 
     expect(
       ApiError.userMessage(error),
-      'Du hast keine Berechtigung dafuer.',
+      'Du hast keine Berechtigung dafür.',
+    );
+  });
+
+  test('oauth launcher error uses German localized copy', () {
+    expect(
+      OAuthLauncher.friendlyError(Exception('User canceled login')),
+      'Anmeldung wurde abgebrochen.',
+    );
+    expect(
+      OAuthLauncher.friendlyError(Exception('boom')),
+      startsWith('Authentifizierung fehlgeschlagen:'),
+    );
+  });
+
+  test('shared German messages use natural umlaut spelling', () {
+    expect(
+      FormValidators.email('not-an-email'),
+      'Gib eine gültige E-Mail-Adresse ein',
+    );
+    expect(
+      OAuthLauncher.friendlyError(Exception('User canceled login')),
+      'Anmeldung wurde abgebrochen.',
+    );
+    expect(
+      currentAppLocalizations().authAppleSignInFailed,
+      'Apple-Anmeldung fehlgeschlagen. Bitte versuche es erneut.',
     );
   });
 }

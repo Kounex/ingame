@@ -30,38 +30,55 @@ class _RecordingProfileNotifier extends ProfileNotifier {
   }
 }
 
+Future<void> pumpOnboardingScreen(
+  WidgetTester tester, {
+  Locale locale = const Locale('en'),
+  AuthState authState = const AuthState.authenticated(
+    User(
+      id: 'user-1',
+      displayName: 'Ready Player',
+      timezone: 'UTC',
+    ),
+  ),
+  ProfileNotifier? profileNotifier,
+}) async {
+  final notifier = profileNotifier ?? _RecordingProfileNotifier();
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(authState),
+        ),
+        profileNotifierProvider.overrideWith(
+          () => notifier,
+        ),
+      ],
+      child: MaterialApp(
+        locale: locale,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: const OnboardingScreen(),
+      ),
+    ),
+  );
+}
+
 void main() {
+  testWidgets('onboarding welcome page shows localized copy', (tester) async {
+    await pumpOnboardingScreen(tester, locale: const Locale('de'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Willkommen bei InGame'), findsOneWidget);
+    expect(find.text('Gaming-Präferenzen'), findsNothing);
+  });
+
   testWidgets(
     'finish requires at least one gaming time slot',
     (tester) async {
       final profileNotifier = _RecordingProfileNotifier();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authNotifierProvider.overrideWith(
-              () => _FakeAuthNotifier(
-                const AuthState.authenticated(
-                  User(
-                    id: 'user-1',
-                    displayName: 'Ready Player',
-                    timezone: 'UTC',
-                  ),
-                ),
-              ),
-            ),
-            profileNotifierProvider.overrideWith(
-              () => profileNotifier,
-            ),
-          ],
-          child: const MaterialApp(
-            locale: Locale('en'),
-            supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: OnboardingScreen(),
-          ),
-        ),
-      );
+      await pumpOnboardingScreen(tester, profileNotifier: profileNotifier);
 
       await tester.tap(find.text('Get Started'));
       await tester.pumpAndSettle();

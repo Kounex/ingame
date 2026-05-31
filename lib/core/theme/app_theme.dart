@@ -134,6 +134,22 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: AppColors.backgroundLight,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shadowColor: Colors.black.withValues(alpha: 0.24),
+        menuPadding: const EdgeInsets.all(8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        textStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.transparent,
         selectedItemColor: AppColors.primary,

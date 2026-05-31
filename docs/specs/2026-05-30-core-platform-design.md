@@ -1,8 +1,8 @@
 ---
 spec: core-platform
-version: "2.22"
+version: "2.24"
 status: complete
-last_updated: "2026-05-31"
+last_updated: "2026-06-01"
 sub_project: 1
 ---
 
@@ -137,6 +137,7 @@ Conflict detection: if another user already has the target `steam_id` or `apple_
 - `launchSteamAuth()` -- builds Steam OpenID URL, launches browser via `flutter_web_auth_2`, returns callback params
 - `launchAppleSignIn()` -- launches Apple Sign-In, returns identity token. On web, passes `WebAuthenticationOptions` with `APPLE_SERVICE_ID` env and redirect URI.
 - Profile's Connected Accounts card triggers these flows directly; on success calls the profile repository's link methods and refreshes both profile and auth providers
+- OAuth/browser failures are mapped through locale-aware user-facing messages so login/profile linking flows do not fall back to inline English copy
 
 **Platform callback configuration:**
 
@@ -144,7 +145,7 @@ Conflict detection: if another user already has the target `steam_id` or `apple_
 |----------|---------------|---------------|----------------|
 | **iOS** | `ingame://auth/steam/callback` via `CFBundleURLTypes` | Native AuthenticationServices via `Runner.entitlements` | `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements` |
 | **Android** | `ingame://` scheme via `CallbackActivity` intent filter | N/A (Apple Sign-In not on Android) | `android/app/src/main/AndroidManifest.xml` |
-| **Web** | `{origin}/auth/steam-callback.html` static HTML page posts result via `window.opener.postMessage` | `{origin}/auth/apple-callback.html` + `WebAuthenticationOptions(clientId, redirectUri)` | `web/auth/steam-callback.html`, `web/auth/apple-callback.html` |
+| **Web** | `{origin}/auth/steam-callback.html` static HTML page posts result via `window.opener.postMessage` and falls back to `localStorage` when opener state is unavailable | `{origin}/auth/apple-callback.html` + `WebAuthenticationOptions(clientId, redirectUri)` | `web/auth/steam-callback.html`, `web/auth/apple-callback.html` |
 | **macOS** | `ingame://auth/steam/callback` via `CFBundleURLTypes` | Native AuthenticationServices via entitlements | `macos/Runner/Info.plist`, `macos/Runner/*.entitlements` |
 
 - `flutter_web_auth_2` always receives the valid custom scheme `ingame`; on web that value is ignored and the flow resolves via `postMessage` from the callback HTML page
@@ -264,6 +265,7 @@ lib/
       api_endpoints.dart
     routing/
       app_router.dart
+      route_normalization.dart        # Canonicalizes auth redirect targets and strips stale query params
       route_names.dart
       page_transitions.dart          # fadeSlideTransition for GoRouter push routes
     storage/
@@ -358,6 +360,7 @@ lib/
       loading_indicator.dart
       error_display.dart
       user_avatar.dart
+      language_switcher.dart         # Shared compact/settings locale switcher
     providers/
       connectivity_provider.dart
       websocket_provider.dart
@@ -469,6 +472,8 @@ backend/
 - **Pointer cursor**: All tappable elements show `SystemMouseCursors.click` on desktop/web hover. Use the `Tappable` widget (`shared/widgets/tappable.dart`) instead of raw `GestureDetector` — it wraps `MouseRegion` + `GestureDetector` with automatic cursor handling. Built into `GlassCard`, bottom nav items, and sidebar items via `Tappable`. `GlassButton` uses a raw `MouseRegion` since its inner `ElevatedButton`/`OutlinedButton`/`TextButton` handles its own taps. Hover-tracking widgets (e.g., social login buttons with animated hover states) use `Cue.onHover`, which provides the pointer cursor and motion trigger together. Enforced by `.cursor/rules/pointer-cursor.mdc`.
 - **Root-level overlays**: All `showModalBottomSheet` and `showDialog` calls inside shell routes must use `useRootNavigator: true` so they render above the persistent navigation bar/sidebar, not beneath it.
 - **Localized copy only**: New user-facing Flutter strings must be added through `lib/l10n/app_en.arb` and `lib/l10n/app_de.arb`, then referenced via generated localization accessors. This is enforced by `.cursor/rules/localize-user-facing-strings.mdc`.
+- **Locale behavior**: The app resolves locale from the system by default, persists manual overrides in shared preferences, and exposes a shared language switcher on the login screen and in profile preferences.
+- **Popup menus**: `ThemeData.popupMenuTheme` is customized globally so overflow menus match the glassmorphism surface styling instead of default Material gray menus.
 
 ### Animation Principles
 - **Page transitions**: fade+slide (300ms ease-in-out) via `fadeSlideTransition` on all detail/sub-routes within the shell and focused flows
@@ -492,6 +497,10 @@ backend/
 Open app -> Welcome screen -> Register (email, Steam, or Apple) -> Onboarding wizard (3-step PageView: Welcome, Profile Setup, Gaming Preferences) -> Home (groups list)
 
 **Onboarding redirect:** GoRouter checks `needsOnboardingProvider` after auth. If the user lacks a bio or gaming hours, they're redirected to `/onboarding`. If onboarding interrupted another destination such as `/join/:code`, the router preserves that `from` target and restores it once onboarding is complete. `OnboardingScreen` also exits immediately once onboarding is no longer required, so users are not left stranded on `/onboarding`.
+
+**Redirect normalization:** Auth/onboarding redirect carriers normalize their route locations and preserve only the whitelisted `from` query so stale or nested auth query params do not leak into later navigation.
+
+**Intentional logout:** Manual logout from an authenticated screen goes to a clean `/login` route without preserving a stale `from` target such as `/profile`. Preserved `from` targets are reserved for interrupted protected/deep-link flows, not explicit sign-out.
 
 ### Flow 2: Create a Group
 Home -> "Create Group" -> Enter name, description, avatar -> Choose visibility (private/discoverable) -> If discoverable, choose join mode (open/approval) -> Group created -> Share invite link
@@ -663,3 +672,8 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-05-31 | CI/CD Pipeline / Release Versioning | Added pubspec-driven release version contract and tag-triggered GHCR image publishing | `pubspec.yaml` is now the canonical stack release version, release prep aligns backend/Helm/deploy refs on `dev`, and release tags on `main` publish images from an already-aligned commit |
 | 2026-05-31 | Deployment / Helm | Split the deployment charts into `ingame-api` and `ingame-web` | The API and web runtimes now have separate Helm ownership boundaries instead of one backend-branded chart containing both |
 | 2026-05-31 | Flutter App Architecture / UX | Added official English/German localization foundation | Core app shell, validators, API errors, and high-traffic auth/onboarding/group/profile flows now use generated `AppLocalizations` instead of inline English copy |
+| 2026-06-01 | Navigation / Flutter | Added route-aware query normalization for auth/onboarding redirects | Redirect carriers now keep only the canonical `from` target and strip stale nested query params that previously leaked across flows |
+| 2026-06-01 | Localization / Flutter | Added system-locale default plus manual language switching on login/profile | Locale now follows system context until overridden, persists explicit language choice, and exposes a shared `LanguageSwitcher` on the first signed-out screen and in profile preferences |
+| 2026-06-01 | Design System / Flutter | Added global popup menu theming and localized remaining high-traffic group/profile surfaces | Overflow menus now match the glass theme, and the connected-accounts/group management flows no longer fall back to inline English copy |
+| 2026-06-01 | Authentication / Web | Restored `localStorage` fallback in Steam callback handoff for opener-less web flows | Steam web auth now matches the documented `flutter_web_auth_2` handoff contract instead of redirecting browser-only flows to the native custom scheme |
+| 2026-06-01 | Navigation / Auth UX | Explicit logout now routes to clean `/login` without a preserved `from` query | Prevents stale return targets like `/profile` from lingering after intentional sign-out while keeping interrupted-flow redirects intact |

@@ -2,23 +2,64 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../../../core/localization/locale_controller.dart';
+import '../../../core/networking/api_endpoints.dart';
+
 class OAuthLauncher {
   OAuthLauncher._();
 
   static const _callbackScheme = 'ingame';
+  static const _steamCallbackPath = '/auth/steam-callback.html';
 
   static String get _steamReturnTo {
-    if (kIsWeb) {
-      return '${Uri.base.origin}/auth/steam-callback.html';
+    return steamReturnToForPlatform(
+      isWeb: kIsWeb,
+      appBaseUrl: ApiEndpoints.appBaseUrl,
+    );
+  }
+
+  static String get _steamRealm {
+    return steamRealmForPlatform(isWeb: kIsWeb, appBaseUrl: ApiEndpoints.appBaseUrl);
+  }
+
+  @visibleForTesting
+  static String steamReturnToForPlatform({
+    required bool isWeb,
+    required String appBaseUrl,
+  }) {
+    if (isWeb) {
+      return '${Uri.base.origin}$_steamCallbackPath';
     }
-    return '$_callbackScheme://auth/steam/callback';
+
+    return _steamCallbackUri(appBaseUrl).toString();
+  }
+
+  @visibleForTesting
+  static String steamRealmForPlatform({
+    required bool isWeb,
+    required String appBaseUrl,
+  }) {
+    if (isWeb) {
+      return Uri.base.origin;
+    }
+
+    return _steamCallbackUri(appBaseUrl).origin;
+  }
+
+  static Uri _steamCallbackUri(String appBaseUrl) {
+    final appUri = Uri.parse(appBaseUrl);
+    return appUri.replace(
+      path: _steamCallbackPath,
+      queryParameters: null,
+      fragment: null,
+    );
   }
 
   /// Launches the Steam OpenID 2.0 browser flow and returns the callback
   /// query parameters on success. Throws on cancellation or failure.
   static Future<Map<String, String>> launchSteamAuth() async {
     final returnTo = _steamReturnTo;
-    final realm = kIsWeb ? Uri.base.origin : '$_callbackScheme://';
+    final realm = _steamRealm;
 
     final authUrl = Uri.https(
       'steamcommunity.com',
@@ -79,13 +120,18 @@ class OAuthLauncher {
   /// Returns a user-friendly error message for OAuth failures.
   /// In debug mode, includes the original error for easier diagnosis.
   static String friendlyError(Object error) {
-    final message = error.toString().toLowerCase();
-    if (message.contains('cancel') || message.contains('closed')) {
-      return 'Sign-in was cancelled.';
+    final l10n = currentAppLocalizations();
+    if (isCancellationError(error)) {
+      return l10n.authSignInCancelled;
     }
     if (kDebugMode) {
-      return 'Authentication failed: $error';
+      return '${l10n.authErrorDebugPrefix}: $error';
     }
-    return 'Authentication failed. Please try again.';
+    return l10n.authErrorGeneric;
+  }
+
+  static bool isCancellationError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('cancel') || message.contains('closed');
   }
 }

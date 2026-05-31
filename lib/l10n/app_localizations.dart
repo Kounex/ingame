@@ -101,6 +101,12 @@ abstract class AppLocalizations {
   /// **'InGame'**
   String get appTitle;
 
+  /// No description provided for @brandTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Find your squad. Game together.'**
+  String get brandTagline;
+
   /// No description provided for @loginEmailLabel.
   ///
   /// In en, this message translates to:
@@ -779,6 +785,12 @@ abstract class AppLocalizations {
   /// **'Try Again'**
   String get steamAuthTryAgain;
 
+  /// No description provided for @steamAuthBackToPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to'**
+  String get steamAuthBackToPrefix;
+
   /// No description provided for @steamAuthBackToLogin.
   ///
   /// In en, this message translates to:
@@ -790,6 +802,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get errorRetryAction;
+
+  /// No description provided for @authSignInCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in was cancelled.'**
+  String get authSignInCancelled;
+
+  /// No description provided for @authAppleSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple sign-in failed. Please try again.'**
+  String get authAppleSignInFailed;
+
+  /// No description provided for @authErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed. Please try again.'**
+  String get authErrorGeneric;
+
+  /// No description provided for @authErrorDebugPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed'**
+  String get authErrorDebugPrefix;
 
   /// No description provided for @profileTitle.
   ///
@@ -821,6 +857,18 @@ abstract class AppLocalizations {
   /// **'Account'**
   String get profileSectionAccount;
 
+  /// No description provided for @profileSectionConnectedAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected Accounts'**
+  String get profileSectionConnectedAccounts;
+
+  /// No description provided for @profileSectionPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get profileSectionPreferences;
+
   /// No description provided for @profileEmailLabel.
   ///
   /// In en, this message translates to:
@@ -850,6 +898,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown'**
   String get profileUnknown;
+
+  /// No description provided for @profileConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get profileConnected;
+
+  /// No description provided for @profileNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get profileNotConnected;
+
+  /// No description provided for @profileConnectedAccountsEmailPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Email & Password'**
+  String get profileConnectedAccountsEmailPassword;
+
+  /// No description provided for @profileConnectedAccountsSteam.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam'**
+  String get profileConnectedAccountsSteam;
+
+  /// No description provided for @profileConnectedAccountsApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple'**
+  String get profileConnectedAccountsApple;
+
+  /// No description provided for @profileDisconnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect {provider}'**
+  String profileDisconnectTitle(String provider);
+
+  /// No description provided for @profileDisconnectMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to disconnect your {provider} account?'**
+  String profileDisconnectMessage(String provider);
+
+  /// No description provided for @profileDisconnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to disconnect {provider}: {message}'**
+  String profileDisconnectFailed(String provider, String message);
+
+  /// No description provided for @profileSteamLinkedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam account linked successfully'**
+  String get profileSteamLinkedSuccess;
+
+  /// No description provided for @profileLinkSteamFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to link Steam: {message}'**
+  String profileLinkSteamFailed(String message);
+
+  /// No description provided for @profileSetEmailPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Email & Password'**
+  String get profileSetEmailPasswordTitle;
+
+  /// No description provided for @profileSetEmailPasswordDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add email login to your account so you can sign in without a social provider.'**
+  String get profileSetEmailPasswordDescription;
+
+  /// No description provided for @profileEmailPasswordAddedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Email & password added successfully'**
+  String get profileEmailPasswordAddedSuccess;
+
+  /// No description provided for @profileSetEmailFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to set email: {message}'**
+  String profileSetEmailFailed(String message);
+
+  /// No description provided for @profileAppleLinkedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple account linked successfully'**
+  String get profileAppleLinkedSuccess;
+
+  /// No description provided for @profileAppleSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple sign-in failed.'**
+  String get profileAppleSignInFailed;
+
+  /// No description provided for @profileLinkAppleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to link Apple: {message}'**
+  String profileLinkAppleFailed(String message);
 
   /// No description provided for @profileSectionGamingHours.
   ///
@@ -935,6 +1085,318 @@ abstract class AppLocalizations {
   /// **'Not set'**
   String get gamingHoursNotSet;
 
+  /// No description provided for @gamingHoursSelectStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Select start time for {day}'**
+  String gamingHoursSelectStartTime(String day);
+
+  /// No description provided for @gamingHoursSelectEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Select end time for {day}'**
+  String gamingHoursSelectEndTime(String day);
+
+  /// No description provided for @commonAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get commonAdd;
+
+  /// No description provided for @groupTitleFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get groupTitleFallback;
+
+  /// No description provided for @groupVisibilityPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get groupVisibilityPublic;
+
+  /// No description provided for @groupVisibilityPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get groupVisibilityPrivate;
+
+  /// No description provided for @groupJoinModeOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get groupJoinModeOpenLabel;
+
+  /// No description provided for @groupJoinModeApprovalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval'**
+  String get groupJoinModeApprovalLabel;
+
+  /// No description provided for @groupJoinModeOpenDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone can join instantly'**
+  String get groupJoinModeOpenDescription;
+
+  /// No description provided for @groupJoinModeApprovalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Members must be approved by an admin'**
+  String get groupJoinModeApprovalDescription;
+
+  /// No description provided for @groupDetailMenuInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get groupDetailMenuInvite;
+
+  /// No description provided for @groupDetailMenuSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get groupDetailMenuSettings;
+
+  /// No description provided for @groupDetailMenuLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Group'**
+  String get groupDetailMenuLeave;
+
+  /// No description provided for @groupDetailSectionAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get groupDetailSectionAbout;
+
+  /// No description provided for @groupDetailSectionMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get groupDetailSectionMembers;
+
+  /// No description provided for @groupDetailLeaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Group'**
+  String get groupDetailLeaveTitle;
+
+  /// No description provided for @groupDetailLeaveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to leave this group?'**
+  String get groupDetailLeaveMessage;
+
+  /// No description provided for @createGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Group'**
+  String get createGroupTitle;
+
+  /// No description provided for @createGroupNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Name'**
+  String get createGroupNameLabel;
+
+  /// No description provided for @createGroupNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name for your group'**
+  String get createGroupNameHint;
+
+  /// No description provided for @createGroupNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name is required'**
+  String get createGroupNameRequired;
+
+  /// No description provided for @createGroupNameMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Name must be at least 3 characters'**
+  String get createGroupNameMin;
+
+  /// No description provided for @createGroupDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get createGroupDescriptionLabel;
+
+  /// No description provided for @createGroupDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What is this group about? (optional)'**
+  String get createGroupDescriptionHint;
+
+  /// No description provided for @createGroupDiscoverableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discoverable'**
+  String get createGroupDiscoverableTitle;
+
+  /// No description provided for @createGroupDiscoverableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow others to find and join this group'**
+  String get createGroupDiscoverableSubtitle;
+
+  /// No description provided for @createGroupJoinModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Mode'**
+  String get createGroupJoinModeLabel;
+
+  /// No description provided for @createGroupSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Group'**
+  String get createGroupSubmit;
+
+  /// No description provided for @groupSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Settings'**
+  String get groupSettingsTitle;
+
+  /// No description provided for @groupSettingsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Group updated'**
+  String get groupSettingsUpdated;
+
+  /// No description provided for @groupSettingsRemoveMemberTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Member'**
+  String get groupSettingsRemoveMemberTitle;
+
+  /// No description provided for @groupSettingsRemoveMemberMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {displayName} from this group?'**
+  String groupSettingsRemoveMemberMessage(String displayName);
+
+  /// No description provided for @groupSettingsMemberRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} removed'**
+  String groupSettingsMemberRemoved(String displayName);
+
+  /// No description provided for @groupSettingsRequestApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Request approved'**
+  String get groupSettingsRequestApproved;
+
+  /// No description provided for @groupSettingsDenyRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny Request'**
+  String get groupSettingsDenyRequestTitle;
+
+  /// No description provided for @groupSettingsDenyRequestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny join request from {displayName}?'**
+  String groupSettingsDenyRequestMessage(String displayName);
+
+  /// No description provided for @groupSettingsRequestDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Request denied'**
+  String get groupSettingsRequestDenied;
+
+  /// No description provided for @groupSettingsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Group'**
+  String get groupSettingsDeleteTitle;
+
+  /// No description provided for @groupSettingsDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. All members will be removed.'**
+  String get groupSettingsDeleteMessage;
+
+  /// No description provided for @groupSettingsSectionGroupInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Info'**
+  String get groupSettingsSectionGroupInfo;
+
+  /// No description provided for @groupSettingsSectionVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get groupSettingsSectionVisibility;
+
+  /// No description provided for @groupSettingsSectionMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members ({count})'**
+  String groupSettingsSectionMembers(int count);
+
+  /// No description provided for @groupSettingsSectionPendingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Requests ({count})'**
+  String groupSettingsSectionPendingRequests(int count);
+
+  /// No description provided for @groupSettingsSectionDangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get groupSettingsSectionDangerZone;
+
+  /// No description provided for @groupSettingsDangerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting this group is permanent and will remove all members.'**
+  String get groupSettingsDangerDescription;
+
+  /// No description provided for @groupSettingsRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get groupSettingsRemoveTooltip;
+
+  /// No description provided for @groupSettingsApproveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get groupSettingsApproveTooltip;
+
+  /// No description provided for @groupSettingsDenyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get groupSettingsDenyTooltip;
+
+  /// No description provided for @groupSettingsRoleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get groupSettingsRoleMember;
+
+  /// No description provided for @groupSettingsTimeAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
+  String groupSettingsTimeAgoDays(int count);
+
+  /// No description provided for @groupSettingsTimeAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String groupSettingsTimeAgoHours(int count);
+
+  /// No description provided for @groupSettingsTimeAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m ago'**
+  String groupSettingsTimeAgoMinutes(int count);
+
   /// No description provided for @dayMonShort.
   ///
   /// In en, this message translates to:
@@ -1012,6 +1474,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offline'**
   String get memberStatusOffline;
+
+  /// No description provided for @languageSwitcherLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageSwitcherLabel;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'Deutsch'**
+  String get languageGerman;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

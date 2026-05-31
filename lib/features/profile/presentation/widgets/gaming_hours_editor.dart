@@ -65,17 +65,18 @@ class _GamingHoursEditorState extends State<GamingHoursEditor> {
 
   Future<void> _editDay(int index) async {
     final day = _days[index];
+    final l10n = context.l10n;
     final labels = _dayLabels(context);
     final result = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 18, minute: 0),
-      helpText: 'Select start time for ${labels[index]}',
+      helpText: l10n.gamingHoursSelectStartTime(labels[index]),
     );
     if (result != null && mounted) {
       final endResult = await showTimePicker(
         context: context,
         initialTime: TimeOfDay(hour: (result.hour + 4) % 24, minute: 0),
-        helpText: 'Select end time for ${labels[index]}',
+        helpText: l10n.gamingHoursSelectEndTime(labels[index]),
       );
       if (endResult != null && mounted) {
         setState(() {

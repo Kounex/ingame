@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/utils/extensions.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/spacing.dart';
 
@@ -86,9 +87,9 @@ class InGameLogo extends StatelessWidget {
       children: [
         content,
         const SizedBox(height: AppSpacing.sm),
-        const Text(
-          'Find your squad. Game together.',
-          style: TextStyle(
+        Text(
+          context.l10n.brandTagline,
+          style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 16,
           ),

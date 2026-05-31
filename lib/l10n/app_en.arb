@@ -1,6 +1,7 @@
 {
   "@@locale": "en",
   "appTitle": "InGame",
+  "brandTagline": "Find your squad. Game together.",
   "loginEmailLabel": "Email",
   "loginEmailHint": "Enter your email",
   "loginPasswordLabel": "Password",
@@ -169,18 +170,87 @@
   "inviteDetailsCopied": "Invite details copied to clipboard",
   "steamAuthConnecting": "Connecting to Steam...",
   "steamAuthTryAgain": "Try Again",
+  "steamAuthBackToPrefix": "Back to",
   "steamAuthBackToLogin": "Back to Login",
   "errorRetryAction": "Retry",
+  "authSignInCancelled": "Sign-in was cancelled.",
+  "authAppleSignInFailed": "Apple sign-in failed. Please try again.",
+  "authErrorGeneric": "Authentication failed. Please try again.",
+  "authErrorDebugPrefix": "Authentication failed",
   "profileTitle": "Profile",
   "profileLoadError": "Could not load profile",
   "profileEdit": "Edit Profile",
   "profileLogout": "Logout",
   "profileSectionAccount": "Account",
+  "profileSectionConnectedAccounts": "Connected Accounts",
+  "profileSectionPreferences": "Preferences",
   "profileEmailLabel": "Email",
   "profileTimezoneLabel": "Timezone",
   "profileMemberSinceLabel": "Member since",
   "profileNotSet": "Not set",
   "profileUnknown": "Unknown",
+  "profileConnected": "Connected",
+  "profileNotConnected": "Not connected",
+  "profileConnectedAccountsEmailPassword": "Email & Password",
+  "profileConnectedAccountsSteam": "Steam",
+  "profileConnectedAccountsApple": "Apple",
+  "profileDisconnectTitle": "Disconnect {provider}",
+  "@profileDisconnectTitle": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileDisconnectMessage": "Are you sure you want to disconnect your {provider} account?",
+  "@profileDisconnectMessage": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileDisconnectFailed": "Failed to disconnect {provider}: {message}",
+  "@profileDisconnectFailed": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSteamLinkedSuccess": "Steam account linked successfully",
+  "profileLinkSteamFailed": "Failed to link Steam: {message}",
+  "@profileLinkSteamFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSetEmailPasswordTitle": "Add Email & Password",
+  "profileSetEmailPasswordDescription": "Add email login to your account so you can sign in without a social provider.",
+  "profileEmailPasswordAddedSuccess": "Email & password added successfully",
+  "profileSetEmailFailed": "Failed to set email: {message}",
+  "@profileSetEmailFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileAppleLinkedSuccess": "Apple account linked successfully",
+  "profileAppleSignInFailed": "Apple sign-in failed.",
+  "profileLinkAppleFailed": "Failed to link Apple: {message}",
+  "@profileLinkAppleFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "profileSectionGamingHours": "Gaming Hours",
   "profileNoSchedule": "No schedule set",
   "profileEveryDay": "Every day",
@@ -195,6 +265,128 @@
   "timezoneLabel": "Timezone",
   "gamingHoursTitle": "Gaming Hours",
   "gamingHoursNotSet": "Not set",
+  "gamingHoursSelectStartTime": "Select start time for {day}",
+  "@gamingHoursSelectStartTime": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "gamingHoursSelectEndTime": "Select end time for {day}",
+  "@gamingHoursSelectEndTime": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "commonAdd": "Add",
+  "groupTitleFallback": "Group",
+  "groupVisibilityPublic": "Public",
+  "groupVisibilityPrivate": "Private",
+  "groupJoinModeOpenLabel": "Open",
+  "groupJoinModeApprovalLabel": "Approval",
+  "groupJoinModeOpenDescription": "Anyone can join instantly",
+  "groupJoinModeApprovalDescription": "Members must be approved by an admin",
+  "groupDetailMenuInvite": "Invite",
+  "groupDetailMenuSettings": "Settings",
+  "groupDetailMenuLeave": "Leave Group",
+  "groupDetailSectionAbout": "About",
+  "groupDetailSectionMembers": "Members",
+  "groupDetailLeaveTitle": "Leave Group",
+  "groupDetailLeaveMessage": "Are you sure you want to leave this group?",
+  "createGroupTitle": "Create Group",
+  "createGroupNameLabel": "Group Name",
+  "createGroupNameHint": "Enter a name for your group",
+  "createGroupNameRequired": "Group name is required",
+  "createGroupNameMin": "Name must be at least 3 characters",
+  "createGroupDescriptionLabel": "Description",
+  "createGroupDescriptionHint": "What is this group about? (optional)",
+  "createGroupDiscoverableTitle": "Discoverable",
+  "createGroupDiscoverableSubtitle": "Allow others to find and join this group",
+  "createGroupJoinModeLabel": "Join Mode",
+  "createGroupSubmit": "Create Group",
+  "groupSettingsTitle": "Group Settings",
+  "groupSettingsUpdated": "Group updated",
+  "groupSettingsRemoveMemberTitle": "Remove Member",
+  "groupSettingsRemoveMemberMessage": "Remove {displayName} from this group?",
+  "@groupSettingsRemoveMemberMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsMemberRemoved": "{displayName} removed",
+  "@groupSettingsMemberRemoved": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsRequestApproved": "Request approved",
+  "groupSettingsDenyRequestTitle": "Deny Request",
+  "groupSettingsDenyRequestMessage": "Deny join request from {displayName}?",
+  "@groupSettingsDenyRequestMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsRequestDenied": "Request denied",
+  "groupSettingsDeleteTitle": "Delete Group",
+  "groupSettingsDeleteMessage": "This action cannot be undone. All members will be removed.",
+  "groupSettingsSectionGroupInfo": "Group Info",
+  "groupSettingsSectionVisibility": "Visibility",
+  "groupSettingsSectionMembers": "Members ({count})",
+  "@groupSettingsSectionMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupSettingsSectionPendingRequests": "Pending Requests ({count})",
+  "@groupSettingsSectionPendingRequests": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupSettingsSectionDangerZone": "Danger Zone",
+  "groupSettingsDangerDescription": "Deleting this group is permanent and will remove all members.",
+  "groupSettingsRemoveTooltip": "Remove",
+  "groupSettingsApproveTooltip": "Approve",
+  "groupSettingsDenyTooltip": "Deny",
+  "groupSettingsRoleMember": "Member",
+  "groupSettingsTimeAgoDays": "{count}d ago",
+  "@groupSettingsTimeAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupSettingsTimeAgoHours": "{count}h ago",
+  "@groupSettingsTimeAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupSettingsTimeAgoMinutes": "{count}m ago",
+  "@groupSettingsTimeAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dayMonShort": "Mon",
   "dayTueShort": "Tue",
   "dayWedShort": "Wed",
@@ -207,5 +399,8 @@
   "memberStatusReady": "Ready to play",
   "memberStatusOnline": "Online",
   "memberStatusAway": "Away",
-  "memberStatusOffline": "Offline"
+  "memberStatusOffline": "Offline",
+  "languageSwitcherLabel": "Language",
+  "languageEnglish": "English",
+  "languageGerman": "Deutsch"
 }

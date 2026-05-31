@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/routing/route_names.dart';
+import '../../../../core/routing/route_normalization.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
@@ -166,8 +167,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     ref.listen<bool>(needsOnboardingProvider, (_, needsOnboarding) {
       if (!needsOnboarding && mounted) {
-        final from = GoRouterState.of(context).uri.queryParameters['from'];
-        context.go((from != null && from.isNotEmpty) ? from : RoutePaths.home);
+        final from = sanitizeRedirectTarget(
+          GoRouterState.of(context).uri.queryParameters['from'],
+        );
+        context.go(from ?? RoutePaths.home);
       }
     });
 

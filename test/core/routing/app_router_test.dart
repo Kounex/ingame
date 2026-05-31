@@ -2,13 +2,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ingame/core/auth/auth_session.dart';
 import 'package:ingame/core/routing/app_router.dart';
+import 'package:ingame/core/storage/preferences.dart';
+import 'package:ingame/features/auth/presentation/screens/login_screen.dart';
 import 'package:ingame/features/auth/domain/auth_state.dart';
 import 'package:ingame/features/auth/domain/user_model.dart';
 import 'package:ingame/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ingame/features/groups/data/groups_repository.dart';
 import 'package:ingame/features/groups/domain/group_model.dart';
 import 'package:ingame/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:ingame/features/profile/presentation/providers/profile_provider.dart';
+import 'package:ingame/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeAuthNotifier extends AuthNotifier {
   _FakeAuthNotifier(this._initialState);
@@ -21,6 +27,21 @@ class _FakeAuthNotifier extends AuthNotifier {
   void setAuthState(AuthState nextState) {
     state = AsyncValue.data(nextState);
   }
+
+  @override
+  Future<void> logout() async {
+    ref.read(logoutRedirectPendingProvider.notifier).state = true;
+    state = const AsyncValue.data(AuthState.unauthenticated());
+  }
+}
+
+class _FakeProfileNotifier extends ProfileNotifier {
+  _FakeProfileNotifier(this._user);
+
+  final User _user;
+
+  @override
+  Future<User?> build() async => _user;
 }
 
 class _FakeGroupsRepository extends GroupsRepository {
@@ -75,17 +96,16 @@ User _completedUser() => const User(
 
 void main() {
   testWidgets(
-    'join link redirect to onboarding preserves return target',
+    'unauthenticated redirect strips stray query params from preserved target',
     (tester) async {
-      late _FakeAuthNotifier authNotifier;
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [
           authNotifierProvider.overrideWith(
-            () => authNotifier = _FakeAuthNotifier(
-              AuthState.authenticated(_userMissingOnboardingData()),
-            ),
+            () => _FakeAuthNotifier(AuthState.unauthenticated()),
           ),
-          groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
         ],
       );
       addTearDown(container.dispose);
@@ -95,7 +115,54 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            routerConfig: router,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+          ),
+        ),
+      );
+
+      router.go('/discover?debug=true');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        '/login?from=%2Fdiscover',
+      );
+    },
+  );
+
+  testWidgets(
+    'join link redirect to onboarding preserves return target',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      late _FakeAuthNotifier authNotifier;
+      final container = ProviderContainer(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => authNotifier = _FakeAuthNotifier(
+              AuthState.authenticated(_userMissingOnboardingData()),
+            ),
+          ),
+          groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(routerProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: router,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+          ),
         ),
       );
 
@@ -116,6 +183,8 @@ void main() {
   testWidgets(
     'onboarding route redirects to preserved target once onboarding is complete',
     (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       late _FakeAuthNotifier authNotifier;
       final container = ProviderContainer(
         overrides: [
@@ -125,6 +194,7 @@ void main() {
             ),
           ),
           groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
         ],
       );
       addTearDown(container.dispose);
@@ -134,7 +204,11 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            routerConfig: router,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+          ),
         ),
       );
 
@@ -146,6 +220,54 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(router.routeInformationProvider.value.uri.toString(), '/join/ABC123');
+    },
+  );
+
+  testWidgets(
+    'intentional logout from profile lands on clean login route',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      late _FakeAuthNotifier authNotifier;
+      final container = ProviderContainer(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => authNotifier = _FakeAuthNotifier(
+              AuthState.authenticated(_completedUser()),
+            ),
+          ),
+          profileNotifierProvider.overrideWith(
+            () => _FakeProfileNotifier(_completedUser()),
+          ),
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(routerProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: router,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+          ),
+        ),
+      );
+
+      router.go('/profile');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Logout'), findsOneWidget);
+      await tester.ensureVisible(find.text('Logout'));
+      await tester.tap(find.text('Logout'));
+      await tester.pumpAndSettle();
+
+      expect(router.routeInformationProvider.value.uri.toString(), '/login');
+
+      final _ = authNotifier;
     },
   );
 }

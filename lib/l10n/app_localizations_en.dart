@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'InGame';
 
   @override
+  String get brandTagline => 'Find your squad. Game together.';
+
+  @override
   String get loginEmailLabel => 'Email';
 
   @override
@@ -365,10 +368,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get steamAuthTryAgain => 'Try Again';
 
   @override
+  String get steamAuthBackToPrefix => 'Back to';
+
+  @override
   String get steamAuthBackToLogin => 'Back to Login';
 
   @override
   String get errorRetryAction => 'Retry';
+
+  @override
+  String get authSignInCancelled => 'Sign-in was cancelled.';
+
+  @override
+  String get authAppleSignInFailed => 'Apple sign-in failed. Please try again.';
+
+  @override
+  String get authErrorGeneric => 'Authentication failed. Please try again.';
+
+  @override
+  String get authErrorDebugPrefix => 'Authentication failed';
 
   @override
   String get profileTitle => 'Profile';
@@ -386,6 +404,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSectionAccount => 'Account';
 
   @override
+  String get profileSectionConnectedAccounts => 'Connected Accounts';
+
+  @override
+  String get profileSectionPreferences => 'Preferences';
+
+  @override
   String get profileEmailLabel => 'Email';
 
   @override
@@ -399,6 +423,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileUnknown => 'Unknown';
+
+  @override
+  String get profileConnected => 'Connected';
+
+  @override
+  String get profileNotConnected => 'Not connected';
+
+  @override
+  String get profileConnectedAccountsEmailPassword => 'Email & Password';
+
+  @override
+  String get profileConnectedAccountsSteam => 'Steam';
+
+  @override
+  String get profileConnectedAccountsApple => 'Apple';
+
+  @override
+  String profileDisconnectTitle(String provider) {
+    return 'Disconnect $provider';
+  }
+
+  @override
+  String profileDisconnectMessage(String provider) {
+    return 'Are you sure you want to disconnect your $provider account?';
+  }
+
+  @override
+  String profileDisconnectFailed(String provider, String message) {
+    return 'Failed to disconnect $provider: $message';
+  }
+
+  @override
+  String get profileSteamLinkedSuccess => 'Steam account linked successfully';
+
+  @override
+  String profileLinkSteamFailed(String message) {
+    return 'Failed to link Steam: $message';
+  }
+
+  @override
+  String get profileSetEmailPasswordTitle => 'Add Email & Password';
+
+  @override
+  String get profileSetEmailPasswordDescription => 'Add email login to your account so you can sign in without a social provider.';
+
+  @override
+  String get profileEmailPasswordAddedSuccess => 'Email & password added successfully';
+
+  @override
+  String profileSetEmailFailed(String message) {
+    return 'Failed to set email: $message';
+  }
+
+  @override
+  String get profileAppleLinkedSuccess => 'Apple account linked successfully';
+
+  @override
+  String get profileAppleSignInFailed => 'Apple sign-in failed.';
+
+  @override
+  String profileLinkAppleFailed(String message) {
+    return 'Failed to link Apple: $message';
+  }
 
   @override
   String get profileSectionGamingHours => 'Gaming Hours';
@@ -443,6 +530,182 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamingHoursNotSet => 'Not set';
 
   @override
+  String gamingHoursSelectStartTime(String day) {
+    return 'Select start time for $day';
+  }
+
+  @override
+  String gamingHoursSelectEndTime(String day) {
+    return 'Select end time for $day';
+  }
+
+  @override
+  String get commonAdd => 'Add';
+
+  @override
+  String get groupTitleFallback => 'Group';
+
+  @override
+  String get groupVisibilityPublic => 'Public';
+
+  @override
+  String get groupVisibilityPrivate => 'Private';
+
+  @override
+  String get groupJoinModeOpenLabel => 'Open';
+
+  @override
+  String get groupJoinModeApprovalLabel => 'Approval';
+
+  @override
+  String get groupJoinModeOpenDescription => 'Anyone can join instantly';
+
+  @override
+  String get groupJoinModeApprovalDescription => 'Members must be approved by an admin';
+
+  @override
+  String get groupDetailMenuInvite => 'Invite';
+
+  @override
+  String get groupDetailMenuSettings => 'Settings';
+
+  @override
+  String get groupDetailMenuLeave => 'Leave Group';
+
+  @override
+  String get groupDetailSectionAbout => 'About';
+
+  @override
+  String get groupDetailSectionMembers => 'Members';
+
+  @override
+  String get groupDetailLeaveTitle => 'Leave Group';
+
+  @override
+  String get groupDetailLeaveMessage => 'Are you sure you want to leave this group?';
+
+  @override
+  String get createGroupTitle => 'Create Group';
+
+  @override
+  String get createGroupNameLabel => 'Group Name';
+
+  @override
+  String get createGroupNameHint => 'Enter a name for your group';
+
+  @override
+  String get createGroupNameRequired => 'Group name is required';
+
+  @override
+  String get createGroupNameMin => 'Name must be at least 3 characters';
+
+  @override
+  String get createGroupDescriptionLabel => 'Description';
+
+  @override
+  String get createGroupDescriptionHint => 'What is this group about? (optional)';
+
+  @override
+  String get createGroupDiscoverableTitle => 'Discoverable';
+
+  @override
+  String get createGroupDiscoverableSubtitle => 'Allow others to find and join this group';
+
+  @override
+  String get createGroupJoinModeLabel => 'Join Mode';
+
+  @override
+  String get createGroupSubmit => 'Create Group';
+
+  @override
+  String get groupSettingsTitle => 'Group Settings';
+
+  @override
+  String get groupSettingsUpdated => 'Group updated';
+
+  @override
+  String get groupSettingsRemoveMemberTitle => 'Remove Member';
+
+  @override
+  String groupSettingsRemoveMemberMessage(String displayName) {
+    return 'Remove $displayName from this group?';
+  }
+
+  @override
+  String groupSettingsMemberRemoved(String displayName) {
+    return '$displayName removed';
+  }
+
+  @override
+  String get groupSettingsRequestApproved => 'Request approved';
+
+  @override
+  String get groupSettingsDenyRequestTitle => 'Deny Request';
+
+  @override
+  String groupSettingsDenyRequestMessage(String displayName) {
+    return 'Deny join request from $displayName?';
+  }
+
+  @override
+  String get groupSettingsRequestDenied => 'Request denied';
+
+  @override
+  String get groupSettingsDeleteTitle => 'Delete Group';
+
+  @override
+  String get groupSettingsDeleteMessage => 'This action cannot be undone. All members will be removed.';
+
+  @override
+  String get groupSettingsSectionGroupInfo => 'Group Info';
+
+  @override
+  String get groupSettingsSectionVisibility => 'Visibility';
+
+  @override
+  String groupSettingsSectionMembers(int count) {
+    return 'Members ($count)';
+  }
+
+  @override
+  String groupSettingsSectionPendingRequests(int count) {
+    return 'Pending Requests ($count)';
+  }
+
+  @override
+  String get groupSettingsSectionDangerZone => 'Danger Zone';
+
+  @override
+  String get groupSettingsDangerDescription => 'Deleting this group is permanent and will remove all members.';
+
+  @override
+  String get groupSettingsRemoveTooltip => 'Remove';
+
+  @override
+  String get groupSettingsApproveTooltip => 'Approve';
+
+  @override
+  String get groupSettingsDenyTooltip => 'Deny';
+
+  @override
+  String get groupSettingsRoleMember => 'Member';
+
+  @override
+  String groupSettingsTimeAgoDays(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String groupSettingsTimeAgoHours(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String groupSettingsTimeAgoMinutes(int count) {
+    return '${count}m ago';
+  }
+
+  @override
   String get dayMonShort => 'Mon';
 
   @override
@@ -480,4 +743,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memberStatusOffline => 'Offline';
+
+  @override
+  String get languageSwitcherLabel => 'Language';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageGerman => 'Deutsch';
 }

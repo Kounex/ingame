@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/localization/locale_controller.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/widgets/avatar_with_status.dart';
@@ -63,6 +63,7 @@ class _MemberTile extends ConsumerWidget {
     final status = ref.watch(
       groupMemberStatusProvider((groupId: groupId, userId: member.userId)),
     );
+    final roleBadge = _roleBadge(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -96,15 +97,15 @@ class _MemberTile extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (_roleBadge != null) ...[
+                    if (roleBadge != null) ...[
                       const SizedBox(width: AppSpacing.sm),
-                      _roleBadge!,
+                      roleBadge,
                     ],
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _statusLabel(status),
+                  _statusLabel(context, status),
                   style: TextStyle(
                     color: _statusColor(status),
                     fontSize: 12,
@@ -119,9 +120,9 @@ class _MemberTile extends ConsumerWidget {
     );
   }
 
-  Widget? get _roleBadge {
+  Widget? _roleBadge(BuildContext context) {
     final role = member.role.toLowerCase();
-    final l10n = currentAppLocalizations();
+    final l10n = context.l10n;
     if (role == 'owner') {
       return _buildBadge(l10n.memberRoleOwner, AppColors.primary);
     } else if (role == 'admin') {
@@ -148,8 +149,8 @@ class _MemberTile extends ConsumerWidget {
     );
   }
 
-  String _statusLabel(UserStatus status) {
-    final l10n = currentAppLocalizations();
+  String _statusLabel(BuildContext context, UserStatus status) {
+    final l10n = context.l10n;
     return switch (status) {
       UserStatus.ready => l10n.memberStatusReady,
       UserStatus.online => l10n.memberStatusOnline,

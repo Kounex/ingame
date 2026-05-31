@@ -6,6 +6,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -22,6 +23,7 @@ class GroupDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(groupDetailNotifierProvider(groupId));
+    final l10n = context.l10n;
 
     return Container(
       decoration: const BoxDecoration(
@@ -34,7 +36,7 @@ class GroupDetailScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: detailAsync.valueOrNull?.group.name ?? 'Group',
+          title: detailAsync.valueOrNull?.group.name ?? l10n.groupTitleFallback,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
@@ -46,11 +48,6 @@ class GroupDetailScreen extends ConsumerWidget {
                       Icons.more_vert,
                       color: AppColors.textSecondary,
                     ),
-                    color: AppColors.backgroundLight,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.glassBorder),
-                    ),
                     onSelected: (action) => _onMenuAction(
                       context,
                       ref,
@@ -58,29 +55,29 @@ class GroupDetailScreen extends ConsumerWidget {
                       detailAsync.valueOrNull!.group.inviteCode,
                     ),
                     itemBuilder: (_) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: _GroupAction.invite,
                         child: _MenuRow(
                           icon: Icons.person_add_outlined,
-                          label: 'Invite',
+                          label: l10n.groupDetailMenuInvite,
                         ),
                       ),
                       PopupMenuItem(
                         value: _GroupAction.settings,
                         child: _MenuRow(
                           icon: Icons.settings_outlined,
-                          label: 'Settings',
+                          label: l10n.groupDetailMenuSettings,
                           badgeCount:
                               detailAsync.valueOrNull?.pendingRequests.length ??
                                   0,
                         ),
                       ),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: _GroupAction.leave,
                         child: _MenuRow(
                           icon: Icons.logout,
-                          label: 'Leave Group',
+                          label: l10n.groupDetailMenuLeave,
                           isDestructive: true,
                         ),
                       ),
@@ -114,8 +111,8 @@ class GroupDetailScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'About',
+                          Text(
+                            l10n.groupDetailSectionAbout,
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 16,
@@ -140,7 +137,7 @@ class GroupDetailScreen extends ConsumerWidget {
                       children: [
                         _InfoChip(
                           icon: Icons.people,
-                          label: '${detail.members.length} members',
+                          label: l10n.joinGroupMembers(detail.members.length),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         _InfoChip(
@@ -148,8 +145,8 @@ class GroupDetailScreen extends ConsumerWidget {
                               ? Icons.public
                               : Icons.lock,
                           label: detail.group.isDiscoverable
-                              ? 'Public'
-                              : 'Private',
+                              ? l10n.groupVisibilityPublic
+                              : l10n.groupVisibilityPrivate,
                         ),
                         if (detail.group.isDiscoverable) ...[
                           const SizedBox(width: AppSpacing.md),
@@ -158,16 +155,16 @@ class GroupDetailScreen extends ConsumerWidget {
                                 ? Icons.open_in_new
                                 : Icons.approval,
                             label: detail.group.joinMode == 'open'
-                                ? 'Open'
-                                : 'Approval',
+                                ? l10n.groupJoinModeOpenLabel
+                                : l10n.groupJoinModeApprovalLabel,
                           ),
                         ],
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  const Text(
-                    'Members',
+                  Text(
+                    l10n.groupDetailSectionMembers,
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 18,
@@ -252,18 +249,18 @@ class GroupDetailScreen extends ConsumerWidget {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.backgroundLight,
-        title: const Text(
-          'Leave Group',
+        title: Text(
+          context.l10n.groupDetailLeaveTitle,
           style: TextStyle(color: AppColors.textPrimary),
         ),
-        content: const Text(
-          'Are you sure you want to leave this group?',
+        content: Text(
+          context.l10n.groupDetailLeaveMessage,
           style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () async {
@@ -273,8 +270,8 @@ class GroupDetailScreen extends ConsumerWidget {
                   .leaveGroup(groupId);
               if (context.mounted) context.pop();
             },
-            child: const Text(
-              'Leave',
+            child: Text(
+              context.l10n.groupDetailMenuLeave,
               style: TextStyle(color: AppColors.error),
             ),
           ),

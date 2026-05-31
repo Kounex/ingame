@@ -1,8 +1,8 @@
 ---
 spec: roadmap
-version: "1.10"
+version: "1.11"
 status: active
-last_updated: "2026-05-31"
+last_updated: "2026-06-01"
 ---
 
 # InGame -- Product Roadmap
@@ -68,15 +68,17 @@ graph LR
 - User profiles with gaming hours (intelligent schedule display), bio, avatar
 - Groups with invite codes, discoverable directory, join requests with admin approval
 - First-time user onboarding wizard (3-step)
-- English and German localization foundation across the app shell and main user-facing flows
+- English and German localization across the app shell plus high-traffic auth/onboarding/group/profile flows
+- System-locale default with manual language switching on login and in profile preferences
+- Route-aware redirect normalization for auth/onboarding return targets
 - Hybrid persistent navigation: sidebar/bottom nav stays visible during browsing; focused flows (auth, onboarding) hide nav
 - Reusable `InGameLogo` brand widget with gradient styling
 - Platform-authentic social login buttons (Steam brand palette, Apple HIG)
-- Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`) plus existing page transitions where retained
+- Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus, and existing page transitions where retained
 - Helm chart + Kustomize overlays for OpenShift deployment
 - 34 backend tests (auth, users, groups, WebSocket)
 
-**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.22)
+**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.23)
 
 ---
 
@@ -214,3 +216,4 @@ These patterns and practices apply across all sub-projects:
 | 2026-05-31 | Release image workflows | Standardized on `pubspec.yaml` as the stack version source and added a release-prep-on-dev plus tag-publish-on-main workflow for GHCR images |
 | 2026-05-31 | Split Helm charts | Separated the backend and web deployment charts so `ingame-api` and `ingame-web` each own their own runtime manifests |
 | 2026-05-31 | SP1 localization foundation | Added English/German localization infrastructure, migrated high-traffic UI copy, and documented the active localization rule for future work |
+| 2026-06-01 | SP1 pre-SP2 cleanup sync | Captured route normalization, shared language switching, popup menu theming, Steam web callback fallback recovery, and the remaining high-traffic group/profile localization sweep in the roadmap/spec pair |

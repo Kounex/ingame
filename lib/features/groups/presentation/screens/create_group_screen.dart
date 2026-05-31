@@ -6,6 +6,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../providers/groups_provider.dart';
@@ -63,6 +64,8 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -74,7 +77,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: 'Create Group',
+          title: l10n.createGroupTitle,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
@@ -90,15 +93,15 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 const SizedBox(height: AppSpacing.md),
                 GlassInput(
                   controller: _nameController,
-                  label: 'Group Name',
-                  hint: 'Enter a name for your group',
+                  label: l10n.createGroupNameLabel,
+                  hint: l10n.createGroupNameHint,
                   prefixIcon: Icons.groups,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Group name is required';
+                      return l10n.createGroupNameRequired;
                     }
                     if (value.trim().length < 3) {
-                      return 'Name must be at least 3 characters';
+                      return l10n.createGroupNameMin;
                     }
                     return null;
                   },
@@ -106,8 +109,8 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 const SizedBox(height: AppSpacing.md),
                 GlassInput(
                   controller: _descriptionController,
-                  label: 'Description',
-                  hint: 'What is this group about? (optional)',
+                  label: l10n.createGroupDescriptionLabel,
+                  hint: l10n.createGroupDescriptionHint,
                   prefixIcon: Icons.description_outlined,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -119,22 +122,22 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Discoverable',
-                                  style: TextStyle(
+                                  l10n.createGroupDiscoverableTitle,
+                                  style: const TextStyle(
                                     color: AppColors.textPrimary,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
-                                  'Allow others to find and join this group',
-                                  style: TextStyle(
+                                  l10n.createGroupDiscoverableSubtitle,
+                                  style: const TextStyle(
                                     color: AppColors.textTertiary,
                                     fontSize: 13,
                                   ),
@@ -152,8 +155,8 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       ),
                       if (_isDiscoverable) ...[
                         const Divider(color: AppColors.glassBorder, height: 24),
-                        const Text(
-                          'Join Mode',
+                        Text(
+                          l10n.createGroupJoinModeLabel,
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 14,
@@ -162,16 +165,16 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         SegmentedButton<String>(
-                          segments: const [
+                          segments: [
                             ButtonSegment(
                               value: 'open',
-                              label: Text('Open'),
-                              icon: Icon(Icons.open_in_new, size: 16),
+                              label: Text(l10n.groupJoinModeOpenLabel),
+                              icon: const Icon(Icons.open_in_new, size: 16),
                             ),
                             ButtonSegment(
                               value: 'approval',
-                              label: Text('Approval'),
-                              icon: Icon(Icons.approval, size: 16),
+                              label: Text(l10n.groupJoinModeApprovalLabel),
+                              icon: const Icon(Icons.approval, size: 16),
                             ),
                           ],
                           selected: {_joinMode},
@@ -197,8 +200,8 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           _joinMode == 'open'
-                              ? 'Anyone can join instantly'
-                              : 'Members must be approved by an admin',
+                              ? l10n.groupJoinModeOpenDescription
+                              : l10n.groupJoinModeApprovalDescription,
                           style: const TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 12,
@@ -212,7 +215,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 GlassButton(
                   onPressed: _submit,
                   isLoading: _isLoading,
-                  child: const Text('Create Group'),
+                  child: Text(l10n.createGroupSubmit),
                 ),
               ],
             ),

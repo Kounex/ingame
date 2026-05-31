@@ -76,7 +76,10 @@ class AuthRepository {
   }
 
   Future<User> steamAuth(Map<String, String> params) async {
-    final response = await dio.post(ApiEndpoints.steamAuth, data: params);
+    final response = await dio.post(
+      ApiEndpoints.steamAuth,
+      data: {'openid_params': params},
+    );
     await storage.saveTokens(
       accessToken: response.data['access_token'] as String,
       refreshToken: response.data['refresh_token'] as String,

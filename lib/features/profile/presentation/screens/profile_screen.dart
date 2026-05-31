@@ -12,6 +12,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/widgets/language_switcher.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -97,6 +98,8 @@ class ProfileScreen extends ConsumerWidget {
                   ],
                   const SizedBox(height: AppSpacing.xl),
                   _AccountInfoCard(user: user),
+                  const SizedBox(height: AppSpacing.md),
+                  const _PreferencesCard(),
                   const SizedBox(height: AppSpacing.md),
                   _GamingHoursCard(
                     gamingHours: user.preferredGamingHours,
@@ -202,6 +205,25 @@ class _AccountInfoCard extends StatelessWidget {
               ),
             _InfoRow(icon: rows[i].$1, label: rows[i].$2, value: rows[i].$3),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PreferencesCard extends StatelessWidget {
+  const _PreferencesCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(title: context.l10n.profileSectionPreferences),
+          const SizedBox(height: AppSpacing.md),
+          const LanguageSwitcher(mode: LanguageSwitcherMode.settingsRow),
         ],
       ),
     );
@@ -464,24 +486,23 @@ class _ConnectedAccountsCard extends ConsumerWidget {
   final String? appleId;
 
   Future<bool?> _confirmDisconnect(BuildContext context, String provider) {
+    final l10n = context.l10n;
     return showDialog<bool>(
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundLight,
-        title: Text('Disconnect $provider'),
-        content: Text(
-          'Are you sure you want to disconnect your $provider account?',
-        ),
+        title: Text(l10n.profileDisconnectTitle(provider)),
+        content: Text(l10n.profileDisconnectMessage(provider)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Disconnect',
+            child: Text(
+              l10n.profileDisconnectTitle(provider),
               style: TextStyle(color: AppColors.error),
             ),
           ),
@@ -504,7 +525,13 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         _refreshProviders(ref);
       } catch (e) {
         if (context.mounted) {
-          AppToast.error(context, 'Failed to disconnect Steam: $e');
+          AppToast.error(
+            context,
+            context.l10n.profileDisconnectFailed(
+              context.l10n.profileConnectedAccountsSteam,
+              '$e',
+            ),
+          );
         }
       }
     } else {
@@ -514,13 +541,13 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         await ref.read(profileRepositoryProvider).linkSteam(params);
         _refreshProviders(ref);
         if (context.mounted) {
-          AppToast.success(context, 'Steam account linked successfully');
+          AppToast.success(context, context.l10n.profileSteamLinkedSuccess);
         }
       } catch (e) {
         if (!context.mounted) return;
         final msg = OAuthLauncher.friendlyError(e);
-        if (!msg.contains('cancelled')) {
-          AppToast.error(context, 'Failed to link Steam: $msg');
+        if (!OAuthLauncher.isCancellationError(e)) {
+          AppToast.error(context, context.l10n.profileLinkSteamFailed(msg));
         }
       }
     }
@@ -543,11 +570,14 @@ class _ConnectedAccountsCard extends ConsumerWidget {
           );
       _refreshProviders(ref);
       if (context.mounted) {
-        AppToast.success(context, 'Email & password added successfully');
+        AppToast.success(
+          context,
+          context.l10n.profileEmailPasswordAddedSuccess,
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        AppToast.error(context, 'Failed to set email: $e');
+        AppToast.error(context, context.l10n.profileSetEmailFailed('$e'));
       }
     }
   }
@@ -561,7 +591,13 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         _refreshProviders(ref);
       } catch (e) {
         if (context.mounted) {
-          AppToast.error(context, 'Failed to disconnect Apple: $e');
+          AppToast.error(
+            context,
+            context.l10n.profileDisconnectFailed(
+              context.l10n.profileConnectedAccountsApple,
+              '$e',
+            ),
+          );
         }
       }
     } else {
@@ -571,16 +607,16 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         await ref.read(profileRepositoryProvider).linkApple(token);
         _refreshProviders(ref);
         if (context.mounted) {
-          AppToast.success(context, 'Apple account linked successfully');
+          AppToast.success(context, context.l10n.profileAppleLinkedSuccess);
         }
       } on SignInWithAppleAuthorizationException catch (e) {
         if (e.code == AuthorizationErrorCode.canceled) return;
         if (context.mounted) {
-          AppToast.error(context, 'Apple sign-in failed.');
+          AppToast.error(context, context.l10n.profileAppleSignInFailed);
         }
       } catch (e) {
         if (!context.mounted) return;
-        AppToast.error(context, 'Failed to link Apple: $e');
+        AppToast.error(context, context.l10n.profileLinkAppleFailed('$e'));
       }
     }
   }
@@ -596,11 +632,11 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(title: 'Connected Accounts'),
+          _SectionHeader(title: context.l10n.profileSectionConnectedAccounts),
           const SizedBox(height: AppSpacing.md),
           _AccountRow(
             icon: Icons.email_outlined,
-            label: 'Email & Password',
+            label: context.l10n.profileConnectedAccountsEmailPassword,
             connected: hasEmail,
             subtitle: hasEmail ? email : null,
             onTap: hasEmail ? null : () => _handleEmailTap(context, ref),
@@ -611,7 +647,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
           ),
           _AccountRow(
             icon: Icons.gamepad_outlined,
-            label: 'Steam',
+            label: context.l10n.profileConnectedAccountsSteam,
             connected: steamConnected,
             onTap: () => _handleSteamTap(context, ref),
           ),
@@ -621,7 +657,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
           ),
           _AccountRow(
             icon: Icons.apple,
-            label: 'Apple',
+            label: context.l10n.profileConnectedAccountsApple,
             connected: appleConnected,
             onTap: () => _handleAppleTap(context, ref),
           ),
@@ -684,7 +720,10 @@ class _AccountRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    subtitle ?? (connected ? 'Connected' : 'Not connected'),
+                    subtitle ??
+                        (connected
+                            ? context.l10n.profileConnected
+                            : context.l10n.profileNotConnected),
                     style: TextStyle(
                       color:
                           connected ? AppColors.success : AppColors.textTertiary,
@@ -746,30 +785,34 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return AlertDialog(
       backgroundColor: AppColors.backgroundLight,
-      title: const Text('Add Email & Password'),
+      title: Text(l10n.profileSetEmailPasswordTitle),
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Add email login to your account so you can sign in without a social provider.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            Text(
+              l10n.profileSetEmailPasswordDescription,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
+              decoration: InputDecoration(
+                labelText: l10n.loginEmailLabel,
                 prefixIcon: Icon(Icons.email_outlined),
               ),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Email is required';
+                if (v == null || v.trim().isEmpty) {
+                  return l10n.validatorEmailRequired;
+                }
                 if (!v.contains('@') || !v.contains('.')) {
-                  return 'Enter a valid email';
+                  return l10n.validatorEmailInvalid;
                 }
                 return null;
               },
@@ -779,7 +822,7 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
               controller: _passwordController,
               obscureText: _obscure,
               decoration: InputDecoration(
-                labelText: 'Password',
+                labelText: l10n.loginPasswordLabel,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon:
@@ -789,7 +832,7 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
               ),
               validator: (v) {
                 if (v == null || v.length < 8) {
-                  return 'At least 8 characters';
+                  return l10n.validatorPasswordMin;
                 }
                 return null;
               },
@@ -798,13 +841,13 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
             TextFormField(
               controller: _confirmController,
               obscureText: _obscure,
-              decoration: const InputDecoration(
-                labelText: 'Confirm Password',
+              decoration: InputDecoration(
+                labelText: l10n.registerConfirmPasswordLabel,
                 prefixIcon: Icon(Icons.lock_outline),
               ),
               validator: (v) {
                 if (v != _passwordController.text) {
-                  return 'Passwords do not match';
+                  return l10n.validatorPasswordsMismatch;
                 }
                 return null;
               },
@@ -815,11 +858,11 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         TextButton(
           onPressed: _submit,
-          child: const Text('Add'),
+          child: Text(l10n.commonAdd),
         ),
       ],
     );

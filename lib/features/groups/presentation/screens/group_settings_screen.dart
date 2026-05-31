@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/locale_controller.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -72,7 +74,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
           _isSaving = false;
           _hasChanges = false;
         });
-        AppToast.success(context, 'Group updated');
+        AppToast.success(context, context.l10n.groupSettingsUpdated);
       }
     } catch (e) {
       if (mounted) {
@@ -88,23 +90,25 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.backgroundLight,
-        title: const Text(
-          'Remove Member',
+        title: Text(
+          context.l10n.groupSettingsRemoveMemberTitle,
           style: TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
-          'Remove $displayName from this group?',
+          context.l10n.groupSettingsRemoveMemberMessage(displayName),
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove',
-                style: TextStyle(color: AppColors.error)),
+            child: Text(
+              context.l10n.commonRemove,
+              style: const TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -119,7 +123,10 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
           .read(groupDetailNotifierProvider(widget.groupId).notifier)
           .refresh();
       if (mounted) {
-        AppToast.success(context, '$displayName removed');
+        AppToast.success(
+          context,
+          context.l10n.groupSettingsMemberRemoved(displayName),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -134,7 +141,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
           .read(groupDetailNotifierProvider(widget.groupId).notifier)
           .resolveRequest(requestId, approved: true);
       if (mounted) {
-        AppToast.success(context, 'Request approved');
+        AppToast.success(context, context.l10n.groupSettingsRequestApproved);
       }
     } catch (e) {
       if (mounted) {
@@ -149,23 +156,25 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.backgroundLight,
-        title: const Text(
-          'Deny Request',
+        title: Text(
+          context.l10n.groupSettingsDenyRequestTitle,
           style: TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
-          'Deny join request from $displayName?',
+          context.l10n.groupSettingsDenyRequestMessage(displayName),
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Deny', style: TextStyle(color: AppColors.error)),
+            child: Text(
+              context.l10n.commonDeny,
+              style: const TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -178,7 +187,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
           .read(groupDetailNotifierProvider(widget.groupId).notifier)
           .resolveRequest(requestId, approved: false);
       if (mounted) {
-        AppToast.info(context, 'Request denied');
+        AppToast.info(context, context.l10n.groupSettingsRequestDenied);
       }
     } catch (e) {
       if (mounted) {
@@ -193,23 +202,25 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.backgroundLight,
-        title: const Text(
-          'Delete Group',
+        title: Text(
+          context.l10n.groupSettingsDeleteTitle,
           style: TextStyle(color: AppColors.textPrimary),
         ),
-        content: const Text(
-          'This action cannot be undone. All members will be removed.',
+        content: Text(
+          context.l10n.groupSettingsDeleteMessage,
           style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.error)),
+            child: Text(
+              context.l10n.commonDelete,
+              style: const TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -233,6 +244,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   Widget build(BuildContext context) {
     final detailAsync =
         ref.watch(groupDetailNotifierProvider(widget.groupId));
+    final l10n = context.l10n;
 
     return Container(
       decoration: const BoxDecoration(
@@ -245,7 +257,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: 'Group Settings',
+          title: l10n.groupSettingsTitle,
           leading: IconButton(
             icon:
                 const Icon(Icons.arrow_back, color: AppColors.textPrimary),
@@ -264,8 +276,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                           color: AppColors.primary,
                         ),
                       )
-                    : const Text(
-                        'Save',
+                    : Text(
+                        l10n.commonSave,
                         style: TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -290,7 +302,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _SectionLabel('GROUP INFO'),
+                  _SectionLabel(l10n.groupSettingsSectionGroupInfo.toUpperCase()),
                   const SizedBox(height: AppSpacing.sm),
                   GlassCard(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -298,14 +310,14 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       children: [
                         GlassInput(
                           controller: _nameController,
-                          label: 'Group Name',
+                          label: l10n.createGroupNameLabel,
                           prefixIcon: Icons.group_outlined,
                           onChanged: (_) => _markChanged(),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         GlassInput(
                           controller: _descriptionController,
-                          label: 'Description',
+                          label: l10n.createGroupDescriptionLabel,
                           prefixIcon: Icons.notes_outlined,
                           maxLines: 3,
                           onChanged: (_) => _markChanged(),
@@ -314,7 +326,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  const _SectionLabel('VISIBILITY'),
+                  _SectionLabel(l10n.groupSettingsSectionVisibility.toUpperCase()),
                   const SizedBox(height: AppSpacing.sm),
                   GlassCard(
                     padding: const EdgeInsets.symmetric(
@@ -325,9 +337,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       children: [
                         _SettingsSwitch(
                           icon: Icons.explore_outlined,
-                          title: 'Discoverable',
-                          subtitle:
-                              'Allow this group to appear in search',
+                          title: l10n.createGroupDiscoverableTitle,
+                          subtitle: l10n.createGroupDiscoverableSubtitle,
                           value: _isDiscoverable,
                           onChanged: (v) {
                             setState(() => _isDiscoverable = v);
@@ -341,11 +352,12 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                           ),
                           _SettingsRadio(
                             icon: Icons.door_front_door_outlined,
-                            title: 'Join Mode',
-                            options: const {
-                              'open': 'Open — anyone can join',
+                            title: l10n.createGroupJoinModeLabel,
+                            options: {
+                              'open':
+                                  '${l10n.groupJoinModeOpenLabel} - ${l10n.groupJoinModeOpenDescription}',
                               'approval':
-                                  'Approval — requests reviewed by admins',
+                                  '${l10n.groupJoinModeApprovalLabel} - ${l10n.groupJoinModeApprovalDescription}',
                             },
                             value: _joinMode,
                             onChanged: (v) {
@@ -359,7 +371,9 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _SectionLabel(
-                      'MEMBERS (${detail.members.length})'),
+                    l10n.groupSettingsSectionMembers(detail.members.length)
+                        .toUpperCase(),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   GlassCard(
                     padding: const EdgeInsets.symmetric(
@@ -391,7 +405,12 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   if (detail.pendingRequests.isNotEmpty) ...[
                     _SectionLabel(
-                        'PENDING REQUESTS (${detail.pendingRequests.length})'),
+                      l10n
+                          .groupSettingsSectionPendingRequests(
+                            detail.pendingRequests.length,
+                          )
+                          .toUpperCase(),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     GlassCard(
                       padding: const EdgeInsets.symmetric(
@@ -423,15 +442,15 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     const SizedBox(height: AppSpacing.lg),
                   ],
                   const SizedBox(height: AppSpacing.xl),
-                  const _SectionLabel('DANGER ZONE'),
+                  _SectionLabel(l10n.groupSettingsSectionDangerZone.toUpperCase()),
                   const SizedBox(height: AppSpacing.sm),
                   GlassCard(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'Deleting this group is permanent and will remove all members.',
+                        Text(
+                          l10n.groupSettingsDangerDescription,
                           style: TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 13,
@@ -441,8 +460,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                         GlassButton(
                           onPressed: _deleteGroup,
                           variant: GlassButtonVariant.ghost,
-                          child: const Text(
-                            'Delete Group',
+                          child: Text(
+                            l10n.groupSettingsDeleteTitle,
                             style: TextStyle(color: AppColors.error),
                           ),
                         ),
@@ -683,7 +702,7 @@ class _MemberSettingsRow extends StatelessWidget {
                 size: 20,
               ),
               onPressed: onRemove,
-              tooltip: 'Remove',
+              tooltip: context.l10n.groupSettingsRemoveTooltip,
             ),
         ],
       ),
@@ -691,10 +710,11 @@ class _MemberSettingsRow extends StatelessWidget {
   }
 
   String _roleLabel(String role) {
+    final l10n = currentAppLocalizations();
     return switch (role.toLowerCase()) {
-      'owner' => 'Owner',
-      'admin' => 'Admin',
-      _ => 'Member',
+      'owner' => l10n.memberRoleOwner,
+      'admin' => l10n.memberRoleAdmin,
+      _ => l10n.groupSettingsRoleMember,
     };
   }
 }
@@ -754,13 +774,13 @@ class _JoinRequestRow extends StatelessWidget {
             icon: const Icon(Icons.check_circle_outline, size: 22),
             color: AppColors.success,
             onPressed: onApprove,
-            tooltip: 'Approve',
+            tooltip: context.l10n.groupSettingsApproveTooltip,
           ),
           IconButton(
             icon: const Icon(Icons.cancel_outlined, size: 22),
             color: AppColors.error,
             onPressed: onDeny,
-            tooltip: 'Deny',
+            tooltip: context.l10n.groupSettingsDenyTooltip,
           ),
         ],
       ),
@@ -769,8 +789,9 @@ class _JoinRequestRow extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final diff = DateTime.now().difference(date);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    return '${diff.inMinutes}m ago';
+    final l10n = currentAppLocalizations();
+    if (diff.inDays > 0) return l10n.groupSettingsTimeAgoDays(diff.inDays);
+    if (diff.inHours > 0) return l10n.groupSettingsTimeAgoHours(diff.inHours);
+    return l10n.groupSettingsTimeAgoMinutes(diff.inMinutes);
   }
 }

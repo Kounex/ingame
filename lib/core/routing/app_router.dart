@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/auth_session.dart';
 import '../../features/auth/domain/auth_state.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -20,6 +21,7 @@ import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../shared/widgets/adaptive_shell.dart';
 import 'route_names.dart';
+import 'route_normalization.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -35,26 +37,13 @@ final _authRefreshListenableProvider = Provider<ValueNotifier<AuthState?>>((ref)
 });
 
 final routerProvider = Provider<GoRouter>((ref) {
-  String? safeRedirectTarget(String? from) {
-    if (from == null || from.isEmpty) {
-      return null;
-    }
-    final uri = Uri.tryParse(from);
-    final path = uri?.path;
-    if (path == null ||
-        path == RoutePaths.login ||
-        path == RoutePaths.register ||
-        path == RoutePaths.steamAuth) {
-      return null;
-    }
-    return from;
-  }
-
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: RoutePaths.home,
     refreshListenable: ref.watch(_authRefreshListenableProvider),
     redirect: (context, state) {
+      final currentLocation = state.uri.toString();
+      final normalizedCurrentLocation = normalizeRouteLocation(currentLocation);
       final authState = ref.read(authNotifierProvider);
       final isAuthenticated = authState.maybeWhen(
         data: (s) => s.maybeWhen(
@@ -68,14 +57,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == RoutePaths.register ||
           state.matchedLocation == RoutePaths.steamAuth;
       final isOnboarding = state.matchedLocation == RoutePaths.onboarding;
-      final redirectTarget = safeRedirectTarget(
+      final redirectTarget = sanitizeRedirectTarget(
         state.uri.queryParameters['from'],
       );
 
       if (!isAuthenticated && !isAuthRoute) {
+        final isLogoutRedirectPending = ref.read(logoutRedirectPendingProvider);
+        if (isLogoutRedirectPending) {
+          ref.read(logoutRedirectPendingProvider.notifier).state = false;
+          return RoutePaths.login;
+        }
+
+        final from = sanitizeRedirectTarget(currentLocation);
         return Uri(
           path: RoutePaths.login,
-          queryParameters: {'from': state.uri.toString()},
+          queryParameters: from == null ? null : {'from': from},
         ).toString();
       }
       if (isAuthenticated && isAuthRoute) {
@@ -86,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         final needsOnboarding = ref.read(needsOnboardingProvider);
         if (needsOnboarding) {
           if (!isOnboarding) {
-            final from = safeRedirectTarget(state.uri.toString());
+            final from = sanitizeRedirectTarget(currentLocation);
             return Uri(
               path: RoutePaths.onboarding,
               queryParameters: from == null ? null : {'from': from},
@@ -97,6 +93,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
+      if (normalizedCurrentLocation != null &&
+          normalizedCurrentLocation != currentLocation) {
+        return normalizedCurrentLocation;
+      }
+
       return null;
     },
     routes: [
@@ -105,21 +106,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: RoutePaths.login,
         name: RouteNames.login,
         builder: (context, state) => LoginScreen(
-          redirectTo: safeRedirectTarget(state.uri.queryParameters['from']),
+          redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
         ),
       ),
       GoRoute(
         path: RoutePaths.register,
         name: RouteNames.register,
         builder: (context, state) => RegisterScreen(
-          redirectTo: safeRedirectTarget(state.uri.queryParameters['from']),
+          redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
         ),
       ),
       GoRoute(
         path: RoutePaths.steamAuth,
         name: RouteNames.steamAuth,
         builder: (context, state) => SteamAuthScreen(
-          redirectTo: safeRedirectTarget(state.uri.queryParameters['from']),
+          redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
         ),
       ),
       GoRoute(

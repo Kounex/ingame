@@ -12,6 +12,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get appTitle => 'InGame';
 
   @override
+  String get brandTagline => 'Finde deine Crew. Spielt zusammen.';
+
+  @override
   String get loginEmailLabel => 'E-Mail';
 
   @override
@@ -50,7 +53,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get validatorEmailRequired => 'E-Mail ist erforderlich';
 
   @override
-  String get validatorEmailInvalid => 'Gib eine gueltige E-Mail-Adresse ein';
+  String get validatorEmailInvalid => 'Gib eine gültige E-Mail-Adresse ein';
 
   @override
   String get validatorPasswordRequired => 'Passwort ist erforderlich';
@@ -59,10 +62,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get validatorPasswordMin => 'Das Passwort muss mindestens 8 Zeichen lang sein';
 
   @override
-  String get validatorPasswordConfirmRequired => 'Bitte bestaetige dein Passwort';
+  String get validatorPasswordConfirmRequired => 'Bitte bestätige dein Passwort';
 
   @override
-  String get validatorPasswordsMismatch => 'Die Passwoerter stimmen nicht ueberein';
+  String get validatorPasswordsMismatch => 'Die Passwörter stimmen nicht überein';
 
   @override
   String get validatorDisplayNameRequired => 'Anzeigename ist erforderlich';
@@ -71,28 +74,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get validatorDisplayNameMin => 'Der Anzeigename muss mindestens 2 Zeichen lang sein';
 
   @override
-  String get validatorDisplayNameMax => 'Der Anzeigename darf hoechstens 30 Zeichen lang sein';
+  String get validatorDisplayNameMax => 'Der Anzeigename darf höchstens 30 Zeichen lang sein';
 
   @override
   String get errorSomethingWentWrong => 'Etwas ist schiefgelaufen. Bitte versuche es erneut.';
 
   @override
-  String get errorConnectionTimedOut => 'Zeitueberschreitung bei der Verbindung. Bitte pruefe dein Internet.';
+  String get errorConnectionTimedOut => 'Zeitüberschreitung bei der Verbindung. Bitte prüfe dein Internet.';
 
   @override
-  String get errorCouldNotConnect => 'Es konnte keine Verbindung zum Server hergestellt werden. Bitte versuche es spaeter erneut.';
+  String get errorCouldNotConnect => 'Es konnte keine Verbindung zum Server hergestellt werden. Bitte versuche es später erneut.';
 
   @override
-  String get errorNetwork => 'Netzwerkfehler. Bitte pruefe deine Verbindung.';
+  String get errorNetwork => 'Netzwerkfehler. Bitte prüfe deine Verbindung.';
 
   @override
-  String get errorInvalidRequest => 'Ungueltige Anfrage. Bitte pruefe deine Eingaben.';
+  String get errorInvalidRequest => 'Ungültige Anfrage. Bitte prüfe deine Eingaben.';
 
   @override
-  String get errorInvalidCredentials => 'Ungueltige Anmeldedaten. Bitte versuche es erneut.';
+  String get errorInvalidCredentials => 'Ungültige Anmeldedaten. Bitte versuche es erneut.';
 
   @override
-  String get errorNoPermission => 'Du hast keine Berechtigung dafuer.';
+  String get errorNoPermission => 'Du hast keine Berechtigung dafür.';
 
   @override
   String get errorNotFound => 'Nicht gefunden.';
@@ -101,13 +104,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get errorAlreadyExists => 'Diese Ressource existiert bereits.';
 
   @override
-  String get errorCheckInput => 'Bitte pruefe deine Eingaben.';
+  String get errorCheckInput => 'Bitte prüfe deine Eingaben.';
 
   @override
   String get errorTooManyRequests => 'Zu viele Anfragen. Bitte warte einen Moment.';
 
   @override
-  String get errorServer => 'Serverfehler. Bitte versuche es spaeter erneut.';
+  String get errorServer => 'Serverfehler. Bitte versuche es später erneut.';
 
   @override
   String errorUnknownWithCode(int statusCode) {
@@ -123,7 +126,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonRetry => 'Erneut versuchen';
 
   @override
-  String get commonBack => 'Zurueck';
+  String get commonBack => 'Zurück';
 
   @override
   String get commonNext => 'Weiter';
@@ -138,7 +141,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonCancel => 'Abbrechen';
 
   @override
-  String get commonDelete => 'Loeschen';
+  String get commonDelete => 'Löschen';
 
   @override
   String get commonRemove => 'Entfernen';
@@ -171,7 +174,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get registerDisplayNameLabel => 'Anzeigename';
 
   @override
-  String get registerDisplayNameHint => 'Waehle einen Anzeigenamen';
+  String get registerDisplayNameHint => 'Wähle einen Anzeigenamen';
 
   @override
   String get registerEmailTaken => 'Diese E-Mail ist bereits vergeben';
@@ -183,10 +186,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get registerPasswordHint => 'Erstelle ein Passwort';
 
   @override
-  String get registerConfirmPasswordLabel => 'Passwort bestaetigen';
+  String get registerConfirmPasswordLabel => 'Passwort bestätigen';
 
   @override
-  String get registerConfirmPasswordHint => 'Bestaetige dein Passwort';
+  String get registerConfirmPasswordHint => 'Bestätige dein Passwort';
 
   @override
   String get registerSubmit => 'Konto erstellen';
@@ -198,7 +201,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get registerLogin => 'Anmelden';
 
   @override
-  String get onboardingTimeSlotRequired => 'Waehle mindestens ein Zeitfenster aus, um das Onboarding abzuschliessen.';
+  String get onboardingTimeSlotRequired => 'Wähle mindestens ein Zeitfenster aus, um das Onboarding abzuschließen.';
 
   @override
   String get onboardingDefaultBio => 'InGame-Spieler';
@@ -228,7 +231,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingBioLabel => 'Bio';
 
   @override
-  String get onboardingBioHint => 'Erzaehle anderen etwas ueber dich (optional)';
+  String get onboardingBioHint => 'Erzähle anderen etwas über dich (optional)';
 
   @override
   String get onboardingAvatarUrlLabel => 'Avatar-URL';
@@ -237,16 +240,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingAvatarUrlHint => 'Link zu deinem Avatarbild (optional)';
 
   @override
-  String get onboardingGamingTitle => 'Gaming-Praeferenzen';
+  String get onboardingGamingTitle => 'Gaming-Präferenzen';
 
   @override
-  String get onboardingGamingSubtitle => 'Waehle mindestens ein Zeitfenster, damit Gruppen sehen koennen, wann du spielst.';
+  String get onboardingGamingSubtitle => 'Wähle mindestens ein Zeitfenster, damit Gruppen sehen können, wann du spielst.';
 
   @override
   String get onboardingConnectSteamTitle => 'Steam verbinden';
 
   @override
-  String get onboardingConnectSteamSubtitle => 'Verknuepfe dein Konto spaeter in den Einstellungen';
+  String get onboardingConnectSteamSubtitle => 'Verknüpfe dein Konto später in den Einstellungen';
 
   @override
   String get timeSlotMorningLabel => 'Morgen';
@@ -349,7 +352,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String inviteShareText(String inviteLink, String inviteCode) {
-    return 'Tritt meiner InGame-Gruppe ueber diesen Link bei: $inviteLink\nEinladungscode: $inviteCode';
+    return 'Tritt meiner InGame-Gruppe über diesen Link bei: $inviteLink\nEinladungscode: $inviteCode';
   }
 
   @override
@@ -365,10 +368,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get steamAuthTryAgain => 'Erneut versuchen';
 
   @override
+  String get steamAuthBackToPrefix => 'Zurueck zu';
+
+  @override
   String get steamAuthBackToLogin => 'Zurueck zum Login';
 
   @override
   String get errorRetryAction => 'Erneut versuchen';
+
+  @override
+  String get authSignInCancelled => 'Anmeldung wurde abgebrochen.';
+
+  @override
+  String get authAppleSignInFailed => 'Apple-Anmeldung fehlgeschlagen. Bitte versuche es erneut.';
+
+  @override
+  String get authErrorGeneric => 'Authentifizierung fehlgeschlagen. Bitte versuche es erneut.';
+
+  @override
+  String get authErrorDebugPrefix => 'Authentifizierung fehlgeschlagen';
 
   @override
   String get profileTitle => 'Profil';
@@ -386,6 +404,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSectionAccount => 'Konto';
 
   @override
+  String get profileSectionConnectedAccounts => 'Verknuepfte Konten';
+
+  @override
+  String get profileSectionPreferences => 'Einstellungen';
+
+  @override
   String get profileEmailLabel => 'E-Mail';
 
   @override
@@ -399,6 +423,69 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileUnknown => 'Unbekannt';
+
+  @override
+  String get profileConnected => 'Verbunden';
+
+  @override
+  String get profileNotConnected => 'Nicht verbunden';
+
+  @override
+  String get profileConnectedAccountsEmailPassword => 'E-Mail und Passwort';
+
+  @override
+  String get profileConnectedAccountsSteam => 'Steam';
+
+  @override
+  String get profileConnectedAccountsApple => 'Apple';
+
+  @override
+  String profileDisconnectTitle(String provider) {
+    return '$provider trennen';
+  }
+
+  @override
+  String profileDisconnectMessage(String provider) {
+    return 'Moechtest du dein $provider-Konto wirklich trennen?';
+  }
+
+  @override
+  String profileDisconnectFailed(String provider, String message) {
+    return '$provider konnte nicht getrennt werden: $message';
+  }
+
+  @override
+  String get profileSteamLinkedSuccess => 'Steam-Konto erfolgreich verknuepft';
+
+  @override
+  String profileLinkSteamFailed(String message) {
+    return 'Steam konnte nicht verknuepft werden: $message';
+  }
+
+  @override
+  String get profileSetEmailPasswordTitle => 'E-Mail und Passwort hinzufuegen';
+
+  @override
+  String get profileSetEmailPasswordDescription => 'Fuege eine E-Mail-Anmeldung zu deinem Konto hinzu, damit du dich ohne Social-Provider anmelden kannst.';
+
+  @override
+  String get profileEmailPasswordAddedSuccess => 'E-Mail und Passwort erfolgreich hinzugefuegt';
+
+  @override
+  String profileSetEmailFailed(String message) {
+    return 'E-Mail konnte nicht gesetzt werden: $message';
+  }
+
+  @override
+  String get profileAppleLinkedSuccess => 'Apple-Konto erfolgreich verknuepft';
+
+  @override
+  String get profileAppleSignInFailed => 'Apple-Anmeldung fehlgeschlagen.';
+
+  @override
+  String profileLinkAppleFailed(String message) {
+    return 'Apple konnte nicht verknuepft werden: $message';
+  }
 
   @override
   String get profileSectionGamingHours => 'Gaming-Zeiten';
@@ -425,10 +512,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editProfileBioLabel => 'Bio';
 
   @override
-  String get editProfileBioHint => 'Erzaehle anderen etwas ueber dich';
+  String get editProfileBioHint => 'Erzähle anderen etwas über dich';
 
   @override
-  String get editProfileSave => 'Aenderungen speichern';
+  String get editProfileSave => 'Änderungen speichern';
 
   @override
   String get avatarUploadSoon => 'Avatar-Upload kommt bald';
@@ -441,6 +528,182 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get gamingHoursNotSet => 'Nicht festgelegt';
+
+  @override
+  String gamingHoursSelectStartTime(String day) {
+    return 'Startzeit für $day wählen';
+  }
+
+  @override
+  String gamingHoursSelectEndTime(String day) {
+    return 'Endzeit für $day wählen';
+  }
+
+  @override
+  String get commonAdd => 'Hinzufuegen';
+
+  @override
+  String get groupTitleFallback => 'Gruppe';
+
+  @override
+  String get groupVisibilityPublic => 'Oeffentlich';
+
+  @override
+  String get groupVisibilityPrivate => 'Privat';
+
+  @override
+  String get groupJoinModeOpenLabel => 'Offen';
+
+  @override
+  String get groupJoinModeApprovalLabel => 'Freigabe';
+
+  @override
+  String get groupJoinModeOpenDescription => 'Jede Person kann sofort beitreten';
+
+  @override
+  String get groupJoinModeApprovalDescription => 'Mitglieder muessen von einem Admin bestaetigt werden';
+
+  @override
+  String get groupDetailMenuInvite => 'Einladen';
+
+  @override
+  String get groupDetailMenuSettings => 'Einstellungen';
+
+  @override
+  String get groupDetailMenuLeave => 'Gruppe verlassen';
+
+  @override
+  String get groupDetailSectionAbout => 'Ueber die Gruppe';
+
+  @override
+  String get groupDetailSectionMembers => 'Mitglieder';
+
+  @override
+  String get groupDetailLeaveTitle => 'Gruppe verlassen';
+
+  @override
+  String get groupDetailLeaveMessage => 'Moechtest du diese Gruppe wirklich verlassen?';
+
+  @override
+  String get createGroupTitle => 'Gruppe erstellen';
+
+  @override
+  String get createGroupNameLabel => 'Gruppenname';
+
+  @override
+  String get createGroupNameHint => 'Gib einen Namen fuer deine Gruppe ein';
+
+  @override
+  String get createGroupNameRequired => 'Ein Gruppenname ist erforderlich';
+
+  @override
+  String get createGroupNameMin => 'Der Name muss mindestens 3 Zeichen lang sein';
+
+  @override
+  String get createGroupDescriptionLabel => 'Beschreibung';
+
+  @override
+  String get createGroupDescriptionHint => 'Worum geht es in dieser Gruppe? (optional)';
+
+  @override
+  String get createGroupDiscoverableTitle => 'Auffindbar';
+
+  @override
+  String get createGroupDiscoverableSubtitle => 'Erlaube anderen, diese Gruppe zu finden und ihr beizutreten';
+
+  @override
+  String get createGroupJoinModeLabel => 'Beitrittsmodus';
+
+  @override
+  String get createGroupSubmit => 'Gruppe erstellen';
+
+  @override
+  String get groupSettingsTitle => 'Gruppeneinstellungen';
+
+  @override
+  String get groupSettingsUpdated => 'Gruppe aktualisiert';
+
+  @override
+  String get groupSettingsRemoveMemberTitle => 'Mitglied entfernen';
+
+  @override
+  String groupSettingsRemoveMemberMessage(String displayName) {
+    return '$displayName aus dieser Gruppe entfernen?';
+  }
+
+  @override
+  String groupSettingsMemberRemoved(String displayName) {
+    return '$displayName entfernt';
+  }
+
+  @override
+  String get groupSettingsRequestApproved => 'Anfrage bestaetigt';
+
+  @override
+  String get groupSettingsDenyRequestTitle => 'Anfrage ablehnen';
+
+  @override
+  String groupSettingsDenyRequestMessage(String displayName) {
+    return 'Beitrittsanfrage von $displayName ablehnen?';
+  }
+
+  @override
+  String get groupSettingsRequestDenied => 'Anfrage abgelehnt';
+
+  @override
+  String get groupSettingsDeleteTitle => 'Gruppe loeschen';
+
+  @override
+  String get groupSettingsDeleteMessage => 'Diese Aktion kann nicht rueckgaengig gemacht werden. Alle Mitglieder werden entfernt.';
+
+  @override
+  String get groupSettingsSectionGroupInfo => 'Gruppeninfo';
+
+  @override
+  String get groupSettingsSectionVisibility => 'Sichtbarkeit';
+
+  @override
+  String groupSettingsSectionMembers(int count) {
+    return 'Mitglieder ($count)';
+  }
+
+  @override
+  String groupSettingsSectionPendingRequests(int count) {
+    return 'Offene Anfragen ($count)';
+  }
+
+  @override
+  String get groupSettingsSectionDangerZone => 'Gefahrenzone';
+
+  @override
+  String get groupSettingsDangerDescription => 'Das Loeschen dieser Gruppe ist dauerhaft und entfernt alle Mitglieder.';
+
+  @override
+  String get groupSettingsRemoveTooltip => 'Entfernen';
+
+  @override
+  String get groupSettingsApproveTooltip => 'Genehmigen';
+
+  @override
+  String get groupSettingsDenyTooltip => 'Ablehnen';
+
+  @override
+  String get groupSettingsRoleMember => 'Mitglied';
+
+  @override
+  String groupSettingsTimeAgoDays(int count) {
+    return 'vor $count T';
+  }
+
+  @override
+  String groupSettingsTimeAgoHours(int count) {
+    return 'vor $count Std';
+  }
+
+  @override
+  String groupSettingsTimeAgoMinutes(int count) {
+    return 'vor $count Min';
+  }
 
   @override
   String get dayMonShort => 'Mo';
@@ -480,4 +743,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get memberStatusOffline => 'Offline';
+
+  @override
+  String get languageSwitcherLabel => 'Sprache';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageGerman => 'Deutsch';
 }
