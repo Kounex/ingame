@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/routing/route_names.dart';
+import '../../../../core/localization/locale_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
@@ -36,7 +39,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: const GlassAppBar(title: 'Profile'),
+        appBar: GlassAppBar(title: context.l10n.profileTitle),
         body: profileAsync.when(
           loading: () => const Center(child: LoadingIndicator()),
           error: (error, _) => ErrorDisplay(
@@ -47,7 +50,7 @@ class ProfileScreen extends ConsumerWidget {
           data: (user) {
             if (user == null) {
               return ErrorDisplay(
-                message: 'Could not load profile',
+                message: context.l10n.profileLoadError,
                 onRetry: () =>
                     ref.read(profileNotifierProvider.notifier).load(),
               );
@@ -108,7 +111,7 @@ class ProfileScreen extends ConsumerWidget {
                   GlassButton(
                     onPressed: () =>
                         context.goNamed(RouteNames.editProfile),
-                    child: const Text('Edit Profile'),
+                    child: Text(context.l10n.profileEdit),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   GlassButton(
@@ -118,8 +121,8 @@ class ProfileScreen extends ConsumerWidget {
                           .read(authNotifierProvider.notifier)
                           .logout();
                     },
-                    child: const Text(
-                      'Logout',
+                    child: Text(
+                      context.l10n.profileLogout,
                       style: TextStyle(color: AppColors.error),
                     ),
                   ),
@@ -159,22 +162,28 @@ class _AccountInfoCard extends StatelessWidget {
   final User user;
 
   static String _formatDate(DateTime date) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    return DateFormat.yMMMd(Intl.getCurrentLocale()).format(date);
   }
 
   @override
   Widget build(BuildContext context) {
     final rows = [
-      (Icons.email_outlined, 'Email', user.email ?? 'Not set'),
-      (Icons.public, 'Timezone', user.timezone.replaceAll('_', ' ')),
+      (
+        Icons.email_outlined,
+        context.l10n.profileEmailLabel,
+        user.email ?? context.l10n.profileNotSet,
+      ),
+      (
+        Icons.public,
+        context.l10n.profileTimezoneLabel,
+        user.timezone.replaceAll('_', ' '),
+      ),
       (
         Icons.calendar_today_outlined,
-        'Member since',
-        user.createdAt != null ? _formatDate(user.createdAt!) : 'Unknown',
+        context.l10n.profileMemberSinceLabel,
+        user.createdAt != null
+            ? _formatDate(user.createdAt!)
+            : context.l10n.profileUnknown,
       ),
     ];
 
@@ -183,7 +192,7 @@ class _AccountInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(title: 'Account'),
+          _SectionHeader(title: context.l10n.profileSectionAccount),
           const SizedBox(height: AppSpacing.md),
           for (var i = 0; i < rows.length; i++) ...[
             if (i > 0)
@@ -214,30 +223,6 @@ class _GamingHoursCard extends StatelessWidget {
     'sunday',
   ];
 
-  static const _dayLabels = {
-    'monday': 'Mon',
-    'tuesday': 'Tue',
-    'wednesday': 'Wed',
-    'thursday': 'Thu',
-    'friday': 'Fri',
-    'saturday': 'Sat',
-    'sunday': 'Sun',
-  };
-
-  static const _slotNames = {
-    '06:00-12:00': 'Morning',
-    '12:00-18:00': 'Afternoon',
-    '18:00-00:00': 'Evening',
-    '00:00-06:00': 'Night',
-  };
-
-  static const _slotIcons = {
-    'Morning': Icons.wb_sunny_outlined,
-    'Afternoon': Icons.wb_cloudy_outlined,
-    'Evening': Icons.nights_stay_outlined,
-    'Night': Icons.dark_mode_outlined,
-  };
-
   String _formatSlot(Map<String, dynamic> slot) {
     final start = slot['start'] as String? ?? '';
     final end = slot['end'] as String? ?? '';
@@ -254,7 +239,7 @@ class _GamingHoursCard extends StatelessWidget {
     return '$hour AM';
   }
 
-  List<_ScheduleGroup> _buildGroups() {
+  List<_ScheduleGroup> _buildGroups(BuildContext context) {
     if (gamingHours == null || gamingHours!.isEmpty) return [];
 
     final daySlots = <String, List<String>>{};
@@ -276,7 +261,7 @@ class _GamingHoursCard extends StatelessWidget {
     return signatureToGroup.entries.map((e) {
       final slotKeys = e.key.split('|');
       final slotLabels = slotKeys.map((key) {
-        final name = _slotNames[key];
+        final name = _slotName(context, key);
         if (name != null) return name;
         final parts = key.split('-');
         return '${_readableTime(parts[0])} – ${_readableTime(parts[1])}';
@@ -286,21 +271,58 @@ class _GamingHoursCard extends StatelessWidget {
   }
 
   String _daysLabel(List<String> days) {
-    if (days.length == 7) return 'Every day';
+    final l10n = currentAppLocalizations();
+    if (days.length == 7) return l10n.profileEveryDay;
     if (days.length == 5 &&
         days.every((d) => !['saturday', 'sunday'].contains(d))) {
-      return 'Weekdays';
+      return l10n.profileWeekdays;
     }
     if (days.length == 2 &&
         days.every((d) => ['saturday', 'sunday'].contains(d))) {
-      return 'Weekends';
+      return l10n.profileWeekends;
     }
-    return days.map((d) => _dayLabels[d] ?? d).join(', ');
+    return days.map((d) => _dayLabel(d)).join(', ');
+  }
+
+  String _dayLabel(String day) {
+    final l10n = currentAppLocalizations();
+    return switch (day) {
+      'monday' => l10n.dayMonShort,
+      'tuesday' => l10n.dayTueShort,
+      'wednesday' => l10n.dayWedShort,
+      'thursday' => l10n.dayThuShort,
+      'friday' => l10n.dayFriShort,
+      'saturday' => l10n.daySatShort,
+      'sunday' => l10n.daySunShort,
+      _ => day,
+    };
+  }
+
+  String? _slotName(BuildContext context, String key) {
+    final l10n = context.l10n;
+    return switch (key) {
+      '06:00-12:00' => l10n.timeSlotMorningLabel,
+      '12:00-18:00' => l10n.timeSlotAfternoonLabel,
+      '18:00-00:00' => l10n.timeSlotEveningLabel,
+      '00:00-06:00' => l10n.timeSlotNightLabel,
+      _ => null,
+    };
+  }
+
+  IconData? _slotIcon(String label, BuildContext context) {
+    final l10n = context.l10n;
+    return switch (label) {
+      _ when label == l10n.timeSlotMorningLabel => Icons.wb_sunny_outlined,
+      _ when label == l10n.timeSlotAfternoonLabel => Icons.wb_cloudy_outlined,
+      _ when label == l10n.timeSlotEveningLabel => Icons.nights_stay_outlined,
+      _ when label == l10n.timeSlotNightLabel => Icons.dark_mode_outlined,
+      _ => null,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    final groups = _buildGroups();
+    final groups = _buildGroups(context);
     final hasHours = groups.isNotEmpty;
 
     return GlassCard(
@@ -308,7 +330,7 @@ class _GamingHoursCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionHeader(title: 'Gaming Hours'),
+          _SectionHeader(title: context.l10n.profileSectionGamingHours),
           const SizedBox(height: AppSpacing.md),
           if (!hasHours)
             Row(
@@ -326,8 +348,8 @@ class _GamingHoursCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                const Text(
-                  'No schedule set',
+                Text(
+                  context.l10n.profileNoSchedule,
                   style: TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 14,
@@ -367,7 +389,7 @@ class _GamingHoursCard extends StatelessWidget {
                         for (final slot in group.slots)
                           _SlotChip(
                             label: slot,
-                            icon: _slotIcons[slot],
+                            icon: _slotIcon(slot, context),
                           ),
                       ],
                     ),

@@ -1,0 +1,211 @@
+{
+  "@@locale": "de",
+  "appTitle": "InGame",
+  "loginEmailLabel": "E-Mail",
+  "loginEmailHint": "Gib deine E-Mail ein",
+  "loginPasswordLabel": "Passwort",
+  "loginPasswordHint": "Gib dein Passwort ein",
+  "loginSubmit": "Anmelden",
+  "loginNoAccount": "Noch kein Konto?",
+  "loginRegister": "Registrieren",
+  "socialDividerOr": "oder",
+  "socialContinueWithSteam": "Mit Steam fortfahren",
+  "socialContinueWithApple": "Mit Apple fortfahren",
+  "validatorFieldRequired": "{fieldName} ist erforderlich",
+  "@validatorFieldRequired": {
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "validatorEmailRequired": "E-Mail ist erforderlich",
+  "validatorEmailInvalid": "Gib eine gueltige E-Mail-Adresse ein",
+  "validatorPasswordRequired": "Passwort ist erforderlich",
+  "validatorPasswordMin": "Das Passwort muss mindestens 8 Zeichen lang sein",
+  "validatorPasswordConfirmRequired": "Bitte bestaetige dein Passwort",
+  "validatorPasswordsMismatch": "Die Passwoerter stimmen nicht ueberein",
+  "validatorDisplayNameRequired": "Anzeigename ist erforderlich",
+  "validatorDisplayNameMin": "Der Anzeigename muss mindestens 2 Zeichen lang sein",
+  "validatorDisplayNameMax": "Der Anzeigename darf hoechstens 30 Zeichen lang sein",
+  "errorSomethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+  "errorConnectionTimedOut": "Zeitueberschreitung bei der Verbindung. Bitte pruefe dein Internet.",
+  "errorCouldNotConnect": "Es konnte keine Verbindung zum Server hergestellt werden. Bitte versuche es spaeter erneut.",
+  "errorNetwork": "Netzwerkfehler. Bitte pruefe deine Verbindung.",
+  "errorInvalidRequest": "Ungueltige Anfrage. Bitte pruefe deine Eingaben.",
+  "errorInvalidCredentials": "Ungueltige Anmeldedaten. Bitte versuche es erneut.",
+  "errorNoPermission": "Du hast keine Berechtigung dafuer.",
+  "errorNotFound": "Nicht gefunden.",
+  "errorAlreadyExists": "Diese Ressource existiert bereits.",
+  "errorCheckInput": "Bitte pruefe deine Eingaben.",
+  "errorTooManyRequests": "Zu viele Anfragen. Bitte warte einen Moment.",
+  "errorServer": "Serverfehler. Bitte versuche es spaeter erneut.",
+  "errorUnknownWithCode": "Etwas ist schiefgelaufen (Fehler {statusCode}).",
+  "@errorUnknownWithCode": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "errorValidationFieldMessage": "{field}: {message}",
+  "@errorValidationFieldMessage": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "commonRetry": "Erneut versuchen",
+  "commonBack": "Zurueck",
+  "commonNext": "Weiter",
+  "commonFinish": "Fertig",
+  "commonSave": "Speichern",
+  "commonCancel": "Abbrechen",
+  "commonDelete": "Loeschen",
+  "commonRemove": "Entfernen",
+  "commonDeny": "Ablehnen",
+  "commonShare": "Teilen",
+  "navigationGroups": "Gruppen",
+  "navigationHome": "Start",
+  "navigationDiscover": "Entdecken",
+  "navigationProfile": "Profil",
+  "registerTitle": "Konto erstellen",
+  "registerSubtitle": "Tritt der Community bei",
+  "registerDisplayNameLabel": "Anzeigename",
+  "registerDisplayNameHint": "Waehle einen Anzeigenamen",
+  "registerEmailTaken": "Diese E-Mail ist bereits vergeben",
+  "registerDisplayNameTaken": "Dieser Anzeigename ist bereits vergeben",
+  "registerPasswordHint": "Erstelle ein Passwort",
+  "registerConfirmPasswordLabel": "Passwort bestaetigen",
+  "registerConfirmPasswordHint": "Bestaetige dein Passwort",
+  "registerSubmit": "Konto erstellen",
+  "registerAlreadyHaveAccount": "Hast du bereits ein Konto?",
+  "registerLogin": "Anmelden",
+  "onboardingTimeSlotRequired": "Waehle mindestens ein Zeitfenster aus, um das Onboarding abzuschliessen.",
+  "onboardingDefaultBio": "InGame-Spieler",
+  "onboardingWelcomeTitle": "Willkommen bei InGame",
+  "onboardingWelcomeSubtitle": "Koordiniere Gaming-Sessions mit Freunden",
+  "onboardingGetStarted": "Los geht's",
+  "onboardingProfileTitle": "Richte dein Profil ein",
+  "onboardingProfileSubtitle": "Lass andere Spieler wissen, wer du bist.",
+  "onboardingDisplayNameHint": "So sehen dich andere",
+  "onboardingDisplayNameShort": "Muss mindestens 2 Zeichen lang sein",
+  "onboardingBioLabel": "Bio",
+  "onboardingBioHint": "Erzaehle anderen etwas ueber dich (optional)",
+  "onboardingAvatarUrlLabel": "Avatar-URL",
+  "onboardingAvatarUrlHint": "Link zu deinem Avatarbild (optional)",
+  "onboardingGamingTitle": "Gaming-Praeferenzen",
+  "onboardingGamingSubtitle": "Waehle mindestens ein Zeitfenster, damit Gruppen sehen koennen, wann du spielst.",
+  "onboardingConnectSteamTitle": "Steam verbinden",
+  "onboardingConnectSteamSubtitle": "Verknuepfe dein Konto spaeter in den Einstellungen",
+  "timeSlotMorningLabel": "Morgen",
+  "timeSlotMorningSubtitle": "6 Uhr - 12 Uhr",
+  "timeSlotAfternoonLabel": "Nachmittag",
+  "timeSlotAfternoonSubtitle": "12 Uhr - 18 Uhr",
+  "timeSlotEveningLabel": "Abend",
+  "timeSlotEveningSubtitle": "18 Uhr - 0 Uhr",
+  "timeSlotNightLabel": "Nacht",
+  "timeSlotNightSubtitle": "0 Uhr - 6 Uhr",
+  "groupsListTitle": "Meine Gruppen",
+  "groupsEmptyTitle": "Noch keine Gruppen",
+  "groupsEmptySubtitle": "Erstelle deine erste Gruppe oder tritt einer bei",
+  "groupsCreate": "Gruppe erstellen",
+  "groupsBrowse": "Gruppen durchsuchen",
+  "groupDirectoryTitle": "Gruppen entdecken",
+  "groupDirectorySearchHint": "Gruppen suchen...",
+  "groupDirectoryNoResults": "Keine Gruppen gefunden",
+  "groupDirectoryNoDiscoverable": "Noch keine sichtbaren Gruppen",
+  "groupDirectoryJoinSuccess": "{groupName} beigetreten!",
+  "@groupDirectoryJoinSuccess": {
+    "placeholders": {
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupDirectoryJoinRequestSent": "Beitrittsanfrage gesendet!",
+  "groupDirectoryJoinAction": "Beitreten",
+  "groupDirectoryRequestJoinAction": "Beitritt anfragen",
+  "joinGroupTitle": "Gruppe beitreten",
+  "joinGroupInvitedTitle": "Du wurdest eingeladen!",
+  "joinGroupSubtitle": "Tippe unten, um dieser Gruppe beizutreten",
+  "joinGroupSubtitleNamed": "{groupName} beitreten",
+  "@joinGroupSubtitleNamed": {
+    "placeholders": {
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "joinGroupMembers": "{count} Mitglieder",
+  "@joinGroupMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "joinGroupOpenJoin": "Offener Beitritt",
+  "joinGroupApprovalRequired": "Genehmigung erforderlich",
+  "joinGroupButton": "Gruppe beitreten",
+  "inviteCodeTitle": "Einladungscode",
+  "inviteCopyLink": "Link kopieren",
+  "inviteShareText": "Tritt meiner InGame-Gruppe ueber diesen Link bei: {inviteLink}\nEinladungscode: {inviteCode}",
+  "@inviteShareText": {
+    "placeholders": {
+      "inviteLink": {
+        "type": "String"
+      },
+      "inviteCode": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteLinkCopied": "Einladungslink in die Zwischenablage kopiert",
+  "inviteDetailsCopied": "Einladungsdetails in die Zwischenablage kopiert",
+  "steamAuthConnecting": "Verbindung zu Steam wird hergestellt...",
+  "steamAuthTryAgain": "Erneut versuchen",
+  "steamAuthBackToLogin": "Zurueck zum Login",
+  "errorRetryAction": "Erneut versuchen",
+  "profileTitle": "Profil",
+  "profileLoadError": "Profil konnte nicht geladen werden",
+  "profileEdit": "Profil bearbeiten",
+  "profileLogout": "Abmelden",
+  "profileSectionAccount": "Konto",
+  "profileEmailLabel": "E-Mail",
+  "profileTimezoneLabel": "Zeitzone",
+  "profileMemberSinceLabel": "Mitglied seit",
+  "profileNotSet": "Nicht festgelegt",
+  "profileUnknown": "Unbekannt",
+  "profileSectionGamingHours": "Gaming-Zeiten",
+  "profileNoSchedule": "Kein Zeitplan festgelegt",
+  "profileEveryDay": "Jeden Tag",
+  "profileWeekdays": "Wochentage",
+  "profileWeekends": "Wochenende",
+  "editProfileTitle": "Profil bearbeiten",
+  "editProfileDisplayNameHint": "Gib deinen Anzeigenamen ein",
+  "editProfileBioLabel": "Bio",
+  "editProfileBioHint": "Erzaehle anderen etwas ueber dich",
+  "editProfileSave": "Aenderungen speichern",
+  "avatarUploadSoon": "Avatar-Upload kommt bald",
+  "timezoneLabel": "Zeitzone",
+  "gamingHoursTitle": "Gaming-Zeiten",
+  "gamingHoursNotSet": "Nicht festgelegt",
+  "dayMonShort": "Mo",
+  "dayTueShort": "Di",
+  "dayWedShort": "Mi",
+  "dayThuShort": "Do",
+  "dayFriShort": "Fr",
+  "daySatShort": "Sa",
+  "daySunShort": "So",
+  "memberRoleOwner": "Besitzer",
+  "memberRoleAdmin": "Admin",
+  "memberStatusReady": "Spielbereit",
+  "memberStatusOnline": "Online",
+  "memberStatusAway": "Abwesend",
+  "memberStatusOffline": "Offline"
+}

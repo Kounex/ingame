@@ -7,6 +7,8 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
+import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/tappable.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -32,12 +34,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final Set<String> _selectedTimeSlots = {};
   bool _isSaving = false;
 
-  static const _timeSlots = [
-    ('morning', 'Morning', '6 AM – 12 PM', Icons.wb_sunny_outlined),
-    ('afternoon', 'Afternoon', '12 PM – 6 PM', Icons.wb_cloudy_outlined),
-    ('evening', 'Evening', '6 PM – 12 AM', Icons.nights_stay_outlined),
-    ('night', 'Night', '12 AM – 6 AM', Icons.dark_mode_outlined),
-  ];
+  List<(String, String, String, IconData)> _timeSlots(BuildContext context) => [
+        (
+          'morning',
+          context.l10n.timeSlotMorningLabel,
+          context.l10n.timeSlotMorningSubtitle,
+          Icons.wb_sunny_outlined,
+        ),
+        (
+          'afternoon',
+          context.l10n.timeSlotAfternoonLabel,
+          context.l10n.timeSlotAfternoonSubtitle,
+          Icons.wb_cloudy_outlined,
+        ),
+        (
+          'evening',
+          context.l10n.timeSlotEveningLabel,
+          context.l10n.timeSlotEveningSubtitle,
+          Icons.nights_stay_outlined,
+        ),
+        (
+          'night',
+          context.l10n.timeSlotNightLabel,
+          context.l10n.timeSlotNightSubtitle,
+          Icons.dark_mode_outlined,
+        ),
+      ];
 
   @override
   void initState() {
@@ -108,7 +130,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_selectedTimeSlots.isEmpty) {
       AppToast.error(
         context,
-        'Select at least one time slot to complete onboarding.',
+        context.l10n.onboardingTimeSlotRequired,
       );
       return;
     }
@@ -119,7 +141,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final updates = <String, dynamic>{
       'display_name': _displayNameController.text.trim(),
       'bio': _bioController.text.trim().isEmpty
-          ? 'InGame player'
+          ? context.l10n.onboardingDefaultBio
           : _bioController.text.trim(),
       if (_avatarUrlController.text.trim().isNotEmpty)
         'avatar_url': _avatarUrlController.text.trim(),
@@ -180,7 +202,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     _GamingPreferencesPage(
                       selectedTimeSlots: _selectedTimeSlots,
-                      timeSlots: _timeSlots,
+                      timeSlots: _timeSlots(context),
                       onToggleSlot: (slot) {
                         setState(() {
                           if (_selectedTimeSlots.contains(slot)) {
@@ -282,8 +304,8 @@ class _WelcomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          const Text(
-            'Welcome to InGame',
+          Text(
+            context.l10n.onboardingWelcomeTitle,
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 28,
@@ -292,8 +314,8 @@ class _WelcomePage extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.md),
-          const Text(
-            'Coordinate gaming sessions with friends',
+          Text(
+            context.l10n.onboardingWelcomeSubtitle,
             style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -302,7 +324,7 @@ class _WelcomePage extends StatelessWidget {
             width: double.infinity,
             child: GlassButton(
               onPressed: onGetStarted,
-              child: const Text('Get Started'),
+                child: Text(context.l10n.onboardingGetStarted),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -339,8 +361,8 @@ class _ProfileSetupPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: AppSpacing.xl),
-            const Text(
-              'Set Up Your Profile',
+            Text(
+              context.l10n.onboardingProfileTitle,
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 24,
@@ -348,8 +370,8 @@ class _ProfileSetupPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'Let other players know who you are.',
+            Text(
+              context.l10n.onboardingProfileSubtitle,
               style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -360,32 +382,24 @@ class _ProfileSetupPage extends StatelessWidget {
                 children: [
                   GlassInput(
                     controller: displayNameController,
-                    label: 'Display Name',
-                    hint: 'How others will see you',
+                    label: context.l10n.registerDisplayNameLabel,
+                    hint: context.l10n.onboardingDisplayNameHint,
                     prefixIcon: Icons.person_outline,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Display name is required';
-                      }
-                      if (value.trim().length < 2) {
-                        return 'Must be at least 2 characters';
-                      }
-                      return null;
-                    },
+                    validator: FormValidators.displayName,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   GlassInput(
                     controller: bioController,
-                    label: 'Bio',
-                    hint: 'Tell others about yourself (optional)',
+                    label: context.l10n.onboardingBioLabel,
+                    hint: context.l10n.onboardingBioHint,
                     prefixIcon: Icons.info_outline,
                     maxLines: 3,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   GlassInput(
                     controller: avatarUrlController,
-                    label: 'Avatar URL',
-                    hint: 'Link to your avatar image (optional)',
+                    label: context.l10n.onboardingAvatarUrlLabel,
+                    hint: context.l10n.onboardingAvatarUrlHint,
                     prefixIcon: Icons.image_outlined,
                     keyboardType: TextInputType.url,
                   ),
@@ -399,14 +413,14 @@ class _ProfileSetupPage extends StatelessWidget {
                   child: GlassButton(
                     variant: GlassButtonVariant.ghost,
                     onPressed: onBack,
-                    child: const Text('Back'),
+                    child: Text(context.l10n.commonBack),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: GlassButton(
                     onPressed: onNext,
-                    child: const Text('Next'),
+                    child: Text(context.l10n.commonNext),
                   ),
                 ),
               ],
@@ -444,8 +458,8 @@ class _GamingPreferencesPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: AppSpacing.xl),
-          const Text(
-            'Gaming Preferences',
+          Text(
+            context.l10n.onboardingGamingTitle,
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
@@ -453,8 +467,8 @@ class _GamingPreferencesPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
-            'Select at least one time slot so groups can see when you play.',
+          Text(
+            context.l10n.onboardingGamingSubtitle,
             style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -495,12 +509,12 @@ class _GamingPreferencesPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Connect Steam',
+                        context.l10n.onboardingConnectSteamTitle,
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 15,
@@ -509,7 +523,7 @@ class _GamingPreferencesPage extends StatelessWidget {
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Link your account later in settings',
+                        context.l10n.onboardingConnectSteamSubtitle,
                         style: TextStyle(
                           color: AppColors.textTertiary,
                           fontSize: 13,
@@ -529,7 +543,7 @@ class _GamingPreferencesPage extends StatelessWidget {
                 child: GlassButton(
                   variant: GlassButtonVariant.ghost,
                   onPressed: isSaving ? null : onBack,
-                  child: const Text('Back'),
+                  child: Text(context.l10n.commonBack),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -537,7 +551,7 @@ class _GamingPreferencesPage extends StatelessWidget {
                 child: GlassButton(
                   onPressed: isSaving ? null : onFinish,
                   isLoading: isSaving,
-                  child: const Text('Finish'),
+                  child: Text(context.l10n.commonFinish),
                 ),
               ),
             ],

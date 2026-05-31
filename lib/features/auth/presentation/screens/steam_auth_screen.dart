@@ -6,6 +6,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../data/oauth_launcher.dart';
 import '../../domain/auth_state.dart';
@@ -91,14 +92,14 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
   }
 
   Widget _buildLoading() {
-    return const Column(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        LoadingIndicator(),
-        SizedBox(height: AppSpacing.lg),
+        const LoadingIndicator(),
+        const SizedBox(height: AppSpacing.lg),
         Text(
-          'Connecting to Steam...',
-          style: TextStyle(
+          context.l10n.steamAuthConnecting,
+          style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 16,
           ),
@@ -131,7 +132,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
           GlassButton(
             onPressed: _retry,
             variant: GlassButtonVariant.secondary,
-            child: const Text('Try Again'),
+            child: Text(context.l10n.steamAuthTryAgain),
           ),
           const SizedBox(height: AppSpacing.sm),
           GlassButton(
@@ -144,7 +145,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
               ).toString(),
             ),
             variant: GlassButtonVariant.ghost,
-            child: const Text('Back to Login'),
+            child: Text(context.l10n.steamAuthBackToLogin),
           ),
         ],
       ),

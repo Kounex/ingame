@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 
 class TimezoneSelector extends StatelessWidget {
   const TimezoneSelector({
@@ -37,8 +38,8 @@ class TimezoneSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Timezone',
+        Text(
+          context.l10n.timezoneLabel,
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,

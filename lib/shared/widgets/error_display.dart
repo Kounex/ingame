@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/glass_components.dart';
 import '../../core/theme/spacing.dart';
+import '../../core/utils/extensions.dart';
 
 class ErrorDisplay extends StatelessWidget {
   const ErrorDisplay({
@@ -41,7 +42,7 @@ class ErrorDisplay extends StatelessWidget {
               GlassButton(
                 onPressed: onRetry!,
                 variant: GlassButtonVariant.secondary,
-                child: const Text('Retry'),
+                child: Text(context.l10n.errorRetryAction),
               ),
             ],
           ],

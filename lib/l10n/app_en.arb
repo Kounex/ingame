@@ -1,0 +1,211 @@
+{
+  "@@locale": "en",
+  "appTitle": "InGame",
+  "loginEmailLabel": "Email",
+  "loginEmailHint": "Enter your email",
+  "loginPasswordLabel": "Password",
+  "loginPasswordHint": "Enter your password",
+  "loginSubmit": "Log In",
+  "loginNoAccount": "Don't have an account?",
+  "loginRegister": "Register",
+  "socialDividerOr": "or",
+  "socialContinueWithSteam": "Continue with Steam",
+  "socialContinueWithApple": "Continue with Apple",
+  "validatorFieldRequired": "{fieldName} is required",
+  "@validatorFieldRequired": {
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "validatorEmailRequired": "Email is required",
+  "validatorEmailInvalid": "Enter a valid email address",
+  "validatorPasswordRequired": "Password is required",
+  "validatorPasswordMin": "Password must be at least 8 characters",
+  "validatorPasswordConfirmRequired": "Please confirm your password",
+  "validatorPasswordsMismatch": "Passwords do not match",
+  "validatorDisplayNameRequired": "Display name is required",
+  "validatorDisplayNameMin": "Display name must be at least 2 characters",
+  "validatorDisplayNameMax": "Display name must be at most 30 characters",
+  "errorSomethingWentWrong": "Something went wrong. Please try again.",
+  "errorConnectionTimedOut": "Connection timed out. Please check your internet.",
+  "errorCouldNotConnect": "Could not connect to the server. Please try again later.",
+  "errorNetwork": "Network error. Please check your connection.",
+  "errorInvalidRequest": "Invalid request. Please check your input.",
+  "errorInvalidCredentials": "Invalid credentials. Please try again.",
+  "errorNoPermission": "You don't have permission to do this.",
+  "errorNotFound": "Not found.",
+  "errorAlreadyExists": "This resource already exists.",
+  "errorCheckInput": "Please check your input.",
+  "errorTooManyRequests": "Too many requests. Please wait a moment.",
+  "errorServer": "Server error. Please try again later.",
+  "errorUnknownWithCode": "Something went wrong (error {statusCode}).",
+  "@errorUnknownWithCode": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "errorValidationFieldMessage": "{field}: {message}",
+  "@errorValidationFieldMessage": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "commonRetry": "Retry",
+  "commonBack": "Back",
+  "commonNext": "Next",
+  "commonFinish": "Finish",
+  "commonSave": "Save",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonRemove": "Remove",
+  "commonDeny": "Deny",
+  "commonShare": "Share",
+  "navigationGroups": "Groups",
+  "navigationHome": "Home",
+  "navigationDiscover": "Discover",
+  "navigationProfile": "Profile",
+  "registerTitle": "Create Account",
+  "registerSubtitle": "Join the community",
+  "registerDisplayNameLabel": "Display Name",
+  "registerDisplayNameHint": "Choose a display name",
+  "registerEmailTaken": "This email is already taken",
+  "registerDisplayNameTaken": "This display name is already taken",
+  "registerPasswordHint": "Create a password",
+  "registerConfirmPasswordLabel": "Confirm Password",
+  "registerConfirmPasswordHint": "Confirm your password",
+  "registerSubmit": "Create Account",
+  "registerAlreadyHaveAccount": "Already have an account?",
+  "registerLogin": "Log in",
+  "onboardingTimeSlotRequired": "Select at least one time slot to complete onboarding.",
+  "onboardingDefaultBio": "InGame player",
+  "onboardingWelcomeTitle": "Welcome to InGame",
+  "onboardingWelcomeSubtitle": "Coordinate gaming sessions with friends",
+  "onboardingGetStarted": "Get Started",
+  "onboardingProfileTitle": "Set Up Your Profile",
+  "onboardingProfileSubtitle": "Let other players know who you are.",
+  "onboardingDisplayNameHint": "How others will see you",
+  "onboardingDisplayNameShort": "Must be at least 2 characters",
+  "onboardingBioLabel": "Bio",
+  "onboardingBioHint": "Tell others about yourself (optional)",
+  "onboardingAvatarUrlLabel": "Avatar URL",
+  "onboardingAvatarUrlHint": "Link to your avatar image (optional)",
+  "onboardingGamingTitle": "Gaming Preferences",
+  "onboardingGamingSubtitle": "Select at least one time slot so groups can see when you play.",
+  "onboardingConnectSteamTitle": "Connect Steam",
+  "onboardingConnectSteamSubtitle": "Link your account later in settings",
+  "timeSlotMorningLabel": "Morning",
+  "timeSlotMorningSubtitle": "6 AM - 12 PM",
+  "timeSlotAfternoonLabel": "Afternoon",
+  "timeSlotAfternoonSubtitle": "12 PM - 6 PM",
+  "timeSlotEveningLabel": "Evening",
+  "timeSlotEveningSubtitle": "6 PM - 12 AM",
+  "timeSlotNightLabel": "Night",
+  "timeSlotNightSubtitle": "12 AM - 6 AM",
+  "groupsListTitle": "My Groups",
+  "groupsEmptyTitle": "No groups yet",
+  "groupsEmptySubtitle": "Create or join your first group",
+  "groupsCreate": "Create Group",
+  "groupsBrowse": "Browse Groups",
+  "groupDirectoryTitle": "Discover Groups",
+  "groupDirectorySearchHint": "Search groups...",
+  "groupDirectoryNoResults": "No groups found",
+  "groupDirectoryNoDiscoverable": "No discoverable groups yet",
+  "groupDirectoryJoinSuccess": "Joined {groupName}!",
+  "@groupDirectoryJoinSuccess": {
+    "placeholders": {
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupDirectoryJoinRequestSent": "Join request sent!",
+  "groupDirectoryJoinAction": "Join",
+  "groupDirectoryRequestJoinAction": "Request to Join",
+  "joinGroupTitle": "Join Group",
+  "joinGroupInvitedTitle": "You've been invited!",
+  "joinGroupSubtitle": "Tap below to join this group",
+  "joinGroupSubtitleNamed": "Join {groupName}",
+  "@joinGroupSubtitleNamed": {
+    "placeholders": {
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "joinGroupMembers": "{count} members",
+  "@joinGroupMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "joinGroupOpenJoin": "Open join",
+  "joinGroupApprovalRequired": "Approval required",
+  "joinGroupButton": "Join Group",
+  "inviteCodeTitle": "Invite Code",
+  "inviteCopyLink": "Copy Link",
+  "inviteShareText": "Join my InGame group with this link: {inviteLink}\nInvite code: {inviteCode}",
+  "@inviteShareText": {
+    "placeholders": {
+      "inviteLink": {
+        "type": "String"
+      },
+      "inviteCode": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteLinkCopied": "Invite link copied to clipboard",
+  "inviteDetailsCopied": "Invite details copied to clipboard",
+  "steamAuthConnecting": "Connecting to Steam...",
+  "steamAuthTryAgain": "Try Again",
+  "steamAuthBackToLogin": "Back to Login",
+  "errorRetryAction": "Retry",
+  "profileTitle": "Profile",
+  "profileLoadError": "Could not load profile",
+  "profileEdit": "Edit Profile",
+  "profileLogout": "Logout",
+  "profileSectionAccount": "Account",
+  "profileEmailLabel": "Email",
+  "profileTimezoneLabel": "Timezone",
+  "profileMemberSinceLabel": "Member since",
+  "profileNotSet": "Not set",
+  "profileUnknown": "Unknown",
+  "profileSectionGamingHours": "Gaming Hours",
+  "profileNoSchedule": "No schedule set",
+  "profileEveryDay": "Every day",
+  "profileWeekdays": "Weekdays",
+  "profileWeekends": "Weekends",
+  "editProfileTitle": "Edit Profile",
+  "editProfileDisplayNameHint": "Enter your display name",
+  "editProfileBioLabel": "Bio",
+  "editProfileBioHint": "Tell others about yourself",
+  "editProfileSave": "Save Changes",
+  "avatarUploadSoon": "Avatar upload coming soon",
+  "timezoneLabel": "Timezone",
+  "gamingHoursTitle": "Gaming Hours",
+  "gamingHoursNotSet": "Not set",
+  "dayMonShort": "Mon",
+  "dayTueShort": "Tue",
+  "dayWedShort": "Wed",
+  "dayThuShort": "Thu",
+  "dayFriShort": "Fri",
+  "daySatShort": "Sat",
+  "daySunShort": "Sun",
+  "memberRoleOwner": "Owner",
+  "memberRoleAdmin": "Admin",
+  "memberStatusReady": "Ready to play",
+  "memberStatusOnline": "Online",
+  "memberStatusAway": "Away",
+  "memberStatusOffline": "Offline"
+}

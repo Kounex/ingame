@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/locale_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/providers/presence_provider.dart';
@@ -120,10 +121,11 @@ class _MemberTile extends ConsumerWidget {
 
   Widget? get _roleBadge {
     final role = member.role.toLowerCase();
+    final l10n = currentAppLocalizations();
     if (role == 'owner') {
-      return _buildBadge('Owner', AppColors.primary);
+      return _buildBadge(l10n.memberRoleOwner, AppColors.primary);
     } else if (role == 'admin') {
-      return _buildBadge('Admin', AppColors.secondary);
+      return _buildBadge(l10n.memberRoleAdmin, AppColors.secondary);
     }
     return null;
   }
@@ -147,11 +149,12 @@ class _MemberTile extends ConsumerWidget {
   }
 
   String _statusLabel(UserStatus status) {
+    final l10n = currentAppLocalizations();
     return switch (status) {
-      UserStatus.ready => 'Ready to play',
-      UserStatus.online => 'Online',
-      UserStatus.away => 'Away',
-      UserStatus.offline => 'Offline',
+      UserStatus.ready => l10n.memberStatusReady,
+      UserStatus.online => l10n.memberStatusOnline,
+      UserStatus.away => l10n.memberStatusAway,
+      UserStatus.offline => l10n.memberStatusOffline,
     };
   }
 

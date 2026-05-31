@@ -6,6 +6,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
@@ -49,6 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+    final l10n = context.l10n;
 
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (_, next) {
       next.whenData((state) {
@@ -95,8 +97,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: AppSpacing.xxl),
                       GlassInput(
                         controller: _emailController,
-                        label: 'Email',
-                        hint: 'Enter your email',
+                        label: l10n.loginEmailLabel,
+                        hint: l10n.loginEmailHint,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         prefixIcon: Icons.email_outlined,
@@ -105,8 +107,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: AppSpacing.md),
                       GlassInput(
                         controller: _passwordController,
-                        label: 'Password',
-                        hint: 'Enter your password',
+                        label: l10n.loginPasswordLabel,
+                        hint: l10n.loginPasswordHint,
                         obscureText: true,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _onLogin(),
@@ -139,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: loading ? null : _onLogin,
                         variant: GlassButtonVariant.primary,
                         isLoading: loading,
-                        child: const Text('Log In'),
+                        child: Text(l10n.loginSubmit),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       SocialLoginButtons(
@@ -173,13 +175,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildRegisterLink() {
+    final l10n = context.l10n;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text(
-          "Don't have an account? ",
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+        Text(
+          l10n.loginNoAccount,
+          style: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
         ),
+        const SizedBox(width: 4),
         Tappable(
           onTap: () => context.go(
             Uri(
@@ -189,8 +193,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : {'from': widget.redirectTo!},
             ).toString(),
           ),
-          child: const Text(
-            'Register',
+          child: Text(
+            l10n.loginRegister,
             style: TextStyle(
               color: AppColors.primary,
               fontSize: 14,

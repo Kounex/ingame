@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # State management
   flutter_riverpod: ^2.6.1
@@ -37,6 +39,7 @@ dependencies:
   cupertino_icons: ^1.0.9
   google_fonts: ^8.1.0
   cue: ^0.3.1
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -52,3 +55,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true

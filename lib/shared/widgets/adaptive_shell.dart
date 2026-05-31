@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/spacing.dart';
+import '../../core/utils/extensions.dart';
 import 'glass_bottom_nav.dart';
 import 'ingame_logo.dart';
 import 'tappable.dart';
@@ -64,26 +65,26 @@ class _GlassSidebar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onDestinationSelected;
 
-  static const _destinations = [
-    _SidebarDestination(
-      icon: Icons.groups_outlined,
-      activeIcon: Icons.groups,
-      label: 'Groups',
-    ),
-    _SidebarDestination(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
-      label: 'Discover',
-    ),
-    _SidebarDestination(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      label: 'Profile',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final destinations = [
+      _SidebarDestination(
+        icon: Icons.groups_outlined,
+        activeIcon: Icons.groups,
+        label: l10n.navigationGroups,
+      ),
+      _SidebarDestination(
+        icon: Icons.explore_outlined,
+        activeIcon: Icons.explore,
+        label: l10n.navigationDiscover,
+      ),
+      _SidebarDestination(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: l10n.navigationProfile,
+      ),
+    ];
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -106,11 +107,11 @@ class _GlassSidebar extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                     ),
-                    itemCount: _destinations.length,
+                    itemCount: destinations.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(height: AppSpacing.xs),
                     itemBuilder: (context, index) {
-                      final dest = _destinations[index];
+                      final dest = destinations[index];
                       final isSelected = index == currentIndex;
 
                       return _SidebarItem(

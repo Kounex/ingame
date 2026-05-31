@@ -9,6 +9,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -83,7 +84,10 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
         await repo.joinByInviteCode(group.inviteCode);
         await ref.read(groupsNotifierProvider.notifier).load();
         if (mounted) {
-          AppToast.success(context, 'Joined ${group.name}!');
+          AppToast.success(
+            context,
+            context.l10n.groupDirectoryJoinSuccess(group.name),
+          );
           context.goNamed(
             RouteNames.groupDetail,
             pathParameters: {'id': group.id},
@@ -93,7 +97,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
         final repo = ref.read(groupsRepositoryProvider);
         await repo.createJoinRequest(group.id);
         if (mounted) {
-          AppToast.info(context, 'Join request sent!');
+          AppToast.info(context, context.l10n.groupDirectoryJoinRequestSent);
         }
       }
     } catch (e) {
@@ -115,14 +119,14 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: const GlassAppBar(title: 'Discover Groups'),
+        appBar: GlassAppBar(title: context.l10n.groupDirectoryTitle),
         body: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: GlassInput(
                 controller: _searchController,
-                hint: 'Search groups...',
+                hint: context.l10n.groupDirectorySearchHint,
                 prefixIcon: Icons.search,
                 onChanged: _onSearchChanged,
               ),
@@ -150,7 +154,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
             GlassButton(
               onPressed: _loadGroups,
               variant: GlassButtonVariant.secondary,
-              child: const Text('Retry'),
+              child: Text(context.l10n.commonRetry),
             ),
           ],
         ),
@@ -170,8 +174,8 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
             const SizedBox(height: AppSpacing.md),
             Text(
               _searchController.text.isNotEmpty
-                  ? 'No groups found'
-                  : 'No discoverable groups yet',
+                  ? context.l10n.groupDirectoryNoResults
+                  : context.l10n.groupDirectoryNoDiscoverable,
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 16,
@@ -251,7 +255,9 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
                         ? GlassButtonVariant.primary
                         : GlassButtonVariant.secondary,
                     child: Text(
-                      group.joinMode == 'open' ? 'Join' : 'Request to Join',
+                      group.joinMode == 'open'
+                          ? context.l10n.groupDirectoryJoinAction
+                          : context.l10n.groupDirectoryRequestJoinAction,
                     ),
                   ),
                 ),

@@ -5,6 +5,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../domain/group_model.dart';
 
 class GroupCard extends StatelessWidget {
@@ -47,7 +48,7 @@ class GroupCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      '${group.memberCount} members',
+                      context.l10n.joinGroupMembers(group.memberCount),
                       style: const TextStyle(
                         color: AppColors.textTertiary,
                         fontSize: 13,

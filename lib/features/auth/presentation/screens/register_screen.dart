@@ -8,6 +8,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../data/auth_repository.dart';
 import '../../../../shared/widgets/tappable.dart';
@@ -64,6 +65,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _onEmailChanged() {
+    final l10n = context.l10n;
     _emailDebounce?.cancel();
     final email = _emailController.text.trim();
 
@@ -85,7 +87,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           setState(() {
             _emailChecking = false;
             _emailAvailabilityError =
-                available ? null : 'This email is already taken';
+                available ? null : l10n.registerEmailTaken;
           });
         }
       } catch (_) {
@@ -97,6 +99,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _onDisplayNameChanged() {
+    final l10n = context.l10n;
     _displayNameDebounce?.cancel();
     final name = _displayNameController.text.trim();
 
@@ -118,7 +121,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           setState(() {
             _displayNameChecking = false;
             _displayNameAvailabilityError =
-                available ? null : 'This display name is already taken';
+                available ? null : l10n.registerDisplayNameTaken;
           });
         }
       } catch (_) {
@@ -166,6 +169,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+    final l10n = context.l10n;
 
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (_, next) {
       next.whenData((state) {
@@ -212,8 +216,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: AppSpacing.xxl),
                       GlassInput(
                         controller: _displayNameController,
-                        label: 'Display Name',
-                        hint: 'Choose a display name',
+                        label: l10n.registerDisplayNameLabel,
+                        hint: l10n.registerDisplayNameHint,
                         textInputAction: TextInputAction.next,
                         prefixIcon: Icons.person_outline,
                         suffixIcon: _buildAvailabilityIndicator(
@@ -232,8 +236,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: AppSpacing.md),
                       GlassInput(
                         controller: _emailController,
-                        label: 'Email',
-                        hint: 'Enter your email',
+                        label: l10n.loginEmailLabel,
+                        hint: l10n.loginEmailHint,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         prefixIcon: Icons.email_outlined,
@@ -253,8 +257,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: AppSpacing.md),
                       GlassInput(
                         controller: _passwordController,
-                        label: 'Password',
-                        hint: 'Create a password',
+                        label: l10n.loginPasswordLabel,
+                        hint: l10n.registerPasswordHint,
                         obscureText: true,
                         textInputAction: TextInputAction.next,
                         prefixIcon: Icons.lock_outline,
@@ -263,8 +267,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: AppSpacing.md),
                       GlassInput(
                         controller: _confirmPasswordController,
-                        label: 'Confirm Password',
-                        hint: 'Confirm your password',
+                        label: l10n.registerConfirmPasswordLabel,
+                        hint: l10n.registerConfirmPasswordHint,
                         obscureText: true,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _onRegister(),
@@ -300,7 +304,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         onPressed: loading ? null : _onRegister,
                         variant: GlassButtonVariant.primary,
                         isLoading: loading,
-                        child: const Text('Create Account'),
+                        child: Text(l10n.registerSubmit),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       _buildLoginLink(),
@@ -322,8 +326,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           shaderCallback: (bounds) => const LinearGradient(
             colors: [AppColors.primary, AppColors.secondary],
           ).createShader(bounds),
-          child: const Text(
-            'Create Account',
+          child: Text(
+            context.l10n.registerTitle,
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -332,8 +336,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        const Text(
-          'Join the community',
+        Text(
+          context.l10n.registerSubtitle,
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 16,
@@ -344,13 +348,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Widget _buildLoginLink() {
+    final l10n = context.l10n;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text(
-          'Already have an account? ',
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+        Text(
+          l10n.registerAlreadyHaveAccount,
+          style: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
         ),
+        const SizedBox(width: 4),
         Tappable(
           onTap: () => context.go(
             Uri(
@@ -360,8 +366,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   : {'from': widget.redirectTo!},
             ).toString(),
           ),
-          child: const Text(
-            'Log in',
+          child: Text(
+            l10n.registerLogin,
             style: TextStyle(
               color: AppColors.primary,
               fontSize: 14,

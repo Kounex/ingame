@@ -6,6 +6,7 @@ import '../../../../core/networking/api_endpoints.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_toast.dart';
 
 class InviteLinkShare extends StatelessWidget {
@@ -18,18 +19,16 @@ class InviteLinkShare extends StatelessWidget {
     return '$baseUrl/join/$inviteCode';
   }
 
-  String get _shareText =>
-      'Join my InGame group with this link: $_inviteLink\nInvite code: $inviteCode';
-
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Invite Code',
+          Text(
+            l10n.inviteCodeTitle,
             style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12,
@@ -65,12 +64,12 @@ class InviteLinkShare extends StatelessWidget {
                 child: GlassButton(
                   onPressed: () => _copyLink(context),
                   variant: GlassButtonVariant.secondary,
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.copy, size: 16),
-                      SizedBox(width: AppSpacing.sm),
-                      Text('Copy Link'),
+                      const Icon(Icons.copy, size: 16),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(l10n.inviteCopyLink),
                     ],
                   ),
                 ),
@@ -80,12 +79,12 @@ class InviteLinkShare extends StatelessWidget {
                 child: GlassButton(
                   onPressed: () => _share(context),
                   variant: GlassButtonVariant.ghost,
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.share, size: 16),
-                      SizedBox(width: AppSpacing.sm),
-                      Text('Share'),
+                      const Icon(Icons.share, size: 16),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(l10n.commonShare),
                     ],
                   ),
                 ),
@@ -99,11 +98,13 @@ class InviteLinkShare extends StatelessWidget {
 
   void _copyLink(BuildContext context) {
     Clipboard.setData(ClipboardData(text: _inviteLink));
-    AppToast.success(context, 'Invite link copied to clipboard');
+    AppToast.success(context, context.l10n.inviteLinkCopied);
   }
 
   void _share(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: _shareText));
-    AppToast.success(context, 'Invite details copied to clipboard');
+    Clipboard.setData(
+      ClipboardData(text: context.l10n.inviteShareText(_inviteLink, inviteCode)),
+    );
+    AppToast.success(context, context.l10n.inviteDetailsCopied);
   }
 }

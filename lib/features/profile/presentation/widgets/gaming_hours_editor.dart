@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 
 class GamingHoursEditor extends StatefulWidget {
   const GamingHoursEditor({
@@ -28,8 +29,6 @@ class _GamingHoursEditorState extends State<GamingHoursEditor> {
     'saturday',
     'sunday',
   ];
-  static const _dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
   late Map<String, dynamic> _hours;
 
   @override
@@ -39,29 +38,44 @@ class _GamingHoursEditorState extends State<GamingHoursEditor> {
   }
 
   String _formatHours(String day) {
+    final l10n = context.l10n;
     final dayHours = _hours[day];
     if (dayHours == null || (dayHours is List && dayHours.isEmpty)) {
-      return 'Not set';
+      return l10n.gamingHoursNotSet;
     }
     if (dayHours is List && dayHours.isNotEmpty) {
       final slot = dayHours.first as Map<String, dynamic>;
       return '${slot['start']} - ${slot['end']}';
     }
-    return 'Not set';
+    return l10n.gamingHoursNotSet;
+  }
+
+  List<String> _dayLabels(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      l10n.dayMonShort,
+      l10n.dayTueShort,
+      l10n.dayWedShort,
+      l10n.dayThuShort,
+      l10n.dayFriShort,
+      l10n.daySatShort,
+      l10n.daySunShort,
+    ];
   }
 
   Future<void> _editDay(int index) async {
     final day = _days[index];
+    final labels = _dayLabels(context);
     final result = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 18, minute: 0),
-      helpText: 'Select start time for ${_dayLabels[index]}',
+      helpText: 'Select start time for ${labels[index]}',
     );
     if (result != null && mounted) {
       final endResult = await showTimePicker(
         context: context,
         initialTime: TimeOfDay(hour: (result.hour + 4) % 24, minute: 0),
-        helpText: 'Select end time for ${_dayLabels[index]}',
+        helpText: 'Select end time for ${labels[index]}',
       );
       if (endResult != null && mounted) {
         setState(() {
@@ -81,11 +95,13 @@ class _GamingHoursEditorState extends State<GamingHoursEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final labels = _dayLabels(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Gaming Hours',
+        Text(
+          l10n.gamingHoursTitle,
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,
@@ -106,7 +122,7 @@ class _GamingHoursEditorState extends State<GamingHoursEditor> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    _dayLabels[index],
+                    labels[index],
                     style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w500,

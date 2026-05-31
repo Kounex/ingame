@@ -1,0 +1,12 @@
+---
+description: Route new user-facing copy through AppLocalizations
+alwaysApply: true
+---
+
+# Localize User-Facing Strings
+
+- Do not add new inline user-facing English strings in Flutter UI, validators, dialogs, toasts, or error helpers.
+- Add new copy to `lib/l10n/app_en.arb` and `lib/l10n/app_de.arb`, then regenerate `AppLocalizations`.
+- Prefer `context.l10n` inside widgets and `currentAppLocalizations()` only in non-widget helpers that cannot access `BuildContext`.
+- Reuse existing localization keys for common actions like retry, save, cancel, back, next, finish, and auth/profile/group labels before adding new ones.
+- Keep backend fields, route names, IDs, and API payload keys unchanged; localize only user-facing display text.

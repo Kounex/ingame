@@ -6,6 +6,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -29,7 +30,7 @@ class GroupsListScreen extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: const GlassAppBar(title: 'My Groups'),
+        appBar: GlassAppBar(title: context.l10n.groupsListTitle),
         body: groupsAsync.when(
           loading: () => const LoadingIndicator(),
           error: (error, _) => ErrorDisplay(
@@ -103,8 +104,8 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            const Text(
-              'No groups yet',
+            Text(
+              context.l10n.groupsEmptyTitle,
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 20,
@@ -112,8 +113,8 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'Create or join your first group',
+            Text(
+              context.l10n.groupsEmptySubtitle,
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 14,
@@ -124,7 +125,7 @@ class _EmptyState extends StatelessWidget {
               width: double.infinity,
               child: GlassButton(
                 onPressed: onCreateGroup,
-                child: const Text('Create Group'),
+                child: Text(context.l10n.groupsCreate),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -133,7 +134,7 @@ class _EmptyState extends StatelessWidget {
               child: GlassButton(
                 onPressed: onBrowseGroups,
                 variant: GlassButtonVariant.secondary,
-                child: const Text('Browse Groups'),
+                child: Text(context.l10n.groupsBrowse),
               ),
             ),
           ],

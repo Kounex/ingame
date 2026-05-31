@@ -7,12 +7,23 @@ class PreferencesService {
   final SharedPreferences _prefs;
 
   static const _onboardingCompleteKey = 'onboarding_complete';
+  static const _localeCodeKey = 'locale_code';
 
   bool get isOnboardingComplete =>
       _prefs.getBool(_onboardingCompleteKey) ?? false;
 
   Future<void> setOnboardingComplete(bool value) async {
     await _prefs.setBool(_onboardingCompleteKey, value);
+  }
+
+  String? get localeCode => _prefs.getString(_localeCodeKey);
+
+  Future<void> setLocaleCode(String? value) async {
+    if (value == null || value.isEmpty) {
+      await _prefs.remove(_localeCodeKey);
+      return;
+    }
+    await _prefs.setString(_localeCodeKey, value);
   }
 
   Future<void> clear() async {

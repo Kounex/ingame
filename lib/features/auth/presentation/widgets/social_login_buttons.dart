@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 
 class SocialLoginButtons extends StatelessWidget {
   const SocialLoginButtons({
@@ -47,6 +48,7 @@ class _SteamButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _HoverableSocialButton(
       onPressed: onPressed,
       child: DecoratedBoxActor(
@@ -91,7 +93,7 @@ class _SteamButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              const Actor(
+              Actor(
                 acts: [
                   .textStyle(
                     from: TextStyle(
@@ -108,7 +110,7 @@ class _SteamButton extends StatelessWidget {
                     ),
                   ),
                 ],
-                child: Text('Continue with Steam'),
+                child: Text(l10n.socialContinueWithSteam),
               ),
             ],
           ),
@@ -124,6 +126,7 @@ class _AppleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _HoverableSocialButton(
       onPressed: onPressed,
       child: DecoratedBoxActor(
@@ -139,17 +142,17 @@ class _AppleButton extends StatelessWidget {
             blurRadius: 10,
           ),
         ]),
-        child: const SizedBox(
+        child: SizedBox(
           width: double.infinity,
           height: 48,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.apple, size: 22, color: Colors.black),
-              SizedBox(width: AppSpacing.sm),
+              const Icon(Icons.apple, size: 22, color: Colors.black),
+              const SizedBox(width: AppSpacing.sm),
               Text(
-                'Continue with Apple',
-                style: TextStyle(
+                l10n.socialContinueWithApple,
+                style: const TextStyle(
                   color: Colors.black,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -196,17 +199,18 @@ class _SocialDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    final l10n = context.l10n;
+    return Row(
       children: [
-        Expanded(child: Divider(color: AppColors.glassBorder)),
+        const Expanded(child: Divider(color: AppColors.glassBorder)),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
-            'or',
-            style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+            l10n.socialDividerOr,
+            style: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
           ),
         ),
-        Expanded(child: Divider(color: AppColors.glassBorder)),
+        const Expanded(child: Divider(color: AppColors.glassBorder)),
       ],
     );
   }

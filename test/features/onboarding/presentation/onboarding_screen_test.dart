@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ingame/l10n/app_localizations.dart';
 import 'package:ingame/features/auth/domain/auth_state.dart';
 import 'package:ingame/features/auth/domain/user_model.dart';
 import 'package:ingame/features/auth/presentation/providers/auth_provider.dart';
@@ -53,7 +54,12 @@ void main() {
               () => profileNotifier,
             ),
           ],
-          child: const MaterialApp(home: OnboardingScreen()),
+          child: const MaterialApp(
+            locale: Locale('en'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: OnboardingScreen(),
+          ),
         ),
       );
 

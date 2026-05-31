@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
+import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../providers/profile_provider.dart';
@@ -79,7 +81,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
-        title: 'Edit Profile',
+        title: context.l10n.editProfileTitle,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
@@ -110,24 +112,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   const SizedBox(height: AppSpacing.xl),
                   GlassInput(
                     controller: _displayNameController,
-                    label: 'Display Name',
-                    hint: 'Enter your display name',
+                    label: context.l10n.registerDisplayNameLabel,
+                    hint: context.l10n.editProfileDisplayNameHint,
                     prefixIcon: Icons.person_outline,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Display name is required';
-                      }
-                      if (value.trim().length < 2) {
-                        return 'Must be at least 2 characters';
-                      }
-                      return null;
+                      return FormValidators.displayName(value);
                     },
                   ),
                   const SizedBox(height: AppSpacing.md),
                   GlassInput(
                     controller: _bioController,
-                    label: 'Bio',
-                    hint: 'Tell others about yourself',
+                    label: context.l10n.editProfileBioLabel,
+                    hint: context.l10n.editProfileBioHint,
                     prefixIcon: Icons.info_outline,
                     maxLines: 3,
                   ),
@@ -147,7 +143,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     child: GlassButton(
                       onPressed: _isSaving ? null : _save,
                       isLoading: _isSaving,
-                      child: const Text('Save Changes'),
+                      child: Text(context.l10n.editProfileSave),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/extensions.dart';
 import 'tappable.dart';
 
 class GlassBottomNav extends StatelessWidget {
@@ -17,6 +18,7 @@ class GlassBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -36,21 +38,21 @@ class GlassBottomNav extends StatelessWidget {
                   _NavItem(
                     icon: Icons.groups_outlined,
                     activeIcon: Icons.groups,
-                    label: 'Home',
+                    label: l10n.navigationHome,
                     isActive: currentIndex == 0,
                     onTap: () => onTap(0),
                   ),
                   _NavItem(
                     icon: Icons.explore_outlined,
                     activeIcon: Icons.explore,
-                    label: 'Discover',
+                    label: l10n.navigationDiscover,
                     isActive: currentIndex == 1,
                     onTap: () => onTap(1),
                   ),
                   _NavItem(
                     icon: Icons.person_outline,
                     activeIcon: Icons.person,
-                    label: 'Profile',
+                    label: l10n.navigationProfile,
                     isActive: currentIndex == 2,
                     onTap: () => onTap(2),
                   ),

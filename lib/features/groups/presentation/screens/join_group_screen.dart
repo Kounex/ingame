@@ -7,6 +7,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/group_model.dart';
@@ -46,7 +47,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: 'Join Group',
+          title: context.l10n.joinGroupTitle,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
@@ -75,8 +76,8 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    const Text(
-                      'You\'ve been invited!',
+                    Text(
+                      context.l10n.joinGroupInvitedTitle,
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 20,
@@ -86,8 +87,10 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       _groupPreview == null
-                          ? 'Tap below to join this group'
-                          : 'Join ${_groupPreview!.name}',
+                          ? context.l10n.joinGroupSubtitle
+                          : context.l10n.joinGroupSubtitleNamed(
+                              _groupPreview!.name,
+                            ),
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -134,7 +137,9 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                         children: [
                           _InfoPill(
                             icon: Icons.people_outline,
-                            label: '${_groupPreview!.memberCount} members',
+                            label: context.l10n.joinGroupMembers(
+                              _groupPreview!.memberCount,
+                            ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           _InfoPill(
@@ -142,8 +147,8 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                                 ? Icons.open_in_new
                                 : Icons.approval_outlined,
                             label: _groupPreview!.joinMode == 'open'
-                                ? 'Open join'
-                                : 'Approval required',
+                                ? context.l10n.joinGroupOpenJoin
+                                : context.l10n.joinGroupApprovalRequired,
                           ),
                         ],
                       ),
@@ -189,7 +194,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                 child: GlassButton(
                   onPressed: _isJoining ? null : _joinGroup,
                   isLoading: _isJoining,
-                  child: const Text('Join Group'),
+                  child: Text(context.l10n.joinGroupButton),
                 ),
               ),
               const Spacer(flex: 2),

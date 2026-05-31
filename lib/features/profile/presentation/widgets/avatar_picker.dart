@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/tappable.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -22,7 +23,7 @@ class AvatarPicker extends StatelessWidget {
     return Tappable(
       onTap: onTap ??
           () {
-            AppToast.info(context, 'Avatar upload coming soon');
+            AppToast.info(context, context.l10n.avatarUploadSoon);
           },
       child: Stack(
         children: [
