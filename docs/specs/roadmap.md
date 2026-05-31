@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.9"
+version: "1.10"
 status: active
 last_updated: "2026-05-31"
 ---
@@ -68,6 +68,7 @@ graph LR
 - User profiles with gaming hours (intelligent schedule display), bio, avatar
 - Groups with invite codes, discoverable directory, join requests with admin approval
 - First-time user onboarding wizard (3-step)
+- English and German localization foundation across the app shell and main user-facing flows
 - Hybrid persistent navigation: sidebar/bottom nav stays visible during browsing; focused flows (auth, onboarding) hide nav
 - Reusable `InGameLogo` brand widget with gradient styling
 - Platform-authentic social login buttons (Steam brand palette, Apple HIG)
@@ -75,7 +76,7 @@ graph LR
 - Helm chart + Kustomize overlays for OpenShift deployment
 - 34 backend tests (auth, users, groups, WebSocket)
 
-**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.21)
+**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.22)
 
 ---
 
@@ -188,6 +189,8 @@ These patterns and practices apply across all sub-projects:
 
 **Design system:** All UI follows the glassmorphism design system defined in SP1 -- dark gradients, translucent glass surfaces, electric blue primary accent. Components: `GlassCard`, `GlassButton`, `GlassInput`, `GlassAppBar`, `AdaptiveShell`, `StatusIndicator`. New sub-projects extend but don't replace this system.
 
+**Localization:** User-facing Flutter copy is localized via Flutter's official `flutter_localizations + intl + gen_l10n` stack. English and German ARB catalogs live under `lib/l10n/`, widgets should use `context.l10n`, and non-widget helpers should use the locale-aware fallback accessor rather than inline English strings.
+
 **Testing strategy:** Each sub-project adds tests covering its scope. Backend uses pytest + httpx AsyncClient + SQLite test DB. Flutter uses Riverpod test utilities for providers and widget tests. CI runs all tests on PR.
 
 **Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo.
@@ -210,3 +213,4 @@ These patterns and practices apply across all sub-projects:
 | 2026-05-31 | Web deployment surfaces | Added a dedicated web runtime to the deployment shape so Compose and OpenShift can serve the Flutter web app plus `/.well-known/*` and later consume separately built GHCR images |
 | 2026-05-31 | Release image workflows | Standardized on `pubspec.yaml` as the stack version source and added a release-prep-on-dev plus tag-publish-on-main workflow for GHCR images |
 | 2026-05-31 | Split Helm charts | Separated the backend and web deployment charts so `ingame-api` and `ingame-web` each own their own runtime manifests |
+| 2026-05-31 | SP1 localization foundation | Added English/German localization infrastructure, migrated high-traffic UI copy, and documented the active localization rule for future work |

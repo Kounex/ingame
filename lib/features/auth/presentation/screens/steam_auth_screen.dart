@@ -8,6 +8,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/tappable.dart';
 import '../../data/oauth_launcher.dart';
 import '../../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
@@ -135,17 +136,28 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
             child: Text(context.l10n.steamAuthTryAgain),
           ),
           const SizedBox(height: AppSpacing.sm),
-          GlassButton(
-            onPressed: () => context.go(
-              Uri(
-                path: RoutePaths.login,
-                queryParameters: widget.redirectTo == null
-                    ? null
-                    : {'from': widget.redirectTo!},
-              ).toString(),
-            ),
-            variant: GlassButtonVariant.ghost,
-            child: Text(context.l10n.steamAuthBackToLogin),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Tappable(
+                onTap: () => context.go(
+                  Uri(
+                    path: RoutePaths.login,
+                    queryParameters: widget.redirectTo == null
+                        ? null
+                        : {'from': widget.redirectTo!},
+                  ).toString(),
+                ),
+                child: Text(
+                  context.l10n.steamAuthBackToLogin,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

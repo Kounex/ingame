@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "2.21"
+version: "2.22"
 status: complete
 last_updated: "2026-05-31"
 sub_project: 1
@@ -39,6 +39,7 @@ This spec covers **Sub-Project 1: Core Platform** -- the foundational layer that
 - **sign_in_with_apple** -- Apple Sign-In (iOS/macOS native, web JS-based)
 - **dio** -- HTTP client (used by generated API code)
 - **cue** -- physics-first animation library for future transitions, motion systems, and reusable animation scenes
+- **flutter_localizations + intl + gen_l10n** -- official Flutter localization stack with generated `AppLocalizations` and English/German ARB catalogs
 
 ### Backend
 - **FastAPI (Python)** -- async REST API + WebSocket server
@@ -250,6 +251,8 @@ lib/
   app.dart
 
   core/
+    localization/
+      locale_controller.dart         # Persisted locale preference + app localization access
     theme/
       app_theme.dart
       glass_components.dart          # GlassCard (with animate/animationDelay), GlassButton, GlassInput, etc.
@@ -273,6 +276,11 @@ lib/
   generated/                         # Auto-generated from OpenAPI spec
     api/
     models/
+
+  l10n/
+    app_en.arb
+    app_de.arb
+    app_localizations.dart
 
   features/
     auth/
@@ -361,6 +369,7 @@ lib/
 - Repositories in `data/` call the generated API client and map DTOs to freezed domain models
 - Domain models are freezed classes (immutable, copyWith, pattern matching)
 - `core/` is the shared foundation; `shared/` holds cross-feature widgets
+- User-facing Flutter copy is localized through generated `AppLocalizations`; widgets use `context.l10n`, while non-widget helpers (e.g. validators / API error mappers) use a locale-aware fallback accessor
 - Generated API code (`generated/`) is never manually edited
 
 ### API Contract Pipeline
@@ -459,6 +468,7 @@ backend/
 ### Interaction Conventions
 - **Pointer cursor**: All tappable elements show `SystemMouseCursors.click` on desktop/web hover. Use the `Tappable` widget (`shared/widgets/tappable.dart`) instead of raw `GestureDetector` — it wraps `MouseRegion` + `GestureDetector` with automatic cursor handling. Built into `GlassCard`, bottom nav items, and sidebar items via `Tappable`. `GlassButton` uses a raw `MouseRegion` since its inner `ElevatedButton`/`OutlinedButton`/`TextButton` handles its own taps. Hover-tracking widgets (e.g., social login buttons with animated hover states) use `Cue.onHover`, which provides the pointer cursor and motion trigger together. Enforced by `.cursor/rules/pointer-cursor.mdc`.
 - **Root-level overlays**: All `showModalBottomSheet` and `showDialog` calls inside shell routes must use `useRootNavigator: true` so they render above the persistent navigation bar/sidebar, not beneath it.
+- **Localized copy only**: New user-facing Flutter strings must be added through `lib/l10n/app_en.arb` and `lib/l10n/app_de.arb`, then referenced via generated localization accessors. This is enforced by `.cursor/rules/localize-user-facing-strings.mdc`.
 
 ### Animation Principles
 - **Page transitions**: fade+slide (300ms ease-in-out) via `fadeSlideTransition` on all detail/sub-routes within the shell and focused flows
@@ -547,7 +557,7 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 
 ### Flutter
 - **Unit tests**: repositories (mocked API client), providers (Riverpod test utilities), domain model serialization
-- **Widget tests**: individual screens with mocked providers, form validation
+- **Widget tests**: individual screens with mocked providers, form validation, and localization delegates enabled where migrated screens use `context.l10n`
 - **Integration tests**: critical flows (register -> create group -> invite) via `integration_test`
 
 ### Backend (34 tests passing)
@@ -652,3 +662,4 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-05-31 | Deployment | Added a dedicated web deployment surface for Compose and OpenShift | The Flutter web app and `/.well-known/*` verification files are now expected to ship from a separate web image/runtime so future GHCR-tagged backend/frontend images can be deployed independently |
 | 2026-05-31 | CI/CD Pipeline / Release Versioning | Added pubspec-driven release version contract and tag-triggered GHCR image publishing | `pubspec.yaml` is now the canonical stack release version, release prep aligns backend/Helm/deploy refs on `dev`, and release tags on `main` publish images from an already-aligned commit |
 | 2026-05-31 | Deployment / Helm | Split the deployment charts into `ingame-api` and `ingame-web` | The API and web runtimes now have separate Helm ownership boundaries instead of one backend-branded chart containing both |
+| 2026-05-31 | Flutter App Architecture / UX | Added official English/German localization foundation | Core app shell, validators, API errors, and high-traffic auth/onboarding/group/profile flows now use generated `AppLocalizations` instead of inline English copy |

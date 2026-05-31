@@ -5,6 +5,7 @@ InGame is a social gaming coordination app for finding time to play with friends
 ## What ships today
 
 - Email/password, Steam, and Apple authentication
+- English and German localization via Flutter `gen_l10n`
 - First-time onboarding and user profiles
 - Groups, invite links, discoverable groups, and join requests
 - Real-time transport foundations for presence and coordination
@@ -28,6 +29,7 @@ InGame is a social gaming coordination app for finding time to play with friends
 ## Tech stack
 
 - Flutter 3.44 / Dart 3.12
+- `flutter_localizations` + `intl` + `gen_l10n` ARB generation
 - FastAPI + SQLAlchemy + PostgreSQL
 - Redis for real-time state and fan-out
 - Docker Compose for local containers
@@ -193,6 +195,7 @@ Native invite-link validation is only complete once the Android release certific
 Useful project-local agent assets:
 
 - `.agents/skills/release-prep/SKILL.md`
+- `.cursor/rules/localize-user-facing-strings.mdc`
 - `.cursor/rules/release-versioning.mdc`
 - `.cursor/rules/ghcr-image-conventions.mdc`
 - `.cursor/rules/web-deployment-runtime.mdc`
