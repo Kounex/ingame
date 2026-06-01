@@ -13,7 +13,7 @@ void main() {
     Intl.defaultLocale = null;
   });
 
-  DioException _dio({
+  DioException dioException({
     required int statusCode,
     Object? data,
     DioExceptionType type = DioExceptionType.badResponse,
@@ -32,7 +32,7 @@ void main() {
 
   test('maps backend error codes to localized failure messages', () {
     final failure = ApiError.toFailure(
-      _dio(
+      dioException(
         statusCode: 401,
         data: {
           'detail': 'Invalid email or password',
@@ -49,7 +49,7 @@ void main() {
 
   test('falls back to backend detail when error code is unknown', () {
     final failure = ApiError.toFailure(
-      _dio(
+      dioException(
         statusCode: 409,
         data: {
           'detail': 'Custom server detail',
