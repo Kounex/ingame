@@ -1,0 +1,12 @@
+---
+description: Focus active product work on iOS, Android, and Web
+alwaysApply: true
+---
+
+# Active Platform Scope
+
+- Treat `iOS`, `Android`, and `Web` as the active in-scope product platforms for current implementation, QA, release, and debugging work.
+- Do not proactively spend time on `macOS`, `Windows`, `Linux`, or desktop-specific behavior unless the user explicitly asks for it.
+- When platform trade-offs come up, optimize first for mobile and web behavior, tooling, and UX.
+- If a bug appears only on an out-of-scope desktop platform, note it briefly and move on unless the user wants it investigated.
+- This scope is temporary and may change later, so keep decisions and docs easy to update.

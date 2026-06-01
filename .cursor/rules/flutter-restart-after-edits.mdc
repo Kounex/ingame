@@ -1,0 +1,12 @@
+---
+description: Restart the active Flutter app after edits
+alwaysApply: true
+---
+
+# Flutter Restart After Edits
+
+- After editing Flutter app code in this repo, check whether an in-scope Flutter run is already active for `web`, `iOS`, or `Android`.
+- If an active in-scope Flutter run exists, kill the active run process and start a fresh run of that same platform before handing work back so the latest changes are ready to verify.
+- Do not prefer hot restart or hot reload for this rule. Use a clean relaunch by default unless the user explicitly asks for a hot restart instead.
+- Treat `web`, `iOS`, and `Android` as the only target platforms for this restart behavior unless the user explicitly says otherwise.
+- Mention briefly which platform was restarted or if no active in-scope Flutter run was found.

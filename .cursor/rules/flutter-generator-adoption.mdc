@@ -1,0 +1,22 @@
+---
+description: Current stance on Riverpod and GoRouter code generators
+alwaysApply: true
+---
+
+# Flutter Generator Adoption
+
+- Keep `Freezed` and `json_serializable` for data models and typed unions.
+- Keep Riverpod providers handwritten for now; do not reintroduce `riverpod_generator` unless the codebase is intentionally migrating to annotation-driven providers at scale.
+- Keep `GoRouter` route declarations handwritten for now; do not add `go_router_builder` unless typed route params/navigation calls become a recurring source of bugs or maintenance pain.
+
+## Why
+
+- Handwritten Riverpod providers in this repo are already explicit, easy to grep, and easy to override in tests.
+- The router contains important centralized redirect and shell behavior; splitting that into generated route data would add indirection without removing the hard parts.
+- Unused generators previously increased `build_runner` complexity and contributed to toolchain instability.
+
+## Revisit When
+
+- Provider boilerplate becomes repetitive across many features.
+- Route-param mistakes or stringly-typed navigation become a frequent problem.
+- The codegen toolchain is stable and the team wants to standardize on annotation-based APIs deliberately rather than incrementally.
