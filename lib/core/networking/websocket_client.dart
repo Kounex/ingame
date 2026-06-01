@@ -73,6 +73,20 @@ class WebSocketClient {
     }
   }
 
+  void send(Map<String, dynamic> message) {
+    final channel = _channel;
+    if (channel == null) return;
+    channel.sink.add(jsonEncode(message));
+  }
+
+  void sendPresenceLifecycle(String state) {
+    send({'type': 'presence_lifecycle', 'state': state});
+  }
+
+  void sendReadyToggle({required String groupId, required bool ready}) {
+    send({'type': 'ready_toggle', 'group_id': groupId, 'ready': ready});
+  }
+
   void _scheduleReconnect() {
     if (_disposed || !_shouldReconnect) return;
     _reconnectTimer?.cancel();

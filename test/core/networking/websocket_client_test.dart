@@ -41,12 +41,15 @@ class _FakeWebSocketChannel implements WebSocketChannel {
 
 class _FakeWebSocketSink implements WebSocketSink {
   void Function()? onClose;
+  void Function(String message)? onAdd;
 
   @override
   Future<dynamic> get done async => null;
 
   @override
-  void add(message) {}
+  void add(message) {
+    onAdd?.call(message as String);
+  }
 
   @override
   void addError(Object error, [StackTrace? stackTrace]) {}
@@ -87,6 +90,25 @@ void main() {
     expect(requestedUris.length, 2);
     expect(requestedUris.last.queryParameters['token'], 'token-2');
 
+    client.dispose();
+  });
+
+  test('sendReadyToggle encodes ready_toggle command', () async {
+    final sinkMessages = <String>[];
+    final client = WebSocketClient(
+      baseUrl: 'ws://example.test/api/v1/ws',
+      getAccessToken: () async => 'token',
+      createChannel: (uri) {
+        final channel = _FakeWebSocketChannel();
+        channel._sink.onAdd = sinkMessages.add;
+        return channel;
+      },
+    );
+
+    await client.connect();
+    client.sendReadyToggle(groupId: 'group-1', ready: true);
+
+    expect(sinkMessages.single, '{"type":"ready_toggle","group_id":"group-1","ready":true}');
     client.dispose();
   });
 }

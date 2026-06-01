@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.15"
+version: "1.16"
 status: active
 last_updated: "2026-06-01"
 ---
@@ -48,7 +48,7 @@ graph LR
 | # | Sub-Project | Status | Spec | Depends On |
 |---|-------------|--------|------|------------|
 | 1 | Core Platform | Complete | [spec](2026-05-30-core-platform-design.md) | -- |
-| 2 | Real-Time Coordination | Planned | [spec](2026-05-30-real-time-coordination-design.md) | SP1 |
+| 2 | Real-Time Coordination | In Progress | [spec](2026-05-30-real-time-coordination-design.md) | SP1 |
 | 3 | Game Matching | Planned | -- | SP1, SP2 |
 | 4 | Settings & Notifications | Planned | -- | SP2 |
 | 5 | Open Matching (V2) | Planned | -- | SP3, SP4 |
@@ -87,9 +87,12 @@ graph LR
 
 **Goal:** Let users signal "ready to game" and coordinate gaming sessions with their groups in real time.
 
-**Key features:**
-- **Status broadcasting** -- users set their status to ready/online/away/offline; status is broadcast to all group members via WebSocket in real time
-- **Group presence** -- group detail screen shows who's currently online and who's ready to play, with live updates
+**Phase 1 (in progress): presence-first kickoff**
+- **Derived connection presence** -- online/offline from WebSocket lifecycle; away from app background/inactive
+- **Group-scoped ready** -- user-controlled ready toggle per group with 8-hour fallback expiry
+- **App-wide live member status** -- member surfaces consume one presence provider contract
+
+**Planned later in SP2:**
 - **Session scheduling** -- propose a future time slot for a gaming session; group members RSVP (in/out/maybe); reminders when session is approaching
 - **Activity feed** -- lightweight event stream in each group (e.g., "Alex is ready to game", "Session proposed for tonight 8 PM")
 
@@ -105,7 +108,7 @@ graph LR
 
 **Estimated effort:** Medium-large (core feature of the app, involves real-time infrastructure)
 
-**Spec:** [docs/specs/2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md) (v1.0)
+**Spec:** [docs/specs/2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md) (v1.1)
 
 ---
 
@@ -222,3 +225,4 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-01 | SP1 structured error handling | Added the backend error-code contract plus locale-reactive Flutter failure handling to the maintained SP1 delivery summary and API contract notes |
 | 2026-06-01 | SP1 release sign-off (`v0.2.5`) | Declared SP1 complete for shipping at `v0.2.5` after structured error handling, locale-aware form revalidation, and CI stabilization landed on `dev` |
 | 2026-06-01 | Release versioning | Retargeted unpublished release metadata from `v0.3.0` to `v0.2.5` | Keeps roadmap release references aligned with the chosen patch-line cut before publish |
+| 2026-06-01 | SP2 phase-1 kickoff | Marked SP2 in progress and documented the presence-first slice: derived connection presence, group-scoped ready with 8-hour expiry, lifecycle-driven away, and app-wide member rendering | Approved SP2 presence-first kickoff plan |

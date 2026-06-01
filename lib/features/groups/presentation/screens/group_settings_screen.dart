@@ -8,9 +8,12 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/avatar_with_status.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/status_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/membership_model.dart';
@@ -392,6 +395,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                               height: 1,
                             ),
                           _MemberSettingsRow(
+                            groupId: widget.groupId,
                             member: detail.members[i],
                             onRemove: detail.members[i].role != 'owner'
                                 ? () => _removeMember(
@@ -644,19 +648,27 @@ class _SettingsRadio extends StatelessWidget {
   }
 }
 
-class _MemberSettingsRow extends StatelessWidget {
+class _MemberSettingsRow extends ConsumerWidget {
   const _MemberSettingsRow({
+    required this.groupId,
     required this.member,
     this.onRemove,
   });
 
+  final String groupId;
   final dynamic member;
   final VoidCallback? onRemove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final role = member.role as String;
     final isOwner = role.toLowerCase() == 'owner';
+    final userId = member.userId as String;
+    final displayName = member.displayName as String;
+    final avatarUrl = member.avatarUrl as String?;
+    final status = ref.watch(
+      groupMemberStatusProvider((groupId: groupId, userId: userId)),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -665,9 +677,10 @@ class _MemberSettingsRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          UserAvatar(
-            imageUrl: member.avatarUrl as String?,
-            displayName: member.displayName as String,
+          AvatarWithStatus(
+            imageUrl: avatarUrl,
+            displayName: displayName,
+            status: status,
             size: 36,
           ),
           const SizedBox(width: AppSpacing.md),
@@ -676,10 +689,19 @@ class _MemberSettingsRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  member.displayName as String,
+                  displayName,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _statusLabel(context, status),
+                  style: TextStyle(
+                    color: _statusColor(status),
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -709,6 +731,25 @@ class _MemberSettingsRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _statusLabel(BuildContext context, UserStatus status) {
+    final l10n = context.l10n;
+    return switch (status) {
+      UserStatus.ready => l10n.memberStatusReady,
+      UserStatus.online => l10n.memberStatusOnline,
+      UserStatus.away => l10n.memberStatusAway,
+      UserStatus.offline => l10n.memberStatusOffline,
+    };
+  }
+
+  Color _statusColor(UserStatus status) {
+    return switch (status) {
+      UserStatus.ready => AppColors.success,
+      UserStatus.online => AppColors.primary,
+      UserStatus.away => AppColors.warning,
+      UserStatus.offline => AppColors.textTertiary,
+    };
   }
 
   String _roleLabel(String role) {

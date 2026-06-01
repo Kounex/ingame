@@ -400,6 +400,8 @@
   "memberStatusOnline": "Online",
   "memberStatusAway": "Away",
   "memberStatusOffline": "Offline",
+  "groupDetailReadyToggleLabel": "Ready to play",
+  "groupDetailReadyToggleHint": "Let your group know you're available to game",
   "languageSwitcherLabel": "Language",
   "languageEnglish": "English",
   "languageGerman": "Deutsch"

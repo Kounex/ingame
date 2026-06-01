@@ -8,6 +8,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -163,6 +164,8 @@ class GroupDetailScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _ReadyToggleCard(groupId: groupId),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     l10n.groupDetailSectionMembers,
@@ -327,6 +330,58 @@ class _MenuRow extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ReadyToggleCard extends ConsumerWidget {
+  const _ReadyToggleCard({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final isReady = ref.watch(currentUserReadyProvider(groupId));
+
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.groupDetailReadyToggleLabel,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.groupDetailReadyToggleHint,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: isReady,
+            activeThumbColor: AppColors.success,
+            onChanged: (ready) {
+              ref
+                  .read(presenceNotifierProvider.notifier)
+                  .toggleReady(groupId: groupId, ready: ready);
+            },
+          ),
+        ],
+      ),
     );
   }
 }

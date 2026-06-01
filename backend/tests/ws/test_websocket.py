@@ -1,3 +1,6 @@
+import asyncio
+import time
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.testclient import TestClient
@@ -7,6 +10,7 @@ from app.auth.jwt import create_access_token
 from app.db.models.group import Group, GroupMembership
 from app.db.models.user import User
 from app.main import app
+from app.redis import status_store
 
 
 async def _create_user(
@@ -83,12 +87,15 @@ async def test_websocket_connect_with_valid_token_receives_presence_snapshot(
     assert event["type"] == "presence_snapshot"
     assert len(event["groups"]) == 1
     assert event["groups"][0]["group_id"] == str(group.id)
-    assert str(user.id) in event["groups"][0]["online_user_ids"]
-    assert event["groups"][0]["statuses"][0]["state"] == "online"
+    members = event["groups"][0]["members"]
+    assert len(members) == 1
+    assert members[0]["user_id"] == str(user.id)
+    assert members[0]["connection"] == "online"
+    assert members[0]["ready"] is False
 
 
 @pytest.mark.asyncio
-async def test_status_change_is_broadcast_to_other_group_members(
+async def test_ready_toggle_is_broadcast_to_other_group_members(
     db_session: AsyncSession,
 ):
     owner, member, group = await _create_group_with_members(db_session)
@@ -105,21 +112,257 @@ async def test_status_change_is_broadcast_to_other_group_members(
                 assert member_snapshot["type"] == "presence_snapshot"
 
                 owner_online_event = owner_ws.receive_json()
-                assert owner_online_event == {
-                    "type": "user_online",
-                    "timestamp": owner_online_event["timestamp"],
-                    "group_id": str(group.id),
-                    "user_id": str(member.id),
-                    "display_name": "Member",
-                }
+                assert owner_online_event["type"] == "user_online"
+                assert owner_online_event["group_id"] == str(group.id)
+                assert owner_online_event["user_id"] == str(member.id)
 
                 member_ws.send_json(
-                    {"type": "status_change", "state": "ready", "game": "CS2"}
+                    {
+                        "type": "ready_toggle",
+                        "group_id": str(group.id),
+                        "ready": True,
+                    }
                 )
-                status_event = owner_ws.receive_json()
+                ready_event = owner_ws.receive_json()
 
-    assert status_event["type"] == "status_changed"
-    assert status_event["group_id"] == str(group.id)
-    assert status_event["user_id"] == str(member.id)
-    assert status_event["state"] == "ready"
-    assert status_event["game"] == "CS2"
+    assert ready_event["type"] == "ready_changed"
+    assert ready_event["group_id"] == str(group.id)
+    assert ready_event["user_id"] == str(member.id)
+    assert ready_event["ready"] is True
+    assert ready_event["ready_since"] is not None
+    assert ready_event["ready_expires_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_presence_lifecycle_away_and_active_broadcast_connection_changed(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+
+    with TestClient(app) as tc:
+        with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+            owner_ws.receive_json()
+
+            with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                member_ws.receive_json()
+                owner_ws.receive_json()
+
+                member_ws.send_json({"type": "presence_lifecycle", "state": "away"})
+                away_event = owner_ws.receive_json()
+
+                member_ws.send_json({"type": "presence_lifecycle", "state": "active"})
+                active_event = owner_ws.receive_json()
+
+    assert away_event == {
+        "type": "connection_changed",
+        "timestamp": away_event["timestamp"],
+        "group_id": str(group.id),
+        "user_id": str(member.id),
+        "connection": "away",
+    }
+    assert active_event == {
+        "type": "connection_changed",
+        "timestamp": active_event["timestamp"],
+        "group_id": str(group.id),
+        "user_id": str(member.id),
+        "connection": "online",
+    }
+
+
+@pytest.mark.asyncio
+async def test_ready_toggle_off_clears_ready_state(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+
+    with TestClient(app) as tc:
+        with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+            owner_ws.receive_json()
+
+            with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                member_ws.receive_json()
+                owner_ws.receive_json()
+
+                member_ws.send_json(
+                    {
+                        "type": "ready_toggle",
+                        "group_id": str(group.id),
+                        "ready": True,
+                    }
+                )
+                owner_ws.receive_json()
+
+                member_ws.send_json(
+                    {
+                        "type": "ready_toggle",
+                        "group_id": str(group.id),
+                        "ready": False,
+                    }
+                )
+                cleared_event = owner_ws.receive_json()
+
+    assert cleared_event["type"] == "ready_changed"
+    assert cleared_event["ready"] is False
+    assert cleared_event.get("ready_since") is None
+    assert cleared_event.get("ready_expires_at") is None
+
+
+@pytest.mark.asyncio
+async def test_expired_ready_is_cleared_on_snapshot_and_broadcast(
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr(status_store, "READY_TTL_SECONDS", 1)
+
+    owner, member, group = await _create_group_with_members(db_session)
+    member_token = create_access_token(member.id)
+    owner_token = create_access_token(owner.id)
+
+    with TestClient(app) as tc:
+        with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+            member_ws.receive_json()
+            member_ws.send_json(
+                {
+                    "type": "ready_toggle",
+                    "group_id": str(group.id),
+                    "ready": True,
+                }
+            )
+
+        await asyncio.sleep(1.1)
+
+        with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+            owner_ws.receive_json()
+
+            with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                snapshot = member_ws.receive_json()
+                owner_events = [owner_ws.receive_json(), owner_ws.receive_json()]
+                expired_event = next(
+                    event
+                    for event in owner_events
+                    if event["type"] == "ready_changed"
+                )
+
+    member_entry = next(
+        m
+        for m in snapshot["groups"][0]["members"]
+        if m["user_id"] == str(member.id)
+    )
+    assert member_entry["ready"] is False
+    assert expired_event["type"] == "ready_changed"
+    assert expired_event["user_id"] == str(member.id)
+    assert expired_event["ready"] is False
+
+
+@pytest.mark.asyncio
+async def test_ready_persists_across_disconnect_until_cleared(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    member_token = create_access_token(member.id)
+
+    with TestClient(app) as tc:
+        with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+            member_ws.receive_json()
+            member_ws.send_json(
+                {
+                    "type": "ready_toggle",
+                    "group_id": str(group.id),
+                    "ready": True,
+                }
+            )
+
+        with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+            snapshot = member_ws.receive_json()
+
+    member_entry = next(
+        m
+        for m in snapshot["groups"][0]["members"]
+        if m["user_id"] == str(member.id)
+    )
+    assert member_entry["ready"] is True
+    assert member_entry["ready_expires_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_legacy_status_change_is_ignored(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+
+    with TestClient(app) as tc:
+        with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+            owner_ws.receive_json()
+
+            with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                member_ws.receive_json()
+                owner_ws.receive_json()
+                member_ws.send_json({"type": "status_change", "state": "ready"})
+
+    ready = await status_store.get_group_ready(str(group.id), str(member.id))
+    assert ready is None
+
+
+@pytest.mark.asyncio
+async def test_closing_one_of_two_connections_does_not_broadcast_user_offline(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+
+    with TestClient(app) as tc:
+        with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+            owner_ws.receive_json()
+
+            with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws_a:
+                member_ws_a.receive_json()
+                owner_ws.receive_json()
+
+                with tc.websocket_connect(
+                    f"/api/v1/ws?token={member_token}"
+                ) as member_ws_b:
+                    member_ws_b.receive_json()
+
+                    member_ws_a.close()
+
+                    member_ws_b.send_json(
+                        {"type": "presence_lifecycle", "state": "away"}
+                    )
+                    away_event = owner_ws.receive_json()
+
+    assert away_event["type"] == "connection_changed"
+    assert away_event["user_id"] == str(member.id)
+    assert away_event["connection"] == "away"
+
+
+@pytest.mark.asyncio
+async def test_closing_last_connection_broadcasts_user_offline(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+
+    with TestClient(app) as tc:
+        with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+            owner_ws.receive_json()
+
+            with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                member_ws.receive_json()
+                owner_ws.receive_json()
+
+            offline_event = owner_ws.receive_json()
+
+    assert offline_event == {
+        "type": "user_offline",
+        "timestamp": offline_event["timestamp"],
+        "group_id": str(group.id),
+        "user_id": str(member.id),
+    }

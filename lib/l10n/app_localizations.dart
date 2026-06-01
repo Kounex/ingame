@@ -1475,6 +1475,18 @@ abstract class AppLocalizations {
   /// **'Offline'**
   String get memberStatusOffline;
 
+  /// No description provided for @groupDetailReadyToggleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to play'**
+  String get groupDetailReadyToggleLabel;
+
+  /// No description provided for @groupDetailReadyToggleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Let your group know you\'re available to game'**
+  String get groupDetailReadyToggleHint;
+
   /// No description provided for @languageSwitcherLabel.
   ///
   /// In en, this message translates to:

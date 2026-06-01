@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination
-version: "1.0"
-status: planned
-last_updated: "2026-05-30"
+version: "1.1"
+status: in-progress
+last_updated: "2026-06-01"
 sub_project: 2
 ---
 
@@ -18,17 +18,43 @@ The goal of SP2 is to make coordination feel immediate: a user can mark themselv
 
 ---
 
+## Phase 1 Scope (Presence-First Kickoff)
+
+Phase 1 delivers **presence only**. Session scheduling, activity feed, and related REST endpoints remain planned but out of the first implementation slice.
+
+### Product Rules
+- Only **`ready`** is user-controlled.
+- **`online`**, **`offline`**, and **`away`** are **derived** states.
+- **`online` / `offline`** come from authenticated WebSocket connection lifecycle.
+- **`away`** is driven by app **background/inactive** lifecycle and returns to **`online`** on resume while the socket stays connected.
+- **`ready`** is **group-scoped**, not global.
+- **`ready`** persists until the user turns it off, with an automatic **8-hour fallback expiry** if they forget.
+- Presence renders **app-wide wherever group members are shown**, not only on group detail.
+
+### Display Priority
+When rendering a member's single status badge:
+1. `offline` if the user has no active WebSocket connection
+2. `away` if connected but the client reported background/inactive
+3. `ready` if the user is ready in that group and the ready expiry has not passed
+4. `online` otherwise
+
+---
+
 ## Scope
 
-### In Scope
+### In Scope (Phase 1)
 - authenticated WebSocket connection lifecycle
-- live presence and status broadcasting (`online`, `ready`, `away`, `offline`)
+- derived connection presence (`online`, `away`, `offline`)
+- group-scoped ready state with 8-hour fallback expiry
 - initial presence bootstrap when a client connects
 - Redis-backed pub/sub fan-out across multiple backend replicas
-- group activity events for status changes and session lifecycle
-- session scheduling data model and CRUD contract
 - Flutter realtime providers and presence UI integration
-- backend and frontend test coverage for realtime behavior
+- backend and frontend test coverage for phase-1 realtime behavior
+
+### Planned Later (Phase 2+)
+- group activity events for session lifecycle
+- session scheduling data model and CRUD contract
+- REST bootstrap endpoints for sessions/presence beyond WebSocket snapshots
 
 ### Out of Scope
 - push notifications (SP4)
@@ -62,7 +88,7 @@ flowchart TD
 - WebSocket is used for live fan-out and fast UI updates.
 - Redis pub/sub is mandatory for cross-instance fan-out in staging/prod.
 - PostgreSQL stores durable session/activity records; Redis stores ephemeral presence.
-- Flutter first hydrates from REST, then applies live updates from WebSocket.
+- Flutter hydrates from WebSocket snapshots, then applies live updates incrementally.
 
 ---
 
@@ -79,44 +105,83 @@ All server-to-client events use one envelope shape:
 
 ```json
 {
-  "type": "status_changed",
-  "timestamp": "2026-05-30T20:15:00Z",
+  "type": "ready_changed",
+  "timestamp": "2026-06-01T20:15:00Z",
   "group_id": "uuid-if-group-scoped",
-  "payload": {}
+  "user_id": "uuid",
+  "connection": "online",
+  "ready": true,
+  "ready_since": "1717268100",
+  "ready_expires_at": "1717296900"
 }
 ```
 
+Only fields relevant to the event type are populated. Group-scoped fan-out events include `group_id`.
+
 ### Naming Rules
-- client-to-server commands use imperative names, e.g. `status_change`, `session_propose`, `session_rsvp`
-- server-to-client events use past-tense names, e.g. `status_changed`, `session_proposed`, `session_rsvp_updated`
+- client-to-server commands use imperative names, e.g. `presence_lifecycle`, `ready_toggle`
+- server-to-client events use past-tense names, e.g. `ready_changed`, `connection_changed`, `user_online`
 - group-scoped fan-out events include `group_id`
 
 ---
 
 ## Presence Model
 
-### User Status Values
-- `online`
-- `ready`
-- `away`
-- `offline`
+### Derived Connection Presence
+- `online` -- authenticated WebSocket connected and client lifecycle is active
+- `away` -- authenticated WebSocket connected and client reported background/inactive
+- `offline` -- no active authenticated WebSocket connection
+
+Connection presence is **not** user-set directly in phase 1.
+
+### Group-Scoped Ready State
+- `ready` is stored per `(group_id, user_id)`
+- toggled explicitly by the user in group context
+- persists across disconnect until cleared manually or by the 8-hour fallback expiry
+- while a user is offline, other members still render them as `offline` even if ready metadata remains stored for reconnect
 
 ### Redis Structures
-- `user:{id}:status` -- hash: `{state, game, since}`
+- `user:{id}:connection` -- hash: `{state, since}` where `state` is `online` or `away`
 - `group:{id}:online` -- set of currently connected user IDs
+- `group:{id}:ready_users` -- set of user IDs currently marked ready in the group
+- `group:{id}:ready:{user_id}` -- ready metadata `{since, expires_at}` with Redis TTL aligned to the 8-hour fallback
 - `group:{id}:events` -- pub/sub channel for fan-out
+
+Expired ready keys are cleared lazily on read/snapshot and may also be swept periodically so connected clients receive `ready_changed` clear events.
 
 ### Bootstrap Strategy
 When a client connects:
 1. authenticate user
 2. load the user’s group memberships from PostgreSQL
-3. mark the user present in Redis group sets
+3. mark the user present in Redis group online sets
 4. send an initial `presence_snapshot` event to the connecting client for all relevant groups
 5. broadcast `user_online` to other connected members
 
 The snapshot payload contains, per group:
-- online member IDs
-- each known user status (`state`, `game`, `since`) from Redis
+- connected members with derived `connection`
+- group-scoped `ready`, `ready_since`, and `ready_expires_at` when applicable
+
+Example snapshot fragment:
+
+```json
+{
+  "type": "presence_snapshot",
+  "groups": [
+    {
+      "group_id": "uuid",
+      "members": [
+        {
+          "user_id": "uuid",
+          "connection": "online",
+          "ready": true,
+          "ready_since": "1717268100",
+          "ready_expires_at": "1717296900"
+        }
+      ]
+    }
+  ]
+}
+```
 
 ### Multi-Replica Rule
 - all broadcast-worthy events must be published to Redis
@@ -125,7 +190,24 @@ The snapshot payload contains, per group:
 
 ---
 
-## Session Scheduling
+## WebSocket Commands (Phase 1)
+
+### Client -> Server
+- `presence_lifecycle` -- `{ "type": "presence_lifecycle", "state": "active" | "away" }`
+- `ready_toggle` -- `{ "type": "ready_toggle", "group_id": "uuid", "ready": true | false }`
+
+The legacy `status_change` command is not part of phase 1 and must not be used for derived presence.
+
+### Server -> Client
+- `presence_snapshot`
+- `user_online`
+- `user_offline`
+- `connection_changed`
+- `ready_changed`
+
+---
+
+## Session Scheduling (Planned Phase 2+)
 
 ### Durable PostgreSQL Model
 
@@ -153,24 +235,19 @@ The snapshot payload contains, per group:
 | updated_at | TIMESTAMP | Auto-updated |
 | Unique constraint | | `(session_id, user_id)` |
 
-### REST Contract
+### REST Contract (Planned)
 - `GET /api/v1/groups/{group_id}/presence`
 - `GET /api/v1/groups/{group_id}/sessions`
 - `POST /api/v1/groups/{group_id}/sessions`
 - `PATCH /api/v1/groups/{group_id}/sessions/{session_id}`
 - `POST /api/v1/groups/{group_id}/sessions/{session_id}/rsvp`
 
-### WebSocket Commands
-- `status_change`
+### WebSocket Commands (Planned)
 - `session_propose`
 - `session_update`
 - `session_rsvp`
 
-### WebSocket Events
-- `presence_snapshot`
-- `user_online`
-- `user_offline`
-- `status_changed`
+### WebSocket Events (Planned)
 - `session_proposed`
 - `session_updated`
 - `session_rsvp_updated`
@@ -181,18 +258,15 @@ The snapshot payload contains, per group:
 
 ### Providers
 - `websocketConnectionProvider` owns authenticated socket lifecycle
-- `presenceProvider` stores per-group online/status state derived from snapshot + events
-- `groupSessionsProvider(groupId)` stores session lists and RSVP state
-- REST bootstrap providers remain responsible for initial group/member/session fetches
+- `presenceNotifierProvider` stores per-group member presence derived from snapshot + events, including expiry-aware ready state
+- `presenceLifecycleProvider` sends lifecycle-derived away/active transitions
+- REST bootstrap providers remain responsible for initial group/member fetches
 
 ### UI Integration
 - `StatusIndicator` remains the canonical readiness signal
 - group member rows use a single live-status composition built from `UserAvatar` + `StatusIndicator`
-- group detail screens show:
-  - who is online
-  - who is ready
-  - active/proposed sessions
-  - recent activity events where applicable
+- group detail screens expose a group-scoped ready toggle for the current user
+- member surfaces app-wide consume `groupMemberStatusProvider` rather than computing status locally
 
 ### Configuration
 - REST and WebSocket base URLs must be environment-configurable
@@ -203,18 +277,17 @@ The snapshot payload contains, per group:
 
 ## Backend Responsibilities
 
-### REST
-- validate durable writes
-- return bootstrap snapshots for sessions and group context
-- expose presence bootstrap endpoint for current group state
+### REST (Phase 1)
+- no new session endpoints in phase 1
+- existing group/member REST endpoints continue to bootstrap static group context
 
 ### WebSocket
 - authenticate and attach user to group scopes
-- accept client commands
-- persist ephemeral status updates to Redis
-- persist durable session mutations to PostgreSQL
+- accept lifecycle and ready-toggle commands
+- persist derived connection presence and group-scoped ready state to Redis
 - publish fan-out events to Redis channels
 - broadcast locally to sockets connected on the same replica
+- enforce ready expiry lazily on read/snapshot and via lightweight sweeps
 
 ---
 
@@ -224,15 +297,16 @@ The snapshot payload contains, per group:
 - WebSocket auth tests: missing, invalid, valid token
 - WebSocket lifecycle tests: connect, disconnect, reconnect
 - Redis-backed fan-out tests: event published once and delivered across subscriber path
-- presence snapshot tests: joining client receives expected bootstrap payload
-- session REST tests: create/update/list/RSVP
-- multi-user integration tests: one user changes status, another receives update
+- presence snapshot tests: joining client receives expected bootstrap payload with connection + ready metadata
+- ready toggle tests: group-scoped ready on/off fan-out
+- lifecycle tests: background/resume transitions emit `connection_changed`
+- ready expiry tests: stale ready clears and fan-out reflects the cleared state
 
 ### Flutter
-- `WebSocketClient` tests: connect, decode, disconnect, reconnect with fresh token
-- provider tests: auth transition triggers connect/disconnect, event stream updates presence state
+- `WebSocketClient` tests: connect, decode, disconnect, reconnect with fresh token, command send helpers
+- provider tests: auth transition triggers connect/disconnect, snapshot merge, ready updates, ready expiry, lifecycle-derived away handling
 - widget tests: member list/status rendering from live provider state
-- integration tests: login -> open group -> receive live status change
+- integration tests: login -> open group -> receive live ready change
 
 ### CI Requirements
 - `flutter analyze`
@@ -240,7 +314,7 @@ The snapshot payload contains, per group:
 - backend test suite
 - spec freshness check
 - API/spec validation
-- realtime tests must run in CI before SP2 work is considered complete
+- realtime tests must run in CI before SP2 phase 1 is considered complete
 
 ---
 
@@ -257,3 +331,4 @@ The snapshot payload contains, per group:
 | Date | Section | Change | Reason |
 |------|---------|--------|--------|
 | 2026-05-30 | Initial spec | Created SP2 Real-Time Coordination spec with WS endpoint, event model, Redis/pubsub rules, session data model, Flutter architecture, and test strategy | Pre-SP2 stabilization requires a written realtime contract before transport and fan-out fixes |
+| 2026-06-01 | Phase 1 presence-first | Split phase-1 presence-only scope from later session/activity work; defined derived connection presence, group-scoped ready with 8-hour expiry, lifecycle-driven away, new WS commands/events, and app-wide presence rendering rules | Approved SP2 presence-first kickoff plan |

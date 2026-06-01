@@ -6,9 +6,14 @@ from app.auth.jwt import decode_token
 from app.db.database import async_session_factory
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.user_repo import UserRepository
-from app.redis.pubsub import publish_event
-from app.redis.status_store import set_user_status, clear_user_status
-from app.ws.events import StatusChangedEvent
+from app.redis.status_store import (
+    clear_group_ready,
+    clear_user_connection,
+    set_group_ready,
+    set_user_connection,
+    CONNECTION_AWAY,
+    CONNECTION_ONLINE,
+)
 from app.ws.manager import manager
 
 
@@ -44,43 +49,80 @@ async def handle_connect(websocket: WebSocket, token: str) -> uuid.UUID | None:
         return None
 
     user_id, display_name, group_ids = result
-    await set_user_status(str(user_id), "online")
-    await manager.connect(websocket, user_id, group_ids)
-    await manager.send_presence_snapshot(user_id, group_ids)
-    await manager.publish_user_online(user_id, display_name, group_ids)
+    await set_user_connection(str(user_id), CONNECTION_ONLINE)
+    is_first_connection = await manager.connect(websocket, user_id, group_ids)
+    await manager.sweep_all_groups(group_ids)
+    await manager.send_presence_snapshot(user_id, group_ids, websocket)
+    if is_first_connection:
+        await manager.publish_user_online(user_id, display_name, group_ids)
     return user_id
 
 
-async def handle_disconnect(user_id: uuid.UUID) -> None:
+async def handle_disconnect(user_id: uuid.UUID, websocket: WebSocket) -> None:
     group_ids = list(manager._user_groups.get(user_id, []))
-    await manager.disconnect(user_id)
-    await clear_user_status(str(user_id))
-    await manager.publish_user_offline(user_id, group_ids)
+    was_last_connection = await manager.disconnect(user_id, websocket)
+    if was_last_connection:
+        await clear_user_connection(str(user_id))
+        await manager.publish_user_offline(user_id, group_ids)
+
+
+async def _publish_ready_changed(
+    user_id: uuid.UUID,
+    group_id: str,
+    *,
+    ready: bool,
+    ready_since: str | None = None,
+    ready_expires_at: str | None = None,
+) -> None:
+    await manager.publish_ready_changed(
+        user_id,
+        group_id,
+        ready=ready,
+        ready_since=ready_since,
+        ready_expires_at=ready_expires_at,
+    )
 
 
 async def handle_message(user_id: uuid.UUID, data: dict) -> None:
     """Route incoming WebSocket messages to appropriate handlers."""
     msg_type = data.get("type")
+    group_ids = manager._user_groups.get(user_id, [])
 
-    if msg_type == "status_change":
-        valid_states = {"online", "ready", "away", "offline"}
-        state = data.get("state", "online")
-        if state not in valid_states:
+    if msg_type == "presence_lifecycle":
+        state = data.get("state")
+        if state == "away":
+            connection = CONNECTION_AWAY
+        elif state == "active":
+            connection = CONNECTION_ONLINE
+        else:
             return
-        game = data.get("game")
-        if game is not None and not isinstance(game, str):
-            return
-        await set_user_status(str(user_id), state, game)
 
-        group_ids = manager._user_groups.get(user_id, [])
+        await set_user_connection(str(user_id), connection)
         for group_id in group_ids:
-            event = StatusChangedEvent(
-                user_id=user_id,
-                state=state,
-                game=game,
-                group_id=uuid.UUID(group_id),
+            await manager.publish_connection_changed(user_id, group_id, connection)
+        return
+
+    if msg_type == "ready_toggle":
+        group_id = data.get("group_id")
+        ready = data.get("ready")
+        if not isinstance(group_id, str) or group_id not in group_ids:
+            return
+        if not isinstance(ready, bool):
+            return
+
+        if ready:
+            payload = await set_group_ready(group_id, str(user_id))
+            await _publish_ready_changed(
+                user_id,
+                group_id,
+                ready=True,
+                ready_since=payload["since"],
+                ready_expires_at=payload["expires_at"],
             )
-            await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+        else:
+            await clear_group_ready(group_id, str(user_id))
+            await _publish_ready_changed(user_id, group_id, ready=False)
+        return
 
 
 async def websocket_endpoint(websocket: WebSocket, token: str | None = None):
@@ -98,6 +140,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str | None = None):
             data = await websocket.receive_json()
             await handle_message(user_id, data)
     except WebSocketDisconnect:
-        await handle_disconnect(user_id)
+        await handle_disconnect(user_id, websocket)
     except Exception:
-        await handle_disconnect(user_id)
+        await handle_disconnect(user_id, websocket)

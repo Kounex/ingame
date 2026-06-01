@@ -9,7 +9,8 @@ class EventType(str, Enum):
     PRESENCE_SNAPSHOT = "presence_snapshot"
     USER_ONLINE = "user_online"
     USER_OFFLINE = "user_offline"
-    STATUS_CHANGED = "status_changed"
+    CONNECTION_CHANGED = "connection_changed"
+    READY_CHANGED = "ready_changed"
 
 
 class BaseEvent(BaseModel):
@@ -18,17 +19,17 @@ class BaseEvent(BaseModel):
     group_id: uuid.UUID | None = None
 
 
-class UserPresence(BaseModel):
+class MemberPresence(BaseModel):
     user_id: uuid.UUID
-    state: str
-    game: str | None = None
-    since: str | None = None
+    connection: str
+    ready: bool = False
+    ready_since: str | None = None
+    ready_expires_at: str | None = None
 
 
 class GroupPresenceSnapshot(BaseModel):
     group_id: uuid.UUID
-    online_user_ids: list[uuid.UUID]
-    statuses: list[UserPresence]
+    members: list[MemberPresence]
 
 
 class PresenceSnapshotEvent(BaseEvent):
@@ -40,6 +41,7 @@ class UserOnlineEvent(BaseEvent):
     type: EventType = EventType.USER_ONLINE
     user_id: uuid.UUID
     display_name: str
+    connection: str = "online"
 
 
 class UserOfflineEvent(BaseEvent):
@@ -47,8 +49,15 @@ class UserOfflineEvent(BaseEvent):
     user_id: uuid.UUID
 
 
-class StatusChangedEvent(BaseEvent):
-    type: EventType = EventType.STATUS_CHANGED
+class ConnectionChangedEvent(BaseEvent):
+    type: EventType = EventType.CONNECTION_CHANGED
     user_id: uuid.UUID
-    state: str
-    game: str | None = None
+    connection: str
+
+
+class ReadyChangedEvent(BaseEvent):
+    type: EventType = EventType.READY_CHANGED
+    user_id: uuid.UUID
+    ready: bool
+    ready_since: str | None = None
+    ready_expires_at: str | None = None

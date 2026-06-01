@@ -745,6 +745,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get memberStatusOffline => 'Offline';
 
   @override
+  String get groupDetailReadyToggleLabel => 'Spielbereit';
+
+  @override
+  String get groupDetailReadyToggleHint => 'Zeig deiner Gruppe, dass du zum Spielen verfügbar bist';
+
+  @override
   String get languageSwitcherLabel => 'Sprache';
 
   @override
