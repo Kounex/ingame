@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "2.27"
+version: "2.28"
 status: complete
 last_updated: "2026-06-01"
 sub_project: 1
@@ -686,4 +686,5 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-01 | Navigation / Auth UX | Explicit logout now routes to clean `/login` without a preserved `from` query | Prevents stale return targets like `/profile` from lingering after intentional sign-out while keeping interrupted-flow redirects intact |
 | 2026-06-01 | Localization / Spec Hygiene | Folded the full localization-sweep intent into the maintained core/roadmap specs | Keeps the lasting localization contract in tracked product docs instead of transient agent-planning files |
 | 2026-06-01 | Error Handling / Flutter App Architecture | Added backend error codes, typed Flutter failures, and locale-aware form revalidation | Prevents frozen translated errors, removes raw exception text from key UI surfaces, and gives Flutter a stable machine-readable API error contract |
-| 2026-06-01 | Release / SP1 Sign-Off | Marked SP1 complete for shipping at `v0.3.0` | Structured error handling and locale-aware validation were the final SP1 contract items before SP2 realtime work begins |
+| 2026-06-01 | Release / SP1 Sign-Off | Marked SP1 complete for shipping at `v0.2.5` | Structured error handling and locale-aware validation were the final SP1 contract items before SP2 realtime work begins |
+| 2026-06-01 | Release versioning | Retargeted unpublished release metadata from `v0.3.0` to `v0.2.5` | Keeps SP1 sign-off references aligned with the chosen patch-line cut before publish |

@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.14"
+version: "1.15"
 status: active
 last_updated: "2026-06-01"
 ---
@@ -220,4 +220,5 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-01 | SP1 pre-SP2 cleanup sync | Captured route normalization, shared language switching, popup menu theming, Steam web callback fallback recovery, and the remaining high-traffic group/profile localization sweep in the roadmap/spec pair |
 | 2026-06-01 | Localization spec consolidation | Moved the useful full-localization-sweep intent into tracked specs and clarified that shared widgets, helper/error copy, and natural German wording are part of the maintained localization contract |
 | 2026-06-01 | SP1 structured error handling | Added the backend error-code contract plus locale-reactive Flutter failure handling to the maintained SP1 delivery summary and API contract notes |
-| 2026-06-01 | SP1 release sign-off (`v0.3.0`) | Declared SP1 complete for shipping at `v0.3.0` after structured error handling, locale-aware form revalidation, and CI stabilization landed on `dev` |
+| 2026-06-01 | SP1 release sign-off (`v0.2.5`) | Declared SP1 complete for shipping at `v0.2.5` after structured error handling, locale-aware form revalidation, and CI stabilization landed on `dev` |
+| 2026-06-01 | Release versioning | Retargeted unpublished release metadata from `v0.3.0` to `v0.2.5` | Keeps roadmap release references aligned with the chosen patch-line cut before publish |
