@@ -1487,6 +1487,18 @@ abstract class AppLocalizations {
   /// **'Let your group know you\'re available to game'**
   String get groupDetailReadyToggleHint;
 
+  /// No description provided for @groupDetailReadyToggleOfflineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to change your ready status'**
+  String get groupDetailReadyToggleOfflineHint;
+
+  /// No description provided for @groupDetailReadyToggleReconnectingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get groupDetailReadyToggleReconnectingHint;
+
   /// No description provided for @languageSwitcherLabel.
   ///
   /// In en, this message translates to:

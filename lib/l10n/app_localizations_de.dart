@@ -751,6 +751,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get groupDetailReadyToggleHint => 'Zeig deiner Gruppe, dass du zum Spielen verfügbar bist';
 
   @override
+  String get groupDetailReadyToggleOfflineHint => 'Verbinde dich, um deinen Spielbereit-Status zu ändern';
+
+  @override
+  String get groupDetailReadyToggleReconnectingHint => 'Verbindung wird wiederhergestellt…';
+
+  @override
   String get languageSwitcherLabel => 'Sprache';
 
   @override

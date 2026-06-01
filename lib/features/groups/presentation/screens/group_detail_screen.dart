@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/networking/api_error.dart';
+import '../../../../core/networking/websocket_client.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
+import '../../../../shared/providers/websocket_provider.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -343,6 +345,16 @@ class _ReadyToggleCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final isReady = ref.watch(currentUserReadyProvider(groupId));
+    final connectionState = ref.watch(websocketConnectionStateProvider);
+    final isConnected =
+        connectionState == WebSocketConnectionState.connected;
+    final hintText = switch (connectionState) {
+      WebSocketConnectionState.connected => l10n.groupDetailReadyToggleHint,
+      WebSocketConnectionState.connecting =>
+        l10n.groupDetailReadyToggleReconnectingHint,
+      WebSocketConnectionState.disconnected =>
+        l10n.groupDetailReadyToggleOfflineHint,
+    };
 
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -362,9 +374,11 @@ class _ReadyToggleCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  l10n.groupDetailReadyToggleHint,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  hintText,
+                  style: TextStyle(
+                    color: isConnected
+                        ? AppColors.textSecondary
+                        : AppColors.textTertiary,
                     fontSize: 13,
                   ),
                 ),
@@ -374,11 +388,13 @@ class _ReadyToggleCard extends ConsumerWidget {
           Switch.adaptive(
             value: isReady,
             activeThumbColor: AppColors.success,
-            onChanged: (ready) {
-              ref
-                  .read(presenceNotifierProvider.notifier)
-                  .toggleReady(groupId: groupId, ready: ready);
-            },
+            onChanged: isConnected
+                ? (ready) {
+                    ref
+                        .read(presenceNotifierProvider.notifier)
+                        .toggleReady(groupId: groupId, ready: ready);
+                  }
+                : null,
           ),
         ],
       ),

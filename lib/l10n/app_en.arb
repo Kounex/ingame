@@ -402,6 +402,8 @@
   "memberStatusOffline": "Offline",
   "groupDetailReadyToggleLabel": "Ready to play",
   "groupDetailReadyToggleHint": "Let your group know you're available to game",
+  "groupDetailReadyToggleOfflineHint": "Connect to change your ready status",
+  "groupDetailReadyToggleReconnectingHint": "Reconnecting…",
   "languageSwitcherLabel": "Language",
   "languageEnglish": "English",
   "languageGerman": "Deutsch"

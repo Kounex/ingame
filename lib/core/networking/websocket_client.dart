@@ -7,6 +7,12 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../storage/secure_storage.dart';
 import 'api_endpoints.dart';
 
+enum WebSocketConnectionState {
+  disconnected,
+  connecting,
+  connected,
+}
+
 class WebSocketClient {
   WebSocketClient({
     required this.baseUrl,
@@ -19,15 +25,41 @@ class WebSocketClient {
   final WebSocketChannel Function(Uri uri) createChannel;
   WebSocketChannel? _channel;
   final _eventController = StreamController<dynamic>.broadcast();
+  final _connectionStateController =
+      StreamController<WebSocketConnectionState>.broadcast();
   Timer? _reconnectTimer;
   int _reconnectAttempts = 0;
   static const int _maxReconnectDelay = 30;
   bool _disposed = false;
   bool _shouldReconnect = false;
   Future<void>? _connectFuture;
+  WebSocketConnectionState _connectionState =
+      WebSocketConnectionState.disconnected;
+  Map<String, dynamic>? _cachedPresenceSnapshot;
 
   Stream<dynamic> get events => _eventController.stream;
-  bool get isConnected => _channel != null;
+  Stream<WebSocketConnectionState> get connectionStateStream =>
+      _connectionStateController.stream;
+  WebSocketConnectionState get connectionState => _connectionState;
+  bool get isConnected => _connectionState == WebSocketConnectionState.connected;
+
+  /// Last `presence_snapshot` received on the current connection, if any.
+  ///
+  /// Broadcast event streams do not replay, so this cache lets late subscribers
+  /// hydrate after the server bootstrap event arrives on connect.
+  Map<String, dynamic>? get cachedPresenceSnapshot {
+    final snapshot = _cachedPresenceSnapshot;
+    if (snapshot == null) return null;
+    return Map<String, dynamic>.from(snapshot);
+  }
+
+  void _setConnectionState(WebSocketConnectionState state) {
+    if (_connectionState == state) return;
+    _connectionState = state;
+    if (!_connectionStateController.isClosed) {
+      _connectionStateController.add(state);
+    }
+  }
 
   Future<void> connect() {
     _connectFuture ??= _connectInternal().whenComplete(() {
@@ -38,6 +70,7 @@ class WebSocketClient {
 
   Future<void> _connectInternal() async {
     if (_disposed) return;
+    _setConnectionState(WebSocketConnectionState.connecting);
     final token = await getAccessToken();
     if (token == null) {
       disconnect();
@@ -45,8 +78,8 @@ class WebSocketClient {
     }
 
     _shouldReconnect = true;
-    disconnect();
-    _shouldReconnect = true;
+    _closeChannel();
+    _setConnectionState(WebSocketConnectionState.connecting);
 
     try {
       final uri = Uri.parse('$baseUrl?token=$token');
@@ -56,20 +89,39 @@ class WebSocketClient {
       _channel!.stream.listen(
         (data) {
           final decoded = data is String ? jsonDecode(data) : data;
+          _cachePresenceSnapshotIfNeeded(decoded);
           _eventController.add(decoded);
         },
         onError: (error) {
           _eventController.addError(error);
-          _scheduleReconnect();
+          _channel = null;
+          if (_shouldReconnect) {
+            _setConnectionState(WebSocketConnectionState.connecting);
+            _scheduleReconnect();
+          }
         },
         onDone: () {
           _channel = null;
-          _scheduleReconnect();
+          if (_shouldReconnect) {
+            _setConnectionState(WebSocketConnectionState.connecting);
+            _scheduleReconnect();
+          }
         },
       );
+
+      await _channel!.ready;
+      if (_disposed || !_shouldReconnect || _channel == null) return;
+      _setConnectionState(WebSocketConnectionState.connected);
     } catch (e) {
       _channel = null;
+      _setConnectionState(WebSocketConnectionState.connecting);
       _scheduleReconnect();
+    }
+  }
+
+  void _cachePresenceSnapshotIfNeeded(dynamic decoded) {
+    if (decoded is Map && decoded['type'] == 'presence_snapshot') {
+      _cachedPresenceSnapshot = Map<String, dynamic>.from(decoded);
     }
   }
 
@@ -100,18 +152,25 @@ class WebSocketClient {
     return delay;
   }
 
-  void disconnect() {
-    _shouldReconnect = false;
+  void _closeChannel() {
     _reconnectTimer?.cancel();
     _channel?.sink.close();
     _channel = null;
+    _cachedPresenceSnapshot = null;
+  }
+
+  void disconnect() {
+    _shouldReconnect = false;
+    _closeChannel();
     _reconnectAttempts = 0;
+    _setConnectionState(WebSocketConnectionState.disconnected);
   }
 
   void dispose() {
     _disposed = true;
     disconnect();
     _eventController.close();
+    _connectionStateController.close();
   }
 }
 

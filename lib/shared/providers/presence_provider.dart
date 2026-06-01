@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/networking/websocket_client.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../widgets/status_indicator.dart';
+import 'websocket_provider.dart';
 
 typedef GroupUserPresenceKey = ({String groupId, String userId});
 
@@ -43,6 +44,7 @@ class PresenceNotifier
     extends Notifier<Map<String, Map<String, MemberPresenceState>>> {
   StreamSubscription<dynamic>? _subscription;
   final _expiryTimers = <String, Timer>{};
+  Map<String, Map<String, MemberPresenceState>> _trackedState = const {};
 
   @override
   Map<String, Map<String, MemberPresenceState>> build() {
@@ -54,6 +56,17 @@ class PresenceNotifier
     });
 
     final authState = ref.watch(authNotifierProvider).valueOrNull;
+    final isUnauthenticated = authState?.maybeWhen(
+          unauthenticated: () => true,
+          orElse: () => false,
+        ) ??
+        false;
+
+    if (isUnauthenticated) {
+      _trackedState = const {};
+      return _trackedState;
+    }
+
     final isAuthenticated = authState?.maybeWhen(
           authenticated: (_) => true,
           orElse: () => false,
@@ -61,15 +74,35 @@ class PresenceNotifier
         false;
 
     if (!isAuthenticated) {
-      return {};
+      // Auth bootstrap or login `loading` — keep hydrated presence intact.
+      return _trackedState;
     }
 
     final wsClient = ref.watch(websocketClientProvider);
+    ref.watch(websocketConnectionStateProvider);
     _subscription = wsClient.events.listen(_handleEvent);
-    return <String, Map<String, MemberPresenceState>>{};
+    final cachedSnapshot = wsClient.cachedPresenceSnapshot;
+    if (cachedSnapshot != null) {
+      _trackedState = _mergeSnapshot(cachedSnapshot, base: _trackedState);
+      return _trackedState;
+    }
+    return _trackedState;
   }
 
-  void toggleReady({required String groupId, required bool ready}) {
+  Map<String, Map<String, MemberPresenceState>> _commitState(
+    Map<String, Map<String, MemberPresenceState>> next,
+  ) {
+    _trackedState = next;
+    state = next;
+    return next;
+  }
+
+  bool toggleReady({required String groupId, required bool ready}) {
+    final wsClient = ref.read(websocketClientProvider);
+    if (wsClient.connectionState != WebSocketConnectionState.connected) {
+      return false;
+    }
+
     final authState = ref.read(authNotifierProvider).valueOrNull;
     final userId = authState?.maybeWhen(
       authenticated: (user) => user.id,
@@ -101,6 +134,7 @@ class PresenceNotifier
           groupId: groupId,
           ready: ready,
         );
+    return true;
   }
 
   void handleReadyExpiry({required String groupId, required String userId}) {
@@ -147,6 +181,9 @@ class PresenceNotifier
           ),
         );
         break;
+      case 'status_changed':
+        _applyLegacyStatusChanged(event);
+        break;
       case 'ready_changed':
         _applyReadyChanged(event);
         break;
@@ -156,11 +193,20 @@ class PresenceNotifier
   }
 
   void _applySnapshot(Map event) {
+    _commitState(_mergeSnapshot(event));
+  }
+
+  Map<String, Map<String, MemberPresenceState>> _mergeSnapshot(
+    Map event, {
+    Map<String, Map<String, MemberPresenceState>>? base,
+  }) {
     final groups = event['groups'];
-    if (groups is! List) return;
+    if (groups is! List) {
+      return base ?? _trackedState;
+    }
 
     final next = <String, Map<String, MemberPresenceState>>{
-      for (final entry in state.entries)
+      for (final entry in (base ?? _trackedState).entries)
         entry.key: Map<String, MemberPresenceState>.from(entry.value),
     };
 
@@ -170,7 +216,7 @@ class PresenceNotifier
       if (groupId == null) continue;
 
       final members = <String, MemberPresenceState>{};
-      final memberList = group['members'];
+      final memberList = group['members'] ?? group['statuses'];
       if (memberList is List) {
         for (final rawMember in memberList) {
           if (rawMember is! Map) continue;
@@ -185,11 +231,19 @@ class PresenceNotifier
             ready: member.ready,
           );
         }
+      } else {
+        final onlineUserIds = group['online_user_ids'];
+        if (onlineUserIds is List) {
+          for (final rawUserId in onlineUserIds) {
+            if (rawUserId is! String) continue;
+            members[rawUserId] = const MemberPresenceState(connection: 'online');
+          }
+        }
       }
       next[groupId] = members;
     }
 
-    state = next;
+    return next;
   }
 
   void _applyReadyChanged(Map event) {
@@ -221,15 +275,48 @@ class PresenceNotifier
   }
 
   MemberPresenceState _memberFromWire(Map rawMember) {
-    final ready = rawMember['ready'] == true;
+    final wireState = rawMember['connection'] as String? ??
+        rawMember['state'] as String? ??
+        'offline';
+    final readyFromState = wireState == 'ready';
+    final ready = rawMember['ready'] == true || readyFromState;
+    final connection = readyFromState ? 'online' : wireState;
     final readyExpiresAt = rawMember['ready_expires_at'] as String?;
     final readyStillValid = ready && !_isExpired(readyExpiresAt);
 
     return MemberPresenceState(
-      connection: rawMember['connection'] as String? ?? 'offline',
+      connection: connection,
       ready: readyStillValid,
       readySince: readyStillValid ? rawMember['ready_since'] as String? : null,
       readyExpiresAt: readyStillValid ? readyExpiresAt : null,
+    );
+  }
+
+  void _applyLegacyStatusChanged(Map event) {
+    final groupId = event['group_id'] as String?;
+    final userId = event['user_id'] as String?;
+    if (groupId == null || userId == null) return;
+
+    final state = event['state'] as String? ?? 'online';
+    if (state == 'offline') {
+      _updateMember(
+        groupId: groupId,
+        userId: userId,
+        update: (_) => const MemberPresenceState(connection: 'offline'),
+      );
+      return;
+    }
+
+    final ready = state == 'ready';
+    _updateMember(
+      groupId: groupId,
+      userId: userId,
+      update: (current) => MemberPresenceState(
+        connection: ready ? 'online' : state,
+        ready: ready,
+        readySince: ready ? event['since'] as String? : null,
+        readyExpiresAt: current.readyExpiresAt,
+      ),
     );
   }
 
@@ -241,14 +328,14 @@ class PresenceNotifier
     if (groupId == null || userId == null) return;
 
     final next = <String, Map<String, MemberPresenceState>>{
-      for (final entry in state.entries)
+      for (final entry in _trackedState.entries)
         entry.key: Map<String, MemberPresenceState>.from(entry.value),
     };
     final groupMembers = next[groupId] ?? <String, MemberPresenceState>{};
     final current = groupMembers[userId] ?? const MemberPresenceState();
     groupMembers[userId] = update(current);
     next[groupId] = groupMembers;
-    state = next;
+    _commitState(next);
   }
 
   void _scheduleReadyExpiry({
@@ -302,11 +389,11 @@ UserStatus deriveMemberStatus(MemberPresenceState? member) {
   if (member == null || member.connection == 'offline') {
     return UserStatus.offline;
   }
-  if (member.connection == 'away') {
-    return UserStatus.away;
-  }
   if (member.ready) {
     return UserStatus.ready;
+  }
+  if (member.connection == 'away') {
+    return UserStatus.away;
   }
   return UserStatus.online;
 }

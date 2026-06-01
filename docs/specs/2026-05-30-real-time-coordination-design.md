@@ -1,6 +1,6 @@
 ---
 spec: real-time-coordination
-version: "1.1"
+version: "1.5"
 status: in-progress
 last_updated: "2026-06-01"
 sub_project: 2
@@ -34,9 +34,11 @@ Phase 1 delivers **presence only**. Session scheduling, activity feed, and relat
 ### Display Priority
 When rendering a member's single status badge:
 1. `offline` if the user has no active WebSocket connection
-2. `away` if connected but the client reported background/inactive
-3. `ready` if the user is ready in that group and the ready expiry has not passed
+2. `ready` if the user is ready in that group and the ready expiry has not passed
+3. `away` if connected but the client reported background/inactive
 4. `online` otherwise
+
+Ready remains visible even when the user backgrounds the app while still connected; only disconnect clears ready from the badge (ready metadata may still persist server-side until expiry or manual clear).
 
 ---
 
@@ -258,6 +260,11 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 
 ### Providers
 - `websocketConnectionProvider` owns authenticated socket lifecycle
+- `websocketConnectionStateProvider` exposes client transport state (`disconnected`, `connecting`, `connected`) for UI gating
+- `WebSocketClient` caches the latest `presence_snapshot` for the current connection because the event stream is broadcast/non-replay; `presenceNotifierProvider` hydrates from that cache on build so bootstrap cannot be lost when the listener attaches after connect
+- `WebSocketClient.connect()` attaches the stream listener before awaiting `channel.ready` and only marks transport `connected` after the handshake succeeds
+- `presenceNotifierProvider` watches `websocketConnectionStateProvider` so it re-hydrates from the cached bootstrap snapshot when transport reaches `connected`
+- `presenceNotifierProvider` normalizes legacy pre-SP2 snapshot payloads (`statuses[].state`, `online_user_ids`) alongside the canonical `members[].connection` shape during backend rollout
 - `presenceNotifierProvider` stores per-group member presence derived from snapshot + events, including expiry-aware ready state
 - `presenceLifecycleProvider` sends lifecycle-derived away/active transitions
 - REST bootstrap providers remain responsible for initial group/member fetches
@@ -265,7 +272,7 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 ### UI Integration
 - `StatusIndicator` remains the canonical readiness signal
 - group member rows use a single live-status composition built from `UserAvatar` + `StatusIndicator`
-- group detail screens expose a group-scoped ready toggle for the current user
+- group detail screens expose a group-scoped ready toggle for the current user; the toggle is disabled unless the WebSocket is `connected`, shows reconnect/offline hints otherwise, and `toggleReady` rejects commands that cannot be delivered (no optimistic ready flip while disconnected)
 - member surfaces app-wide consume `groupMemberStatusProvider` rather than computing status locally
 
 ### Configuration
@@ -303,8 +310,8 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 - ready expiry tests: stale ready clears and fan-out reflects the cleared state
 
 ### Flutter
-- `WebSocketClient` tests: connect, decode, disconnect, reconnect with fresh token, command send helpers
-- provider tests: auth transition triggers connect/disconnect, snapshot merge, ready updates, ready expiry, lifecycle-derived away handling
+- `WebSocketClient` tests: connect, decode, disconnect, reconnect with fresh token, command send helpers, connection-state transitions, await `channel.ready` before marking connected, `presence_snapshot` cache for late subscribers and cache clear on disconnect
+- provider tests: auth transition triggers connect/disconnect, snapshot merge, bootstrap hydration when snapshot arrives before listener attach, legacy snapshot wire-format normalization, ready updates, ready expiry, lifecycle-derived away handling, connection-state provider sync, ready toggle rejection while disconnected/reconnecting
 - widget tests: member list/status rendering from live provider state
 - integration tests: login -> open group -> receive live ready change
 
@@ -332,3 +339,7 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 |------|---------|--------|--------|
 | 2026-05-30 | Initial spec | Created SP2 Real-Time Coordination spec with WS endpoint, event model, Redis/pubsub rules, session data model, Flutter architecture, and test strategy | Pre-SP2 stabilization requires a written realtime contract before transport and fan-out fixes |
 | 2026-06-01 | Phase 1 presence-first | Split phase-1 presence-only scope from later session/activity work; defined derived connection presence, group-scoped ready with 8-hour expiry, lifecycle-driven away, new WS commands/events, and app-wide presence rendering rules | Approved SP2 presence-first kickoff plan |
+| 2026-06-01 | Flutter Architecture | Added `websocketConnectionStateProvider`, connection-aware ready toggle gating, and `toggleReady` delivery rejection while disconnected/reconnecting | Prevent silent local ready flips when WS commands cannot be delivered |
+| 2026-06-01 | Flutter Architecture | Document `WebSocketClient` `presence_snapshot` cache and presence provider bootstrap hydration from cache | Fix lost bootstrap when broadcast event stream has no late-subscriber replay |
+| 2026-06-01 | Flutter Architecture | Require `WebSocketClient` to await `channel.ready` before transport `connected`; presence provider re-hydrates on connection-state transitions and normalizes legacy snapshot wire format (`statuses`/`state`) | Live web login showed self offline because bootstrap used pre-SP2 payload shape and transport could report connected before handshake completion |
+| 2026-06-01 | Product Rules / Display Priority | Correct badge precedence to `offline → ready → away → online`; ready stays visible when a connected user backgrounds | Live observation showed away overriding ready after lifecycle `connection_changed`; backend stores ready and connection independently |

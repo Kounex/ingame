@@ -751,6 +751,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupDetailReadyToggleHint => 'Let your group know you\'re available to game';
 
   @override
+  String get groupDetailReadyToggleOfflineHint => 'Connect to change your ready status';
+
+  @override
+  String get groupDetailReadyToggleReconnectingHint => 'Reconnecting…';
+
+  @override
   String get languageSwitcherLabel => 'Language';
 
   @override

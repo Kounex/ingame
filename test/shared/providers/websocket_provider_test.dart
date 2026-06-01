@@ -1,93 +1,69 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ingame/core/networking/websocket_client.dart';
-import 'package:ingame/features/auth/domain/auth_state.dart';
-import 'package:ingame/features/auth/domain/user_model.dart';
-import 'package:ingame/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ingame/shared/providers/websocket_provider.dart';
 
-class _FakeAuthNotifier extends AuthNotifier {
-  _FakeAuthNotifier(this._initialState);
+class _FakeWebSocketClient extends WebSocketClient {
+  _FakeWebSocketClient()
+      : _stateController =
+            StreamController<WebSocketConnectionState>.broadcast(),
+        super(
+          baseUrl: 'ws://example.test/api/v1/ws',
+          getAccessToken: () async => 'token',
+        );
 
-  final AuthState _initialState;
-
-  @override
-  Future<AuthState> build() async => _initialState;
-
-  void setAuthState(AuthState nextState) {
-    state = AsyncValue.data(nextState);
-  }
-}
-
-class _RecordingWebSocketClient extends WebSocketClient {
-  _RecordingWebSocketClient()
-    : super(
-        baseUrl: 'ws://example.test/api/v1/ws',
-        getAccessToken: () async => 'token',
-      );
-
-  int connectCalls = 0;
-  int disconnectCalls = 0;
-  bool _connected = false;
+  final StreamController<WebSocketConnectionState> _stateController;
+  WebSocketConnectionState _state = WebSocketConnectionState.disconnected;
 
   @override
-  bool get isConnected => _connected;
+  WebSocketConnectionState get connectionState => _state;
 
   @override
-  Future<void> connect() async {
-    connectCalls++;
-    _connected = true;
+  Stream<WebSocketConnectionState> get connectionStateStream =>
+      _stateController.stream;
+
+  void emitState(WebSocketConnectionState state) {
+    _state = state;
+    _stateController.add(state);
   }
 
   @override
-  void disconnect() {
-    disconnectCalls++;
-    _connected = false;
+  void dispose() {
+    _stateController.close();
+    super.dispose();
   }
 }
 
 void main() {
-  test('connects on auth and disconnects on logout', () async {
-    late _FakeAuthNotifier authNotifier;
-    final wsClient = _RecordingWebSocketClient();
-
+  test('websocketConnectionStateProvider reflects client connection state',
+      () async {
+    final client = _FakeWebSocketClient();
     final container = ProviderContainer(
       overrides: [
-        authNotifierProvider.overrideWith(
-          () => authNotifier = _FakeAuthNotifier(const AuthState.unauthenticated()),
-        ),
-        websocketClientProvider.overrideWithValue(wsClient),
+        websocketClientProvider.overrideWithValue(client),
       ],
     );
     addTearDown(container.dispose);
 
-    final subscription = container.listen<void>(
-      websocketConnectionProvider,
-      (_, _) {},
-      fireImmediately: true,
+    expect(
+      container.read(websocketConnectionStateProvider),
+      WebSocketConnectionState.disconnected,
     );
-    addTearDown(subscription.close);
-    await Future<void>.delayed(Duration.zero);
-    expect(wsClient.connectCalls, 0);
 
-    authNotifier.setAuthState(
-      const AuthState.authenticated(
-        User(
-          id: 'user-1',
-          displayName: 'Ready Player',
-          timezone: 'UTC',
-        ),
-      ),
+    client.emitState(WebSocketConnectionState.connecting);
+    await Future<void>.delayed(Duration.zero);
+    expect(
+      container.read(websocketConnectionStateProvider),
+      WebSocketConnectionState.connecting,
     );
+
+    client.emitState(WebSocketConnectionState.connected);
     await Future<void>.delayed(Duration.zero);
-
-    expect(wsClient.connectCalls, 1);
-    expect(wsClient.isConnected, isTrue);
-
-    authNotifier.setAuthState(const AuthState.unauthenticated());
-    await Future<void>.delayed(Duration.zero);
-
-    expect(wsClient.disconnectCalls, 1);
-    expect(wsClient.isConnected, isFalse);
+    expect(
+      container.read(websocketConnectionStateProvider),
+      WebSocketConnectionState.connected,
+    );
   });
 }

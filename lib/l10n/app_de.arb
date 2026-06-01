@@ -402,6 +402,8 @@
   "memberStatusOffline": "Offline",
   "groupDetailReadyToggleLabel": "Spielbereit",
   "groupDetailReadyToggleHint": "Zeig deiner Gruppe, dass du zum Spielen verfügbar bist",
+  "groupDetailReadyToggleOfflineHint": "Verbinde dich, um deinen Spielbereit-Status zu ändern",
+  "groupDetailReadyToggleReconnectingHint": "Verbindung wird wiederhergestellt…",
   "languageSwitcherLabel": "Sprache",
   "languageEnglish": "English",
   "languageGerman": "Deutsch"
