@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/networking/app_failure.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -26,7 +27,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   Group? _groupPreview;
   bool _isLoadingPreview = true;
   bool _isJoining = false;
-  String? _error;
+  AppFailure? _error;
 
   @override
   void initState() {
@@ -177,7 +178,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                     if (_error != null) ...[
                       const SizedBox(height: AppSpacing.md),
                       Text(
-                        _error!,
+                        _error!.userMessage(context.l10n),
                         style: const TextStyle(
                           color: AppColors.error,
                           fontSize: 13,
@@ -226,7 +227,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
       if (mounted) {
         setState(() {
           _isJoining = false;
-          _error = ApiError.userMessage(e);
+          _error = ApiError.toFailure(e);
         });
       }
     }
@@ -244,7 +245,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = ApiError.userMessage(e);
+        _error = ApiError.toFailure(e);
         _isLoadingPreview = false;
       });
     }

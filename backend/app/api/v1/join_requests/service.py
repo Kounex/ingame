@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.error_codes import ErrorCode
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.db.models.user import User
 from app.db.repositories.group_repo import GroupRepository
@@ -12,16 +13,22 @@ async def create_request(db: AsyncSession, group_id: uuid.UUID, user: User):
     repo = GroupRepository(db)
     group = await repo.get_by_id(group_id)
     if group is None:
-        raise NotFoundError("Group not found")
+        raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
 
     existing_membership = await repo.get_membership(group_id, user.id)
     if existing_membership:
-        raise ConflictError("Already a member of this group")
+        raise ConflictError(
+            "Already a member of this group",
+            code=ErrorCode.GROUP_MEMBER_ALREADY_EXISTS,
+        )
 
     pending = await repo.list_pending_requests(group_id)
     for req in pending:
         if req.user_id == user.id:
-            raise ConflictError("You already have a pending request for this group")
+            raise ConflictError(
+                "You already have a pending request for this group",
+                code=ErrorCode.JOIN_REQUEST_PENDING_ALREADY_EXISTS,
+            )
 
     join_request = await repo.create_join_request(group_id, user.id)
 
@@ -48,7 +55,10 @@ async def list_pending_for_group(
 
     membership = await repo.get_membership(group_id, user.id)
     if membership is None or membership.role not in ("owner", "admin"):
-        raise ForbiddenError("Only admins/owners can view join requests")
+        raise ForbiddenError(
+            "Only admins/owners can view join requests",
+            code=ErrorCode.JOIN_REQUEST_ADMIN_OR_OWNER_REQUIRED,
+        )
 
     requests = await repo.list_pending_requests(group_id)
     results = []
@@ -78,11 +88,17 @@ async def resolve_request(
 
     join_request = await repo.get_join_request(request_id)
     if join_request is None:
-        raise NotFoundError("Join request not found")
+        raise NotFoundError(
+            "Join request not found",
+            code=ErrorCode.JOIN_REQUEST_NOT_FOUND,
+        )
 
     membership = await repo.get_membership(join_request.group_id, user.id)
     if membership is None or membership.role not in ("owner", "admin"):
-        raise ForbiddenError("Only admins/owners can resolve join requests")
+        raise ForbiddenError(
+            "Only admins/owners can resolve join requests",
+            code=ErrorCode.JOIN_REQUEST_ADMIN_OR_OWNER_REQUIRED,
+        )
 
     resolved = await repo.resolve_join_request(request_id, status, user.id)
 

@@ -4,6 +4,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.error_codes import ErrorCode
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.db.models.user import User
 from app.db.repositories.group_repo import GroupRepository
@@ -33,7 +34,10 @@ async def create_group(
             invite_code = candidate
             break
     if invite_code is None:
-        raise ConflictError("Failed to generate unique invite code, please try again")
+        raise ConflictError(
+            "Failed to generate unique invite code, please try again",
+            code=ErrorCode.GROUP_INVITE_CODE_GENERATION_FAILED,
+        )
 
     group = await repo.create(
         name=name,
@@ -55,7 +59,7 @@ async def get_group(db: AsyncSession, group_id: uuid.UUID):
     repo = GroupRepository(db)
     group = await repo.get_by_id(group_id)
     if group is None:
-        raise NotFoundError("Group not found")
+        raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
     member_count = await repo.get_member_count(group_id)
     return {**_group_to_dict(group), "member_count": member_count}
 
@@ -96,7 +100,7 @@ async def update_group(
 
     group = await repo.update(group_id, **update_data)
     if group is None:
-        raise NotFoundError("Group not found")
+        raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
     member_count = await repo.get_member_count(group_id)
     return {**_group_to_dict(group), "member_count": member_count}
 
@@ -105,21 +109,30 @@ async def delete_group(db: AsyncSession, group_id: uuid.UUID, user: User):
     repo = GroupRepository(db)
     membership = await repo.get_membership(group_id, user.id)
     if membership is None or membership.role != "owner":
-        raise ForbiddenError("Only the group owner can delete the group")
+        raise ForbiddenError(
+            "Only the group owner can delete the group",
+            code=ErrorCode.GROUP_DELETE_REQUIRES_OWNER,
+        )
     deleted = await repo.delete(group_id)
     if not deleted:
-        raise NotFoundError("Group not found")
+        raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
 
 
 async def join_by_invite_code(db: AsyncSession, code: str, user: User):
     repo = GroupRepository(db)
     group = await repo.get_by_invite_code(code)
     if group is None:
-        raise NotFoundError("Invalid invite code")
+        raise NotFoundError(
+            "Invalid invite code",
+            code=ErrorCode.GROUP_INVITE_CODE_INVALID,
+        )
 
     existing = await repo.get_membership(group.id, user.id)
     if existing:
-        raise ConflictError("Already a member of this group")
+        raise ConflictError(
+            "Already a member of this group",
+            code=ErrorCode.GROUP_MEMBER_ALREADY_EXISTS,
+        )
 
     await repo.add_member(group.id, user.id, role="member")
     member_count = await repo.get_member_count(group.id)
@@ -130,7 +143,10 @@ async def preview_group_by_invite_code(db: AsyncSession, code: str):
     repo = GroupRepository(db)
     group = await repo.get_by_invite_code(code)
     if group is None:
-        raise NotFoundError("Invalid invite code")
+        raise NotFoundError(
+            "Invalid invite code",
+            code=ErrorCode.GROUP_INVITE_CODE_INVALID,
+        )
 
     member_count = await repo.get_member_count(group.id)
     return {**_group_to_dict(group), "member_count": member_count}
@@ -144,7 +160,10 @@ async def add_member(
 
     existing = await repo.get_membership(group_id, target_user_id)
     if existing:
-        raise ConflictError("User is already a member")
+        raise ConflictError(
+            "User is already a member",
+            code=ErrorCode.GROUP_MEMBER_ALREADY_EXISTS,
+        )
 
     await repo.add_member(group_id, target_user_id, role=role)
 
@@ -159,13 +178,19 @@ async def remove_member(
 
     target_membership = await repo.get_membership(group_id, target_user_id)
     if target_membership is None:
-        raise NotFoundError("User is not a member of this group")
+        raise NotFoundError(
+            "User is not a member of this group",
+            code=ErrorCode.GROUP_MEMBER_NOT_FOUND,
+        )
     if target_membership.role == "owner" and user.id != target_user_id:
-        raise ForbiddenError("Cannot remove the group owner")
+        raise ForbiddenError(
+            "Cannot remove the group owner",
+            code=ErrorCode.GROUP_OWNER_CANNOT_BE_REMOVED,
+        )
 
     removed = await repo.remove_member(group_id, target_user_id)
     if not removed:
-        raise NotFoundError("Member not found")
+        raise NotFoundError("Member not found", code=ErrorCode.GROUP_MEMBER_NOT_FOUND)
 
 
 async def list_members(db: AsyncSession, group_id: uuid.UUID):
@@ -191,7 +216,10 @@ async def _ensure_admin_or_owner(
 ):
     membership = await repo.get_membership(group_id, user_id)
     if membership is None or membership.role not in ("owner", "admin"):
-        raise ForbiddenError("Only group owners or admins can perform this action")
+        raise ForbiddenError(
+            "Only group owners or admins can perform this action",
+            code=ErrorCode.GROUP_ADMIN_OR_OWNER_REQUIRED,
+        )
 
 
 def _group_to_dict(group) -> dict:

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/localization/locale_aware_form_state_mixin.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/localization/locale_controller.dart';
+import '../../../../core/networking/api_error.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
@@ -44,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
         body: profileAsync.when(
           loading: () => const Center(child: LoadingIndicator()),
           error: (error, _) => ErrorDisplay(
-            message: error.toString(),
+            message: ApiError.userMessage(error, context.l10n),
             onRetry: () =>
                 ref.read(profileNotifierProvider.notifier).load(),
           ),
@@ -529,7 +531,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             context,
             context.l10n.profileDisconnectFailed(
               context.l10n.profileConnectedAccountsSteam,
-              '$e',
+              ApiError.userMessage(e, context.l10n),
             ),
           );
         }
@@ -545,7 +547,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         }
       } catch (e) {
         if (!context.mounted) return;
-        final msg = OAuthLauncher.friendlyError(e);
+        final msg = OAuthLauncher.toFailure(e).userMessage(context.l10n);
         if (!OAuthLauncher.isCancellationError(e)) {
           AppToast.error(context, context.l10n.profileLinkSteamFailed(msg));
         }
@@ -577,7 +579,12 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        AppToast.error(context, context.l10n.profileSetEmailFailed('$e'));
+        AppToast.error(
+          context,
+          context.l10n.profileSetEmailFailed(
+            ApiError.userMessage(e, context.l10n),
+          ),
+        );
       }
     }
   }
@@ -595,7 +602,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             context,
             context.l10n.profileDisconnectFailed(
               context.l10n.profileConnectedAccountsApple,
-              '$e',
+              ApiError.userMessage(e, context.l10n),
             ),
           );
         }
@@ -616,7 +623,12 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         }
       } catch (e) {
         if (!context.mounted) return;
-        AppToast.error(context, context.l10n.profileLinkAppleFailed('$e'));
+        AppToast.error(
+          context,
+          context.l10n.profileLinkAppleFailed(
+            ApiError.userMessage(e, context.l10n),
+          ),
+        );
       }
     }
   }
@@ -761,12 +773,14 @@ class _SetEmailPasswordDialog extends StatefulWidget {
       _SetEmailPasswordDialogState();
 }
 
-class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
+class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog>
+    with LocaleAwareFormStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _obscure = true;
+  bool _hasAttemptedSubmit = false;
 
   @override
   void dispose() {
@@ -777,6 +791,7 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
   }
 
   void _submit() {
+    _hasAttemptedSubmit = true;
     if (!_formKey.currentState!.validate()) return;
     Navigator.of(context).pop(
       (email: _emailController.text.trim(), password: _passwordController.text),
@@ -786,6 +801,11 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+
+    revalidateFormOnLocaleChange(
+      formKey: _formKey,
+      shouldRevalidate: _hasAttemptedSubmit,
+    );
 
     return AlertDialog(
       backgroundColor: AppColors.backgroundLight,

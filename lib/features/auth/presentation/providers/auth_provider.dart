@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../../core/auth/auth_session.dart';
-import '../../../../core/localization/locale_controller.dart';
+import '../../../../core/networking/app_failure.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../data/auth_repository.dart';
@@ -40,7 +40,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final user = await repo.login(email: email, password: password);
       state = AsyncValue.data(AuthState.authenticated(user));
     } catch (e) {
-      state = AsyncValue.data(AuthState.error(ApiError.userMessage(e)));
+      state = AsyncValue.data(AuthState.error(ApiError.toFailure(e)));
     }
   }
 
@@ -59,7 +59,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
       state = AsyncValue.data(AuthState.authenticated(user));
     } catch (e) {
-      state = AsyncValue.data(AuthState.error(ApiError.userMessage(e)));
+      state = AsyncValue.data(AuthState.error(ApiError.toFailure(e)));
     }
   }
 
@@ -70,7 +70,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final user = await repo.steamAuth(params);
       state = AsyncValue.data(AuthState.authenticated(user));
     } catch (e) {
-      state = AsyncValue.data(AuthState.error(ApiError.userMessage(e)));
+      state = AsyncValue.data(AuthState.error(ApiError.toFailure(e)));
     }
   }
 
@@ -86,11 +86,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state = const AsyncValue.data(AuthState.unauthenticated());
         return;
       }
-      state = AsyncValue.data(
-        AuthState.error(currentAppLocalizations().authAppleSignInFailed),
+      state = const AsyncValue.data(
+        AuthState.error(
+          LocalizedFailure(AppFailureMessageKey.authAppleSignInFailed),
+        ),
       );
     } catch (e) {
-      state = AsyncValue.data(AuthState.error(ApiError.userMessage(e)));
+      state = AsyncValue.data(AuthState.error(ApiError.toFailure(e)));
     }
   }
 

@@ -52,4 +52,9 @@ backend/.pytest_cache/
 # Generated platform environment files
 /ios/Flutter/Generated.xcconfig
 /ios/Flutter/flutter_export_environment.sh
+/ios/build/
 /macos/Flutter/ephemeral/
+/macos/Podfile.lock
+
+# Agent-generated planning artifacts
+/docs/superpowers/

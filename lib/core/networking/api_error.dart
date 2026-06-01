@@ -1,48 +1,50 @@
 import 'package:dio/dio.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../localization/locale_controller.dart';
+import 'app_failure.dart';
 
 class ApiError {
   ApiError._();
 
-  static String userMessage(Object error) {
-    final l10n = currentAppLocalizations();
-    if (error is DioException) {
-      return _fromDio(error, l10n);
+  static AppFailure toFailure(Object error) {
+    if (error is AppFailure) {
+      return error;
     }
-    return l10n.errorSomethingWentWrong;
+    if (error is DioException) {
+      return _fromDio(error);
+    }
+    return const UnknownFailure();
   }
 
-  static String _fromDio(DioException error, AppLocalizations l10n) {
+  static String userMessage(Object error, [AppLocalizations? l10n]) {
+    return toFailure(error).userMessage(l10n);
+  }
+
+  static AppFailure _fromDio(DioException error) {
     final statusCode = error.response?.statusCode;
     final detail = _extractDetail(error);
+    final code = _extractCode(error);
 
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout ||
         error.type == DioExceptionType.sendTimeout) {
-      return l10n.errorConnectionTimedOut;
+      return const NetworkFailure(AppNetworkFailureType.timeout);
     }
 
     if (error.type == DioExceptionType.connectionError) {
-      return l10n.errorCouldNotConnect;
+      return const NetworkFailure(AppNetworkFailureType.connection);
     }
 
     if (statusCode == null) {
-      return l10n.errorNetwork;
+      return const NetworkFailure(AppNetworkFailureType.unknown);
     }
 
-    return switch (statusCode) {
-      400 => detail ?? l10n.errorInvalidRequest,
-      401 => detail ?? l10n.errorInvalidCredentials,
-      403 => l10n.errorNoPermission,
-      404 => l10n.errorNotFound,
-      409 => detail ?? l10n.errorAlreadyExists,
-      422 => _formatValidationError(error, l10n) ?? detail ?? l10n.errorCheckInput,
-      429 => l10n.errorTooManyRequests,
-      >= 500 => l10n.errorServer,
-      _ => detail ?? l10n.errorUnknownWithCode(statusCode),
-    };
+    final validationFailure = _formatValidationError(error);
+    if (validationFailure != null) {
+      return validationFailure;
+    }
+
+    return BackendFailure(statusCode: statusCode, detail: detail, code: code);
   }
 
   static String? _extractDetail(DioException error) {
@@ -54,10 +56,16 @@ class ApiError {
     return null;
   }
 
-  static String? _formatValidationError(
-    DioException error,
-    AppLocalizations l10n,
-  ) {
+  static String? _extractCode(DioException error) {
+    final data = error.response?.data;
+    if (data is Map<String, dynamic>) {
+      final code = data['code'];
+      if (code is String && code.isNotEmpty) return code;
+    }
+    return null;
+  }
+
+  static ValidationFailure? _formatValidationError(DioException error) {
     final data = error.response?.data;
     if (data is Map<String, dynamic>) {
       final detail = data['detail'];
@@ -67,24 +75,14 @@ class ApiError {
           final field = (first['loc'] as List?)?.last;
           final msg = first['msg'];
           if (field != null && msg != null) {
-            return l10n.errorValidationFieldMessage(
-              _humanizeField(field.toString()),
-              msg.toString(),
+            return ValidationFailure(
+              field: field.toString(),
+              message: msg.toString(),
             );
           }
         }
       }
     }
     return null;
-  }
-
-  static String _humanizeField(String field) {
-    return field
-        .replaceAll('_', ' ')
-        .replaceAllMapped(
-          RegExp(r'(^| )(\w)'),
-          (m) => '${m[1]}${m[2]!.toUpperCase()}',
-        )
-        .trim();
   }
 }

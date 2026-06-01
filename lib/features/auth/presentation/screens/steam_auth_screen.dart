@@ -6,6 +6,7 @@ import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/networking/app_failure.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/tappable.dart';
@@ -26,7 +27,7 @@ class SteamAuthScreen extends ConsumerStatefulWidget {
 }
 
 class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
-  String? _error;
+  AppFailure? _error;
 
   @override
   void initState() {
@@ -42,7 +43,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = OAuthLauncher.friendlyError(e);
+        _error = OAuthLauncher.toFailure(e);
       });
     }
   }
@@ -60,10 +61,10 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
       next.whenData((state) {
         state.whenOrNull(
           authenticated: (_) => context.go(widget.redirectTo ?? RoutePaths.home),
-          error: (msg) {
+          error: (failure) {
             if (mounted) {
               setState(() {
-                _error = msg;
+                _error = failure;
               });
             }
           },
@@ -105,7 +106,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
     );
   }
 
-  Widget _buildError(String message) {
+  Widget _buildError(AppFailure failure) {
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
@@ -118,7 +119,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            message,
+            failure.userMessage(context.l10n),
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 16,

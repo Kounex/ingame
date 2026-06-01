@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/locale_aware_form_state_mixin.dart';
+import '../../../../core/networking/api_error.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/routing/route_normalization.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -23,7 +25,8 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
+    with LocaleAwareFormStateMixin {
   final _pageController = PageController();
   final _formKey = GlobalKey<FormState>();
   int _currentPage = 0;
@@ -34,6 +37,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   final Set<String> _selectedTimeSlots = {};
   bool _isSaving = false;
+  bool _hasAttemptedProfileValidation = false;
 
   List<(String, String, String, IconData)> _timeSlots(BuildContext context) => [
         (
@@ -90,6 +94,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _goToPage(int page) {
     if (page == 1 || page == 2) {
       if (_currentPage == 1 && page == 2) {
+        _hasAttemptedProfileValidation = true;
         if (!_formKey.currentState!.validate()) return;
       }
     }
@@ -156,7 +161,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final profileState = ref.read(profileNotifierProvider);
     if (profileState.hasError) {
       setState(() => _isSaving = false);
-      AppToast.error(context, profileState.error.toString());
+      AppToast.error(
+        context,
+        ApiError.userMessage(profileState.error!, context.l10n),
+      );
       return;
     }
 
@@ -165,6 +173,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    revalidateFormOnLocaleChange(
+      formKey: _formKey,
+      shouldRevalidate: _currentPage == 1 && _hasAttemptedProfileValidation,
+    );
+
     ref.listen<bool>(needsOnboardingProvider, (_, needsOnboarding) {
       if (!needsOnboarding && mounted) {
         final from = sanitizeRedirectTarget(

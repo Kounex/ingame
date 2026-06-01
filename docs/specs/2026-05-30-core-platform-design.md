@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "2.24"
+version: "2.27"
 status: complete
 last_updated: "2026-06-01"
 sub_project: 1
@@ -254,6 +254,7 @@ lib/
   core/
     localization/
       locale_controller.dart         # Persisted locale preference + app localization access
+      locale_aware_form_state_mixin.dart # Revalidates visible form errors after locale changes
     theme/
       app_theme.dart
       glass_components.dart          # GlassCard (with animate/animationDelay), GlassButton, GlassInput, etc.
@@ -263,6 +264,7 @@ lib/
       api_client.dart
       websocket_client.dart
       api_endpoints.dart
+      app_failure.dart              # Typed user-facing failure descriptors resolved in the UI
     routing/
       app_router.dart
       route_normalization.dart        # Canonicalizes auth redirect targets and strips stale query params
@@ -291,7 +293,7 @@ lib/
         oauth_launcher.dart           # Shared Steam/Apple OAuth flow (used by login + profile linking)
       domain/
         user_model.dart              # Freezed domain model
-        auth_state.dart              # Freezed union: authenticated/unauthenticated/loading
+        auth_state.dart              # Auth state + typed AppFailure payload for error state
       presentation/
         providers/
           auth_provider.dart         # Riverpod AsyncNotifier
@@ -373,6 +375,9 @@ lib/
 - Domain models are freezed classes (immutable, copyWith, pattern matching)
 - `core/` is the shared foundation; `shared/` holds cross-feature widgets
 - User-facing Flutter copy is localized through generated `AppLocalizations`; widgets use `context.l10n`, while non-widget helpers (e.g. validators / API error mappers) use a locale-aware fallback accessor
+- The maintained localization sweep covers shared widgets, auth/onboarding/group/profile flows, and supporting validator/error/helper copy so user-visible inline English does not drift back into the app
+- User-visible failures that survive rebuilds are modeled as typed `AppFailure` values instead of already-localized strings, and widgets resolve the current text from `context.l10n` at display time.
+- Form screens with visible validation output re-run validation after a locale change, while untouched forms stay quiet until the user interacts.
 - Generated API code (`generated/`) is never manually edited
 
 ### API Contract Pipeline
@@ -441,6 +446,7 @@ backend/
 - Async throughout: async SQLAlchemy, aioredis, async FastAPI
 - Pydantic v2 schemas for all request/response validation
 - `get_current_user` FastAPI dependency for protected routes
+- Custom app HTTP exceptions carry a stable machine-readable `code` alongside human-readable `detail`, and `main.py` serializes those responses centrally for Flutter consumers.
 - Alembic for database migrations
 
 ---
@@ -471,7 +477,7 @@ backend/
 ### Interaction Conventions
 - **Pointer cursor**: All tappable elements show `SystemMouseCursors.click` on desktop/web hover. Use the `Tappable` widget (`shared/widgets/tappable.dart`) instead of raw `GestureDetector` — it wraps `MouseRegion` + `GestureDetector` with automatic cursor handling. Built into `GlassCard`, bottom nav items, and sidebar items via `Tappable`. `GlassButton` uses a raw `MouseRegion` since its inner `ElevatedButton`/`OutlinedButton`/`TextButton` handles its own taps. Hover-tracking widgets (e.g., social login buttons with animated hover states) use `Cue.onHover`, which provides the pointer cursor and motion trigger together. Enforced by `.cursor/rules/pointer-cursor.mdc`.
 - **Root-level overlays**: All `showModalBottomSheet` and `showDialog` calls inside shell routes must use `useRootNavigator: true` so they render above the persistent navigation bar/sidebar, not beneath it.
-- **Localized copy only**: New user-facing Flutter strings must be added through `lib/l10n/app_en.arb` and `lib/l10n/app_de.arb`, then referenced via generated localization accessors. This is enforced by `.cursor/rules/localize-user-facing-strings.mdc`.
+- **Localized copy only**: New user-facing Flutter strings must be added through `lib/l10n/app_en.arb` and `lib/l10n/app_de.arb`, then referenced via generated localization accessors. This includes shared widget copy plus validator, toast, dialog, and error/helper text that reaches users. German catalog updates should prefer natural `ä`, `ö`, `ü`, and `ß` forms when linguistically correct. This is enforced by `.cursor/rules/localize-user-facing-strings.mdc`.
 - **Locale behavior**: The app resolves locale from the system by default, persists manual overrides in shared preferences, and exposes a shared language switcher on the login screen and in profile preferences.
 - **Popup menus**: `ThemeData.popupMenuTheme` is customized globally so overflow menus match the glassmorphism surface styling instead of default Material gray menus.
 
@@ -556,9 +562,10 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 
 - **Network errors**: Dio interceptor, non-intrusive snackbar with retry
 - **Auth errors**: auto-refresh on 401, redirect to login if refresh fails, preserve deep-link return target when possible, and continue through onboarding before restoring the original destination
-- **API errors**: structured responses (`{"detail": "...", "code": "..."}`) mapped to user-friendly messages
+- **API errors**: business-rule failures return structured responses (`{"detail": "...", "code": "..."}`) and Flutter first maps them into typed `AppFailure` values before resolving localized user-facing copy
+- **Request validation errors**: FastAPI/Pydantic request-shape validation keeps the default `422` body with `detail: [{loc, msg, ...}]`; Flutter formats those separately from business-rule error codes
 - **WebSocket disconnection**: auto-reconnect with exponential backoff (1s -> 30s max)
-- **Form validation**: inline field validation + backend validation as final gate
+- **Form validation**: inline field validation + backend validation as final gate; locale changes revalidate already-visible form errors so translated messages refresh immediately without waiting for the next submit
 
 ---
 
@@ -566,7 +573,7 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 
 ### Flutter
 - **Unit tests**: repositories (mocked API client), providers (Riverpod test utilities), domain model serialization
-- **Widget tests**: individual screens with mocked providers, form validation, and localization delegates enabled where migrated screens use `context.l10n`
+- **Widget tests**: individual screens with mocked providers, form validation, locale-switch revalidation, and localization delegates enabled where migrated screens use `context.l10n`
 - **Integration tests**: critical flows (register -> create group -> invite) via `integration_test`
 
 ### Backend (34 tests passing)
@@ -677,3 +684,6 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-01 | Design System / Flutter | Added global popup menu theming and localized remaining high-traffic group/profile surfaces | Overflow menus now match the glass theme, and the connected-accounts/group management flows no longer fall back to inline English copy |
 | 2026-06-01 | Authentication / Web | Restored `localStorage` fallback in Steam callback handoff for opener-less web flows | Steam web auth now matches the documented `flutter_web_auth_2` handoff contract instead of redirecting browser-only flows to the native custom scheme |
 | 2026-06-01 | Navigation / Auth UX | Explicit logout now routes to clean `/login` without a preserved `from` query | Prevents stale return targets like `/profile` from lingering after intentional sign-out while keeping interrupted-flow redirects intact |
+| 2026-06-01 | Localization / Spec Hygiene | Folded the full localization-sweep intent into the maintained core/roadmap specs | Keeps the lasting localization contract in tracked product docs instead of transient agent-planning files |
+| 2026-06-01 | Error Handling / Flutter App Architecture | Added backend error codes, typed Flutter failures, and locale-aware form revalidation | Prevents frozen translated errors, removes raw exception text from key UI surfaces, and gives Flutter a stable machine-readable API error contract |
+| 2026-06-01 | Release / SP1 Sign-Off | Marked SP1 complete for shipping at `v0.3.0` | Structured error handling and locale-aware validation were the final SP1 contract items before SP2 realtime work begins |

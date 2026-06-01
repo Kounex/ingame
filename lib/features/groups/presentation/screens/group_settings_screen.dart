@@ -79,7 +79,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        AppToast.error(context, ApiError.userMessage(e));
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
       }
     }
   }
@@ -130,7 +130,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, ApiError.userMessage(e));
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
       }
     }
   }
@@ -145,7 +145,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, ApiError.userMessage(e));
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
       }
     }
   }
@@ -191,7 +191,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, ApiError.userMessage(e));
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
       }
     }
   }
@@ -235,7 +235,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, ApiError.userMessage(e));
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
       }
     }
   }
@@ -289,8 +289,10 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
         body: detailAsync.when(
           loading: () => const Center(child: LoadingIndicator()),
           error: (error, _) => Center(
-            child: Text(error.toString(),
-                style: const TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              ApiError.userMessage(error, context.l10n),
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           data: (detail) {
             _initFromGroup(detail);

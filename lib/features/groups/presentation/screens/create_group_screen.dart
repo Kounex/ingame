@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/locale_aware_form_state_mixin.dart';
+import '../../../../core/networking/api_error.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
@@ -18,13 +20,15 @@ class CreateGroupScreen extends ConsumerStatefulWidget {
   ConsumerState<CreateGroupScreen> createState() => _CreateGroupScreenState();
 }
 
-class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
+class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
+    with LocaleAwareFormStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isDiscoverable = false;
   String _joinMode = 'open';
   bool _isLoading = false;
+  bool _hasAttemptedSubmit = false;
 
   @override
   void dispose() {
@@ -34,6 +38,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   }
 
   Future<void> _submit() async {
+    _hasAttemptedSubmit = true;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isLoading = true);
@@ -55,7 +60,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, e.toString());
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -65,6 +70,11 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+
+    revalidateFormOnLocaleChange(
+      formKey: _formKey,
+      shouldRevalidate: _hasAttemptedSubmit,
+    );
 
     return Container(
       decoration: const BoxDecoration(

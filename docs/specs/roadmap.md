@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.11"
+version: "1.14"
 status: active
 last_updated: "2026-06-01"
 ---
@@ -68,17 +68,18 @@ graph LR
 - User profiles with gaming hours (intelligent schedule display), bio, avatar
 - Groups with invite codes, discoverable directory, join requests with admin approval
 - First-time user onboarding wizard (3-step)
-- English and German localization across the app shell plus high-traffic auth/onboarding/group/profile flows
+- English and German localization across the app shell, shared widgets, validators/error surfaces, and auth/onboarding/group/profile flows, with German catalog wording normalized for native spelling
 - System-locale default with manual language switching on login and in profile preferences
+- Structured backend error codes plus locale-reactive Flutter error/validation handling so persisted failures switch language without requiring a refetch or re-entry
 - Route-aware redirect normalization for auth/onboarding return targets
 - Hybrid persistent navigation: sidebar/bottom nav stays visible during browsing; focused flows (auth, onboarding) hide nav
 - Reusable `InGameLogo` brand widget with gradient styling
 - Platform-authentic social login buttons (Steam brand palette, Apple HIG)
 - Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus, and existing page transitions where retained
 - Helm chart + Kustomize overlays for OpenShift deployment
-- 34 backend tests (auth, users, groups, WebSocket)
+- 40 backend tests (auth, users, groups, WebSocket)
 
-**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.23)
+**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.25)
 
 ---
 
@@ -191,13 +192,13 @@ These patterns and practices apply across all sub-projects:
 
 **Design system:** All UI follows the glassmorphism design system defined in SP1 -- dark gradients, translucent glass surfaces, electric blue primary accent. Components: `GlassCard`, `GlassButton`, `GlassInput`, `GlassAppBar`, `AdaptiveShell`, `StatusIndicator`. New sub-projects extend but don't replace this system.
 
-**Localization:** User-facing Flutter copy is localized via Flutter's official `flutter_localizations + intl + gen_l10n` stack. English and German ARB catalogs live under `lib/l10n/`, widgets should use `context.l10n`, and non-widget helpers should use the locale-aware fallback accessor rather than inline English strings.
+**Localization:** User-facing Flutter copy is localized via Flutter's official `flutter_localizations + intl + gen_l10n` stack. English and German ARB catalogs live under `lib/l10n/`; widgets should use `context.l10n`, and non-widget helpers should use the locale-aware fallback accessor rather than inline English strings. This contract also covers shared widget copy plus supporting validator/error/helper text, and the German catalog should prefer natural `ä`, `ö`, `ü`, and `ß` forms when linguistically correct.
 
 **Testing strategy:** Each sub-project adds tests covering its scope. Backend uses pytest + httpx AsyncClient + SQLite test DB. Flutter uses Riverpod test utilities for providers and widget tests. CI runs all tests on PR.
 
 **Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo.
 
-**API contract:** Backend Pydantic schemas are the source of truth. Flutter Freezed models must match the API response shapes. CI validates this alignment.
+**API contract:** Backend Pydantic schemas are the source of truth. Flutter Freezed models must match the API response shapes. Business-rule error responses may also include stable machine-readable `code` values alongside `detail` so Flutter can localize failures without parsing English text. CI validates this alignment.
 
 ---
 
@@ -217,3 +218,6 @@ These patterns and practices apply across all sub-projects:
 | 2026-05-31 | Split Helm charts | Separated the backend and web deployment charts so `ingame-api` and `ingame-web` each own their own runtime manifests |
 | 2026-05-31 | SP1 localization foundation | Added English/German localization infrastructure, migrated high-traffic UI copy, and documented the active localization rule for future work |
 | 2026-06-01 | SP1 pre-SP2 cleanup sync | Captured route normalization, shared language switching, popup menu theming, Steam web callback fallback recovery, and the remaining high-traffic group/profile localization sweep in the roadmap/spec pair |
+| 2026-06-01 | Localization spec consolidation | Moved the useful full-localization-sweep intent into tracked specs and clarified that shared widgets, helper/error copy, and natural German wording are part of the maintained localization contract |
+| 2026-06-01 | SP1 structured error handling | Added the backend error-code contract plus locale-reactive Flutter failure handling to the maintained SP1 delivery summary and API contract notes |
+| 2026-06-01 | SP1 release sign-off (`v0.3.0`) | Declared SP1 complete for shipping at `v0.3.0` after structured error handling, locale-aware form revalidation, and CI stabilization landed on `dev` |

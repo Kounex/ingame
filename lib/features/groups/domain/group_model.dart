@@ -4,7 +4,7 @@ part 'group_model.freezed.dart';
 part 'group_model.g.dart';
 
 @freezed
-class Group with _$Group {
+abstract class Group with _$Group {
   const factory Group({
     required String id,
     required String name,

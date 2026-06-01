@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/locale_aware_form_state_mixin.dart';
+import '../../../../core/networking/api_error.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
@@ -21,13 +23,15 @@ class EditProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
+    with LocaleAwareFormStateMixin {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _displayNameController;
   late TextEditingController _bioController;
   late String _timezone;
   Map<String, dynamic>? _gamingHours;
   bool _isSaving = false;
+  bool _hasAttemptedSave = false;
 
   @override
   void initState() {
@@ -50,6 +54,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Future<void> _save() async {
+    _hasAttemptedSave = true;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
@@ -67,7 +72,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       setState(() => _isSaving = false);
       final state = ref.read(profileNotifierProvider);
       if (state.hasError) {
-        AppToast.error(context, state.error.toString());
+        AppToast.error(context, ApiError.userMessage(state.error!, context.l10n));
       } else {
         context.pop();
       }
@@ -77,6 +82,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(profileNotifierProvider).valueOrNull;
+
+    revalidateFormOnLocaleChange(
+      formKey: _formKey,
+      shouldRevalidate: _hasAttemptedSave,
+    );
 
     return Scaffold(
       extendBodyBehindAppBar: true,

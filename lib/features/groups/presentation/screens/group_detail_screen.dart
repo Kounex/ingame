@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/networking/api_error.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
@@ -89,7 +90,7 @@ class GroupDetailScreen extends ConsumerWidget {
         body: detailAsync.when(
           loading: () => const LoadingIndicator(),
           error: (error, _) => ErrorDisplay(
-            message: error.toString(),
+            message: ApiError.userMessage(error, context.l10n),
             onRetry: () =>
                 ref.read(groupDetailNotifierProvider(groupId).notifier).refresh(),
           ),

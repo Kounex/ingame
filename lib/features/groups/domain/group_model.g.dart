@@ -6,7 +6,7 @@ part of 'group_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$GroupImpl _$$GroupImplFromJson(Map<String, dynamic> json) => _$GroupImpl(
+_Group _$GroupFromJson(Map<String, dynamic> json) => _Group(
   id: json['id'] as String,
   name: json['name'] as String,
   description: json['description'] as String?,
@@ -24,17 +24,16 @@ _$GroupImpl _$$GroupImplFromJson(Map<String, dynamic> json) => _$GroupImpl(
       : DateTime.parse(json['updated_at'] as String),
 );
 
-Map<String, dynamic> _$$GroupImplToJson(_$GroupImpl instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'description': instance.description,
-      'invite_code': instance.inviteCode,
-      'is_discoverable': instance.isDiscoverable,
-      'join_mode': instance.joinMode,
-      'avatar_url': instance.avatarUrl,
-      'created_by': instance.createdBy,
-      'member_count': instance.memberCount,
-      'created_at': instance.createdAt?.toIso8601String(),
-      'updated_at': instance.updatedAt?.toIso8601String(),
-    };
+Map<String, dynamic> _$GroupToJson(_Group instance) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'description': instance.description,
+  'invite_code': instance.inviteCode,
+  'is_discoverable': instance.isDiscoverable,
+  'join_mode': instance.joinMode,
+  'avatar_url': instance.avatarUrl,
+  'created_by': instance.createdBy,
+  'member_count': instance.memberCount,
+  'created_at': instance.createdAt?.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
+};

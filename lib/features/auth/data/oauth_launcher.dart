@@ -3,6 +3,7 @@ import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../core/localization/locale_controller.dart';
+import '../../../core/networking/app_failure.dart';
 import '../../../core/networking/api_endpoints.dart';
 
 class OAuthLauncher {
@@ -119,15 +120,22 @@ class OAuthLauncher {
 
   /// Returns a user-friendly error message for OAuth failures.
   /// In debug mode, includes the original error for easier diagnosis.
+  static AppFailure toFailure(Object error) {
+    if (isCancellationError(error)) {
+      return const LocalizedFailure(AppFailureMessageKey.authSignInCancelled);
+    }
+    return const LocalizedFailure(AppFailureMessageKey.authErrorGeneric);
+  }
+
   static String friendlyError(Object error) {
     final l10n = currentAppLocalizations();
-    if (isCancellationError(error)) {
-      return l10n.authSignInCancelled;
-    }
-    if (kDebugMode) {
+    final failure = toFailure(error);
+    if (kDebugMode &&
+        failure is LocalizedFailure &&
+        failure.key == AppFailureMessageKey.authErrorGeneric) {
       return '${l10n.authErrorDebugPrefix}: $error';
     }
-    return l10n.authErrorGeneric;
+    return failure.userMessage(l10n);
   }
 
   static bool isCancellationError(Object error) {

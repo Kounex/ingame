@@ -4,7 +4,7 @@ part 'membership_model.freezed.dart';
 part 'membership_model.g.dart';
 
 @freezed
-class GroupMember with _$GroupMember {
+abstract class GroupMember with _$GroupMember {
   const factory GroupMember({
     required String id,
     required String userId,
@@ -19,7 +19,7 @@ class GroupMember with _$GroupMember {
 }
 
 @freezed
-class JoinRequestUser with _$JoinRequestUser {
+abstract class JoinRequestUser with _$JoinRequestUser {
   const factory JoinRequestUser({
     required String id,
     required String displayName,
@@ -31,7 +31,7 @@ class JoinRequestUser with _$JoinRequestUser {
 }
 
 @freezed
-class JoinRequest with _$JoinRequest {
+abstract class JoinRequest with _$JoinRequest {
   const factory JoinRequest({
     required String id,
     required JoinRequestUser user,

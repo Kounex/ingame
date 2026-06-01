@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/locale_aware_form_state_mixin.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/networking/app_failure.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/language_switcher.dart';
@@ -27,10 +29,12 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with LocaleAwareFormStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _hasAttemptedSubmit = false;
 
   @override
   void dispose() {
@@ -40,6 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _onLogin() {
+    _hasAttemptedSubmit = true;
     if (_formKey.currentState?.validate() ?? false) {
       ref.read(authNotifierProvider.notifier).login(
             email: _emailController.text.trim(),
@@ -53,6 +58,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authNotifierProvider);
     final l10n = context.l10n;
 
+    revalidateFormOnLocaleChange(
+      formKey: _formKey,
+      shouldRevalidate: _hasAttemptedSubmit,
+    );
+
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (_, next) {
       next.whenData((state) {
         state.whenOrNull(
@@ -61,7 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       });
     });
 
-    String? errorMessage;
+    AppFailure? errorFailure;
     bool loading = false;
     authState.whenData((state) {
       state.when(
@@ -69,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         loading: () => loading = true,
         authenticated: (_) {},
         unauthenticated: () {},
-        error: (msg) => errorMessage = msg,
+        error: (failure) => errorFailure = failure,
       );
     });
 
@@ -120,7 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         prefixIcon: Icons.lock_outline,
                         validator: FormValidators.password,
                       ),
-                      if (errorMessage != null) ...[
+                      if (errorFailure != null) ...[
                         const SizedBox(height: AppSpacing.md),
                         Container(
                           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -132,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                           child: Text(
-                            errorMessage!,
+                            errorFailure!.userMessage(l10n),
                             style: const TextStyle(
                               color: AppColors.error,
                               fontSize: 13,

@@ -6,19 +6,18 @@ part of 'membership_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$GroupMemberImpl _$$GroupMemberImplFromJson(Map<String, dynamic> json) =>
-    _$GroupMemberImpl(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      displayName: json['display_name'] as String,
-      avatarUrl: json['avatar_url'] as String?,
-      role: json['role'] as String,
-      joinedAt: json['joined_at'] == null
-          ? null
-          : DateTime.parse(json['joined_at'] as String),
-    );
+_GroupMember _$GroupMemberFromJson(Map<String, dynamic> json) => _GroupMember(
+  id: json['id'] as String,
+  userId: json['user_id'] as String,
+  displayName: json['display_name'] as String,
+  avatarUrl: json['avatar_url'] as String?,
+  role: json['role'] as String,
+  joinedAt: json['joined_at'] == null
+      ? null
+      : DateTime.parse(json['joined_at'] as String),
+);
 
-Map<String, dynamic> _$$GroupMemberImplToJson(_$GroupMemberImpl instance) =>
+Map<String, dynamic> _$GroupMemberToJson(_GroupMember instance) =>
     <String, dynamic>{
       'id': instance.id,
       'user_id': instance.userId,
@@ -28,38 +27,35 @@ Map<String, dynamic> _$$GroupMemberImplToJson(_$GroupMemberImpl instance) =>
       'joined_at': instance.joinedAt?.toIso8601String(),
     };
 
-_$JoinRequestUserImpl _$$JoinRequestUserImplFromJson(
-  Map<String, dynamic> json,
-) => _$JoinRequestUserImpl(
-  id: json['id'] as String,
-  displayName: json['display_name'] as String,
-  avatarUrl: json['avatar_url'] as String?,
-);
-
-Map<String, dynamic> _$$JoinRequestUserImplToJson(
-  _$JoinRequestUserImpl instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'display_name': instance.displayName,
-  'avatar_url': instance.avatarUrl,
-};
-
-_$JoinRequestImpl _$$JoinRequestImplFromJson(Map<String, dynamic> json) =>
-    _$JoinRequestImpl(
+_JoinRequestUser _$JoinRequestUserFromJson(Map<String, dynamic> json) =>
+    _JoinRequestUser(
       id: json['id'] as String,
-      user: JoinRequestUser.fromJson(json['user'] as Map<String, dynamic>),
-      groupId: json['group_id'] as String,
-      status: json['status'] as String,
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.parse(json['created_at'] as String),
-      resolvedBy: json['resolved_by'] as String?,
-      resolvedAt: json['resolved_at'] == null
-          ? null
-          : DateTime.parse(json['resolved_at'] as String),
+      displayName: json['display_name'] as String,
+      avatarUrl: json['avatar_url'] as String?,
     );
 
-Map<String, dynamic> _$$JoinRequestImplToJson(_$JoinRequestImpl instance) =>
+Map<String, dynamic> _$JoinRequestUserToJson(_JoinRequestUser instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'display_name': instance.displayName,
+      'avatar_url': instance.avatarUrl,
+    };
+
+_JoinRequest _$JoinRequestFromJson(Map<String, dynamic> json) => _JoinRequest(
+  id: json['id'] as String,
+  user: JoinRequestUser.fromJson(json['user'] as Map<String, dynamic>),
+  groupId: json['group_id'] as String,
+  status: json['status'] as String,
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+  resolvedBy: json['resolved_by'] as String?,
+  resolvedAt: json['resolved_at'] == null
+      ? null
+      : DateTime.parse(json['resolved_at'] as String),
+);
+
+Map<String, dynamic> _$JoinRequestToJson(_JoinRequest instance) =>
     <String, dynamic>{
       'id': instance.id,
       'user': instance.user,

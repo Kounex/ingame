@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/locale_aware_form_state_mixin.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/networking/app_failure.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../data/auth_repository.dart';
@@ -27,7 +29,8 @@ class RegisterScreen extends ConsumerStatefulWidget {
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen>
+    with LocaleAwareFormStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -39,8 +42,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   bool _emailChecking = false;
   bool _displayNameChecking = false;
-  String? _emailAvailabilityError;
-  String? _displayNameAvailabilityError;
+  AppFailure? _emailAvailabilityError;
+  AppFailure? _displayNameAvailabilityError;
+  bool _hasAttemptedSubmit = false;
 
   static const _debounceDuration = Duration(milliseconds: 600);
 
@@ -65,7 +69,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _onEmailChanged() {
-    final l10n = context.l10n;
     _emailDebounce?.cancel();
     final email = _emailController.text.trim();
 
@@ -87,7 +90,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           setState(() {
             _emailChecking = false;
             _emailAvailabilityError =
-                available ? null : l10n.registerEmailTaken;
+                available
+                    ? null
+                    : const LocalizedFailure(AppFailureMessageKey.registerEmailTaken);
           });
         }
       } catch (_) {
@@ -99,7 +104,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _onDisplayNameChanged() {
-    final l10n = context.l10n;
     _displayNameDebounce?.cancel();
     final name = _displayNameController.text.trim();
 
@@ -121,7 +125,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           setState(() {
             _displayNameChecking = false;
             _displayNameAvailabilityError =
-                available ? null : l10n.registerDisplayNameTaken;
+                available
+                    ? null
+                    : const LocalizedFailure(
+                        AppFailureMessageKey.registerDisplayNameTaken,
+                      );
           });
         }
       } catch (_) {
@@ -133,22 +141,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _onRegister() {
+    _hasAttemptedSubmit = true;
+    final isFormValid = _formKey.currentState?.validate() ?? false;
     if (_emailAvailabilityError != null ||
-        _displayNameAvailabilityError != null) {
+        _displayNameAvailabilityError != null ||
+        !isFormValid) {
       return;
     }
-    if (_formKey.currentState?.validate() ?? false) {
-      ref.read(authNotifierProvider.notifier).register(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-            displayName: _displayNameController.text.trim(),
-          );
-    }
+    ref.read(authNotifierProvider.notifier).register(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          displayName: _displayNameController.text.trim(),
+        );
   }
 
   Widget _buildAvailabilityIndicator({
     required bool checking,
-    required String? error,
+    required AppFailure? error,
   }) {
     if (checking) {
       return const SizedBox(
@@ -171,6 +180,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final authState = ref.watch(authNotifierProvider);
     final l10n = context.l10n;
 
+    revalidateFormOnLocaleChange(
+      formKey: _formKey,
+      shouldRevalidate:
+          _hasAttemptedSubmit ||
+          _emailAvailabilityError != null ||
+          _displayNameAvailabilityError != null,
+    );
+
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (_, next) {
       next.whenData((state) {
         state.whenOrNull(
@@ -179,7 +196,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       });
     });
 
-    String? errorMessage;
+    AppFailure? errorFailure;
     bool loading = false;
     authState.whenData((state) {
       state.when(
@@ -187,7 +204,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         loading: () => loading = true,
         authenticated: (_) {},
         unauthenticated: () {},
-        error: (msg) => errorMessage = msg,
+        error: (failure) => errorFailure = failure,
       );
     });
 
@@ -228,7 +245,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           final base = FormValidators.displayName(value);
                           if (base != null) return base;
                           if (_displayNameAvailabilityError != null) {
-                            return _displayNameAvailabilityError;
+                            return _displayNameAvailabilityError!.userMessage(l10n);
                           }
                           return null;
                         },
@@ -249,7 +266,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           final base = FormValidators.email(value);
                           if (base != null) return base;
                           if (_emailAvailabilityError != null) {
-                            return _emailAvailabilityError;
+                            return _emailAvailabilityError!.userMessage(l10n);
                           }
                           return null;
                         },
@@ -278,7 +295,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           _passwordController.text,
                         ),
                       ),
-                      if (errorMessage != null) ...[
+                      if (errorFailure != null) ...[
                         const SizedBox(height: AppSpacing.md),
                         Container(
                           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -290,7 +307,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                           ),
                           child: Text(
-                            errorMessage!,
+                            errorFailure!.userMessage(l10n),
                             style: const TextStyle(
                               color: AppColors.error,
                               fontSize: 13,

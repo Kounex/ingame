@@ -2,11 +2,12 @@ import asyncio
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
-from fastapi import FastAPI
-from fastapi import WebSocket
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.core.exceptions import AppHTTPException
 from app.core.middleware import RequestLoggingMiddleware
 
 
@@ -49,6 +50,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(AppHTTPException)
+async def handle_app_http_exception(_: Request, exc: AppHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "code": exc.code.value},
+        headers=exc.headers,
+    )
 
 from app.api.v1.router import v1_router  # noqa: E402
 from app.ws.handlers import websocket_endpoint  # noqa: E402

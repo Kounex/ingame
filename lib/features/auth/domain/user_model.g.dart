@@ -6,7 +6,7 @@ part of 'user_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
+_User _$UserFromJson(Map<String, dynamic> json) => _User(
   id: json['id'] as String,
   displayName: json['display_name'] as String,
   email: json['email'] as String?,
@@ -24,17 +24,16 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       : DateTime.parse(json['updated_at'] as String),
 );
 
-Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'display_name': instance.displayName,
-      'email': instance.email,
-      'avatar_url': instance.avatarUrl,
-      'bio': instance.bio,
-      'timezone': instance.timezone,
-      'preferred_gaming_hours': instance.preferredGamingHours,
-      'steam_id': instance.steamId,
-      'apple_id': instance.appleId,
-      'created_at': instance.createdAt?.toIso8601String(),
-      'updated_at': instance.updatedAt?.toIso8601String(),
-    };
+Map<String, dynamic> _$UserToJson(_User instance) => <String, dynamic>{
+  'id': instance.id,
+  'display_name': instance.displayName,
+  'email': instance.email,
+  'avatar_url': instance.avatarUrl,
+  'bio': instance.bio,
+  'timezone': instance.timezone,
+  'preferred_gaming_hours': instance.preferredGamingHours,
+  'steam_id': instance.steamId,
+  'apple_id': instance.appleId,
+  'created_at': instance.createdAt?.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
+};

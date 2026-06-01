@@ -108,6 +108,35 @@ async def test_link_steam_conflict(client: AsyncClient):
             json={"openid_params": fake_params},
         )
     assert response.status_code == 409
+    assert response.json()["code"] == "user.steam_account_already_linked"
+
+
+@pytest.mark.asyncio
+async def test_get_me_invalid_token_returns_error_code(client: AsyncClient):
+    response = await client.get(
+        "/api/v1/users/me", headers={"Authorization": "Bearer invalid.token.value"}
+    )
+    assert response.status_code == 401
+    assert response.json()["code"] == "auth.access_token_invalid"
+
+
+@pytest.mark.asyncio
+async def test_link_steam_invalid_openid_returns_validation_code(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    with patch(
+        "app.api.v1.users.service.validate_steam_login",
+        new_callable=AsyncMock,
+        side_effect=ValueError("Steam OpenID validation failed"),
+    ):
+        response = await client.post(
+            "/api/v1/users/me/link-steam",
+            headers=_auth(token),
+            json={"openid_params": {"openid.mode": "cancel"}},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "auth.steam_openid_invalid"
 
 
 @pytest.mark.asyncio
@@ -130,6 +159,16 @@ async def test_unlink_steam(client: AsyncClient):
     response = await client.delete("/api/v1/users/me/link-steam", headers=_auth(token))
     assert response.status_code == 200
     assert response.json()["steam_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_unlink_steam_only_auth_method_returns_error_code(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    response = await client.delete("/api/v1/users/me/link-steam", headers=_auth(token))
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "user.last_auth_method_required"
 
 
 @pytest.mark.asyncio

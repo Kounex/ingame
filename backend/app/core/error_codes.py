@@ -1,0 +1,36 @@
+from enum import Enum
+
+
+class ErrorCode(str, Enum):
+    AUTH_MISSING_CREDENTIALS = "auth.missing_credentials"
+    AUTH_ACCESS_TOKEN_INVALID = "auth.access_token_invalid"
+    AUTH_ACCESS_TOKEN_TYPE_INVALID = "auth.access_token_type_invalid"
+    AUTH_ACCESS_TOKEN_USER_NOT_FOUND = "auth.access_token_user_not_found"
+    AUTH_EMAIL_TAKEN = "auth.email_taken"
+    AUTH_INVALID_CREDENTIALS = "auth.invalid_credentials"
+    AUTH_REFRESH_TOKEN_INVALID = "auth.refresh_token_invalid"
+    AUTH_REFRESH_TOKEN_TYPE_INVALID = "auth.refresh_token_type_invalid"
+    AUTH_REFRESH_TOKEN_REVOKED = "auth.refresh_token_revoked"
+    AUTH_REFRESH_TOKEN_USER_NOT_FOUND = "auth.refresh_token_user_not_found"
+    AUTH_STEAM_OPENID_INVALID = "auth.steam_openid_invalid"
+    AUTH_APPLE_TOKEN_INVALID = "auth.apple_token_invalid"
+
+    USER_NOT_FOUND = "user.not_found"
+    USER_STEAM_ACCOUNT_ALREADY_LINKED = "user.steam_account_already_linked"
+    USER_APPLE_ACCOUNT_ALREADY_LINKED = "user.apple_account_already_linked"
+    USER_EMAIL_PASSWORD_ALREADY_SET = "user.email_password_already_set"
+    USER_EMAIL_TAKEN = "user.email_taken"
+    USER_LAST_AUTH_METHOD_REQUIRED = "user.last_auth_method_required"
+
+    GROUP_NOT_FOUND = "group.not_found"
+    GROUP_INVITE_CODE_GENERATION_FAILED = "group.invite_code_generation_failed"
+    GROUP_INVITE_CODE_INVALID = "group.invite_code_invalid"
+    GROUP_MEMBER_ALREADY_EXISTS = "group.member_already_exists"
+    GROUP_DELETE_REQUIRES_OWNER = "group.delete_requires_owner"
+    GROUP_ADMIN_OR_OWNER_REQUIRED = "group.admin_or_owner_required"
+    GROUP_OWNER_CANNOT_BE_REMOVED = "group.owner_cannot_be_removed"
+    GROUP_MEMBER_NOT_FOUND = "group.member_not_found"
+
+    JOIN_REQUEST_NOT_FOUND = "join_request.not_found"
+    JOIN_REQUEST_PENDING_ALREADY_EXISTS = "join_request.pending_already_exists"
+    JOIN_REQUEST_ADMIN_OR_OWNER_REQUIRED = "join_request.admin_or_owner_required"

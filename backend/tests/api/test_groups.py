@@ -86,6 +86,20 @@ async def test_join_by_invite_code_already_member(client: AsyncClient):
         headers=_auth(token),
     )
     assert response.status_code == 409
+    assert response.json()["code"] == "group.member_already_exists"
+
+
+@pytest.mark.asyncio
+async def test_join_by_invite_code_invalid_code_returns_error_code(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    response = await client.post(
+        "/api/v1/groups/join/INVALID1",
+        headers=_auth(token),
+    )
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "group.invite_code_invalid"
 
 
 @pytest.mark.asyncio
@@ -208,6 +222,7 @@ async def test_non_owner_cannot_delete(client: AsyncClient):
         f"/api/v1/groups/{group_id}", headers=_auth(token2)
     )
     assert response.status_code == 403
+    assert response.json()["code"] == "group.delete_requires_owner"
 
 
 @pytest.mark.asyncio
@@ -284,3 +299,31 @@ async def test_join_request_deny(client: AsyncClient):
         headers=_auth(token_owner),
     )
     assert len(members_resp.json()) == 1
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_list_join_requests_returns_error_code(
+    client: AsyncClient,
+):
+    token_owner = await _register_and_get_token(client, "listowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={"name": "List Requests Group", "join_mode": "approval"},
+    )
+    group_id = create_resp.json()["id"]
+
+    token_member = await _register_and_get_token(client, "listmember@test.com")
+    invite_code = create_resp.json()["invite_code"]
+    await client.post(
+        f"/api/v1/groups/join/{invite_code}",
+        headers=_auth(token_member),
+    )
+
+    response = await client.get(
+        f"/api/v1/groups/{group_id}/join-requests",
+        headers=_auth(token_member),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "join_request.admin_or_owner_required"

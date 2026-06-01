@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/networking/app_failure.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -30,7 +31,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
   Timer? _debounce;
   List<Group>? _groups;
   bool _isLoading = true;
-  String? _error;
+  AppFailure? _error;
 
   @override
   void initState() {
@@ -70,7 +71,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = ApiError.toFailure(e);
           _isLoading = false;
         });
       }
@@ -102,7 +103,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppToast.error(context, ApiError.userMessage(e));
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
       }
     }
   }
@@ -147,7 +148,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              _error!,
+              _error!.userMessage(context.l10n),
               style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: AppSpacing.md),
