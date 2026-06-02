@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$User {
 
- String get id; String get displayName; String? get email; String? get avatarUrl; String? get bio; String get timezone; Map<String, dynamic>? get preferredGamingHours; String? get steamId; String? get appleId; DateTime? get createdAt; DateTime? get updatedAt;
+ String get id; String get displayName; String? get email; bool get hasPasswordLogin; String? get avatarUrl; String? get bio; String get timezone; Map<String, dynamic>? get preferredGamingHours; String? get steamId; String? get appleId; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $UserCopyWith<User> get copyWith => _$UserCopyWithImpl<User>(this as User, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is User&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&const DeepCollectionEquality().equals(other.preferredGamingHours, preferredGamingHours)&&(identical(other.steamId, steamId) || other.steamId == steamId)&&(identical(other.appleId, appleId) || other.appleId == appleId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is User&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.hasPasswordLogin, hasPasswordLogin) || other.hasPasswordLogin == hasPasswordLogin)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&const DeepCollectionEquality().equals(other.preferredGamingHours, preferredGamingHours)&&(identical(other.steamId, steamId) || other.steamId == steamId)&&(identical(other.appleId, appleId) || other.appleId == appleId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,email,avatarUrl,bio,timezone,const DeepCollectionEquality().hash(preferredGamingHours),steamId,appleId,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,displayName,email,hasPasswordLogin,avatarUrl,bio,timezone,const DeepCollectionEquality().hash(preferredGamingHours),steamId,appleId,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'User(id: $id, displayName: $displayName, email: $email, avatarUrl: $avatarUrl, bio: $bio, timezone: $timezone, preferredGamingHours: $preferredGamingHours, steamId: $steamId, appleId: $appleId, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'User(id: $id, displayName: $displayName, email: $email, hasPasswordLogin: $hasPasswordLogin, avatarUrl: $avatarUrl, bio: $bio, timezone: $timezone, preferredGamingHours: $preferredGamingHours, steamId: $steamId, appleId: $appleId, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $UserCopyWith<$Res>  {
   factory $UserCopyWith(User value, $Res Function(User) _then) = _$UserCopyWithImpl;
 @useResult
 $Res call({
- String id, String displayName, String? email, String? avatarUrl, String? bio, String timezone, Map<String, dynamic>? preferredGamingHours, String? steamId, String? appleId, DateTime? createdAt, DateTime? updatedAt
+ String id, String displayName, String? email, bool hasPasswordLogin, String? avatarUrl, String? bio, String timezone, Map<String, dynamic>? preferredGamingHours, String? steamId, String? appleId, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -65,12 +65,13 @@ class _$UserCopyWithImpl<$Res>
 
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? email = freezed,Object? avatarUrl = freezed,Object? bio = freezed,Object? timezone = null,Object? preferredGamingHours = freezed,Object? steamId = freezed,Object? appleId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? email = freezed,Object? hasPasswordLogin = null,Object? avatarUrl = freezed,Object? bio = freezed,Object? timezone = null,Object? preferredGamingHours = freezed,Object? steamId = freezed,Object? appleId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
-as String?,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
+as String?,hasPasswordLogin: null == hasPasswordLogin ? _self.hasPasswordLogin : hasPasswordLogin // ignore: cast_nullable_to_non_nullable
+as bool,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,bio: freezed == bio ? _self.bio : bio // ignore: cast_nullable_to_non_nullable
 as String?,timezone: null == timezone ? _self.timezone : timezone // ignore: cast_nullable_to_non_nullable
 as String,preferredGamingHours: freezed == preferredGamingHours ? _self.preferredGamingHours : preferredGamingHours // ignore: cast_nullable_to_non_nullable
@@ -163,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String? email,  String? avatarUrl,  String? bio,  String timezone,  Map<String, dynamic>? preferredGamingHours,  String? steamId,  String? appleId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String? email,  bool hasPasswordLogin,  String? avatarUrl,  String? bio,  String timezone,  Map<String, dynamic>? preferredGamingHours,  String? steamId,  String? appleId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _User() when $default != null:
-return $default(_that.id,_that.displayName,_that.email,_that.avatarUrl,_that.bio,_that.timezone,_that.preferredGamingHours,_that.steamId,_that.appleId,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.displayName,_that.email,_that.hasPasswordLogin,_that.avatarUrl,_that.bio,_that.timezone,_that.preferredGamingHours,_that.steamId,_that.appleId,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -184,10 +185,10 @@ return $default(_that.id,_that.displayName,_that.email,_that.avatarUrl,_that.bio
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String? email,  String? avatarUrl,  String? bio,  String timezone,  Map<String, dynamic>? preferredGamingHours,  String? steamId,  String? appleId,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String? email,  bool hasPasswordLogin,  String? avatarUrl,  String? bio,  String timezone,  Map<String, dynamic>? preferredGamingHours,  String? steamId,  String? appleId,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _User():
-return $default(_that.id,_that.displayName,_that.email,_that.avatarUrl,_that.bio,_that.timezone,_that.preferredGamingHours,_that.steamId,_that.appleId,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.displayName,_that.email,_that.hasPasswordLogin,_that.avatarUrl,_that.bio,_that.timezone,_that.preferredGamingHours,_that.steamId,_that.appleId,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +205,10 @@ return $default(_that.id,_that.displayName,_that.email,_that.avatarUrl,_that.bio
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String? email,  String? avatarUrl,  String? bio,  String timezone,  Map<String, dynamic>? preferredGamingHours,  String? steamId,  String? appleId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String? email,  bool hasPasswordLogin,  String? avatarUrl,  String? bio,  String timezone,  Map<String, dynamic>? preferredGamingHours,  String? steamId,  String? appleId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _User() when $default != null:
-return $default(_that.id,_that.displayName,_that.email,_that.avatarUrl,_that.bio,_that.timezone,_that.preferredGamingHours,_that.steamId,_that.appleId,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.displayName,_that.email,_that.hasPasswordLogin,_that.avatarUrl,_that.bio,_that.timezone,_that.preferredGamingHours,_that.steamId,_that.appleId,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -219,12 +220,13 @@ return $default(_that.id,_that.displayName,_that.email,_that.avatarUrl,_that.bio
 @JsonSerializable()
 
 class _User implements User {
-  const _User({required this.id, required this.displayName, this.email, this.avatarUrl, this.bio, required this.timezone, final  Map<String, dynamic>? preferredGamingHours, this.steamId, this.appleId, this.createdAt, this.updatedAt}): _preferredGamingHours = preferredGamingHours;
+  const _User({required this.id, required this.displayName, this.email, this.hasPasswordLogin = false, this.avatarUrl, this.bio, required this.timezone, final  Map<String, dynamic>? preferredGamingHours, this.steamId, this.appleId, this.createdAt, this.updatedAt}): _preferredGamingHours = preferredGamingHours;
   factory _User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
 @override final  String id;
 @override final  String displayName;
 @override final  String? email;
+@override@JsonKey() final  bool hasPasswordLogin;
 @override final  String? avatarUrl;
 @override final  String? bio;
 @override final  String timezone;
@@ -255,16 +257,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _User&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&const DeepCollectionEquality().equals(other._preferredGamingHours, _preferredGamingHours)&&(identical(other.steamId, steamId) || other.steamId == steamId)&&(identical(other.appleId, appleId) || other.appleId == appleId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _User&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.email, email) || other.email == email)&&(identical(other.hasPasswordLogin, hasPasswordLogin) || other.hasPasswordLogin == hasPasswordLogin)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.bio, bio) || other.bio == bio)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&const DeepCollectionEquality().equals(other._preferredGamingHours, _preferredGamingHours)&&(identical(other.steamId, steamId) || other.steamId == steamId)&&(identical(other.appleId, appleId) || other.appleId == appleId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,email,avatarUrl,bio,timezone,const DeepCollectionEquality().hash(_preferredGamingHours),steamId,appleId,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,displayName,email,hasPasswordLogin,avatarUrl,bio,timezone,const DeepCollectionEquality().hash(_preferredGamingHours),steamId,appleId,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'User(id: $id, displayName: $displayName, email: $email, avatarUrl: $avatarUrl, bio: $bio, timezone: $timezone, preferredGamingHours: $preferredGamingHours, steamId: $steamId, appleId: $appleId, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'User(id: $id, displayName: $displayName, email: $email, hasPasswordLogin: $hasPasswordLogin, avatarUrl: $avatarUrl, bio: $bio, timezone: $timezone, preferredGamingHours: $preferredGamingHours, steamId: $steamId, appleId: $appleId, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -275,7 +277,7 @@ abstract mixin class _$UserCopyWith<$Res> implements $UserCopyWith<$Res> {
   factory _$UserCopyWith(_User value, $Res Function(_User) _then) = __$UserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String displayName, String? email, String? avatarUrl, String? bio, String timezone, Map<String, dynamic>? preferredGamingHours, String? steamId, String? appleId, DateTime? createdAt, DateTime? updatedAt
+ String id, String displayName, String? email, bool hasPasswordLogin, String? avatarUrl, String? bio, String timezone, Map<String, dynamic>? preferredGamingHours, String? steamId, String? appleId, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -292,12 +294,13 @@ class __$UserCopyWithImpl<$Res>
 
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? email = freezed,Object? avatarUrl = freezed,Object? bio = freezed,Object? timezone = null,Object? preferredGamingHours = freezed,Object? steamId = freezed,Object? appleId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? email = freezed,Object? hasPasswordLogin = null,Object? avatarUrl = freezed,Object? bio = freezed,Object? timezone = null,Object? preferredGamingHours = freezed,Object? steamId = freezed,Object? appleId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_User(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
-as String?,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
+as String?,hasPasswordLogin: null == hasPasswordLogin ? _self.hasPasswordLogin : hasPasswordLogin // ignore: cast_nullable_to_non_nullable
+as bool,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,bio: freezed == bio ? _self.bio : bio // ignore: cast_nullable_to_non_nullable
 as String?,timezone: null == timezone ? _self.timezone : timezone // ignore: cast_nullable_to_non_nullable
 as String,preferredGamingHours: freezed == preferredGamingHours ? _self._preferredGamingHours : preferredGamingHours // ignore: cast_nullable_to_non_nullable

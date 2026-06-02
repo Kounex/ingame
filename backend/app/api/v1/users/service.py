@@ -8,6 +8,7 @@ from app.auth.steam import validate_steam_login
 from app.core.error_codes import ErrorCode
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.db.models.user import User
+from app.db.repositories.revoked_auth_link_repo import RevokedAuthLinkRepository
 from app.db.repositories.user_repo import UserRepository
 
 
@@ -31,6 +32,16 @@ async def update_profile(db: AsyncSession, user: User, **kwargs) -> User:
     update_data = {k: v for k, v in kwargs.items() if v is not None}
     if not update_data:
         return user
+
+    email = update_data.get("email")
+    if email is not None and email != user.email:
+        existing = await repo.get_by_email(email)
+        if existing and existing.id != user.id:
+            raise ConflictError(
+                "This email is already in use by another account",
+                code=ErrorCode.USER_EMAIL_TAKEN,
+            )
+
     updated = await repo.update(user.id, **update_data)
     if updated is None:
         raise NotFoundError("User not found", code=ErrorCode.USER_NOT_FOUND)
@@ -52,6 +63,7 @@ async def link_steam(db: AsyncSession, user: User, openid_params: dict) -> User:
         raise ValidationError(str(e), code=ErrorCode.AUTH_STEAM_OPENID_INVALID)
 
     repo = UserRepository(db)
+    revoked_repo = RevokedAuthLinkRepository(db)
     existing = await repo.get_by_steam_id(steam_id)
     if existing and existing.id != user.id:
         raise ConflictError(
@@ -62,6 +74,7 @@ async def link_steam(db: AsyncSession, user: User, openid_params: dict) -> User:
     updated = await repo.update(user.id, steam_id=steam_id)
     if updated is None:
         raise NotFoundError("User not found", code=ErrorCode.USER_NOT_FOUND)
+    await revoked_repo.delete("steam", steam_id)
     return updated
 
 
@@ -73,6 +86,7 @@ async def link_apple(db: AsyncSession, user: User, identity_token: str) -> User:
     apple_id = apple_info["sub"]
 
     repo = UserRepository(db)
+    revoked_repo = RevokedAuthLinkRepository(db)
     existing = await repo.get_by_apple_id(apple_id)
     if existing and existing.id != user.id:
         raise ConflictError(
@@ -83,6 +97,7 @@ async def link_apple(db: AsyncSession, user: User, identity_token: str) -> User:
     updated = await repo.update(user.id, apple_id=apple_id)
     if updated is None:
         raise NotFoundError("User not found", code=ErrorCode.USER_NOT_FOUND)
+    await revoked_repo.delete("apple", apple_id)
     return updated
 
 
@@ -118,10 +133,19 @@ async def unlink_steam(db: AsyncSession, user: User) -> User:
         )
 
     repo = UserRepository(db)
+    revoked_repo = RevokedAuthLinkRepository(db)
     user_record = await repo.get_by_id(user.id)
     if user_record is None:
         raise NotFoundError("User not found", code=ErrorCode.USER_NOT_FOUND)
+    steam_id = user_record.steam_id
+    if steam_id is None:
+        return user_record
     user_record.steam_id = None
+    await revoked_repo.upsert(
+        user_id=user_record.id,
+        provider="steam",
+        external_id=steam_id,
+    )
     await db.flush()
     await db.refresh(user_record)
     return user_record
@@ -135,10 +159,19 @@ async def unlink_apple(db: AsyncSession, user: User) -> User:
         )
 
     repo = UserRepository(db)
+    revoked_repo = RevokedAuthLinkRepository(db)
     user_record = await repo.get_by_id(user.id)
     if user_record is None:
         raise NotFoundError("User not found", code=ErrorCode.USER_NOT_FOUND)
+    apple_id = user_record.apple_id
+    if apple_id is None:
+        return user_record
     user_record.apple_id = None
+    await revoked_repo.upsert(
+        user_id=user_record.id,
+        provider="apple",
+        external_id=apple_id,
+    )
     await db.flush()
     await db.refresh(user_record)
     return user_record

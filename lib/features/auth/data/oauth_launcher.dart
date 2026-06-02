@@ -6,6 +6,16 @@ import '../../../core/localization/locale_controller.dart';
 import '../../../core/networking/app_failure.dart';
 import '../../../core/networking/api_endpoints.dart';
 
+class AppleSignInResult {
+  const AppleSignInResult({
+    required this.identityToken,
+    this.displayName,
+  });
+
+  final String identityToken;
+  final String? displayName;
+}
+
 class OAuthLauncher {
   OAuthLauncher._();
 
@@ -49,10 +59,11 @@ class OAuthLauncher {
 
   static Uri _steamCallbackUri(String appBaseUrl) {
     final appUri = Uri.parse(appBaseUrl);
-    return appUri.replace(
+    return Uri(
+      scheme: appUri.scheme,
+      host: appUri.host,
+      port: appUri.hasPort ? appUri.port : null,
       path: _steamCallbackPath,
-      queryParameters: null,
-      fragment: null,
     );
   }
 
@@ -88,11 +99,24 @@ class OAuthLauncher {
     return Uri.parse(resultUrl).queryParameters;
   }
 
+  @visibleForTesting
+  static String? appleDisplayNameFromParts({
+    required String? givenName,
+    required String? familyName,
+  }) {
+    final parts = [givenName?.trim(), familyName?.trim()]
+        .whereType<String>()
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return null;
+    return parts.join(' ');
+  }
+
   /// Launches Apple Sign-In and returns the identity token on success.
   /// On web, requires a configured service ID and redirect URI in Apple
   /// Developer Console. Uses native AuthenticationServices on iOS/macOS.
   /// Throws [SignInWithAppleAuthorizationException] on cancellation.
-  static Future<String> launchAppleSignIn() async {
+  static Future<AppleSignInResult> launchAppleSignIn() async {
     final credential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
@@ -115,7 +139,13 @@ class OAuthLauncher {
     if (identityToken == null) {
       throw Exception('Failed to get Apple identity token.');
     }
-    return identityToken;
+    return AppleSignInResult(
+      identityToken: identityToken,
+      displayName: appleDisplayNameFromParts(
+        givenName: credential.givenName,
+        familyName: credential.familyName,
+      ),
+    );
   }
 
   /// Returns a user-friendly error message for OAuth failures.

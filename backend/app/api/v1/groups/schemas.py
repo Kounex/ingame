@@ -48,3 +48,11 @@ class GroupMemberResponse(BaseModel):
 class AddMemberRequest(BaseModel):
     user_id: uuid.UUID
     role: str = Field(default="member", pattern="^(admin|member)$")
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    role: str = Field(pattern="^(admin|member)$")
+
+
+class TransferOwnershipRequest(BaseModel):
+    user_id: uuid.UUID

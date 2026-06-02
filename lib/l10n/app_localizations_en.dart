@@ -153,6 +153,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonShare => 'Share';
 
   @override
+  String get commonClose => 'Close';
+
+  @override
   String get navigationGroups => 'Groups';
 
   @override
@@ -243,7 +246,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingGamingTitle => 'Gaming Preferences';
 
   @override
-  String get onboardingGamingSubtitle => 'Select at least one time slot so groups can see when you play.';
+  String get onboardingGamingSubtitle => 'Add your usual time slots now or skip this step and set them later.';
 
   @override
   String get onboardingConnectSteamTitle => 'Connect Steam';
@@ -440,19 +443,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileConnectedAccountsApple => 'Apple';
 
   @override
+  String get profileConnectedTapToDisconnect => 'Connected. Tap to disconnect.';
+
+  @override
   String profileDisconnectTitle(String provider) {
-    return 'Disconnect $provider';
+    return 'Disconnect $provider?';
   }
 
   @override
   String profileDisconnectMessage(String provider) {
-    return 'Are you sure you want to disconnect your $provider account?';
+    return 'You won\'t be able to sign in with $provider after this.';
   }
+
+  @override
+  String get profileDisconnectSessionNotice => 'Your current session will stay active on this device.';
+
+  @override
+  String get profileDisconnectKeepAnotherMethod => 'Make sure another sign-in method is already connected before you continue.';
+
+  @override
+  String get profileDisconnectSteamFeatureNotice => 'Steam-connected features will stay unavailable until you relink Steam.';
+
+  @override
+  String get profileDisconnectAction => 'Disconnect';
 
   @override
   String profileDisconnectFailed(String provider, String message) {
     return 'Failed to disconnect $provider: $message';
   }
+
+  @override
+  String profileDisconnectedSuccess(String provider) {
+    return '$provider disconnected.';
+  }
+
+  @override
+  String get profileLastAuthMethodRequired => 'Add another sign-in method before disconnecting this one.';
 
   @override
   String get profileSteamLinkedSuccess => 'Steam account linked successfully';
@@ -543,6 +569,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAdd => 'Add';
 
   @override
+  String get authSteamRelinkRequired => 'This Steam login was disconnected. Sign in with another method and relink Steam from Profile.';
+
+  @override
+  String get authAppleRelinkRequired => 'This Apple login was disconnected. Sign in with another method and relink Apple from Profile.';
+
+  @override
   String get groupTitleFallback => 'Group';
 
   @override
@@ -583,6 +615,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupDetailLeaveMessage => 'Are you sure you want to leave this group?';
+
+  @override
+  String get groupDetailOwnerLeaveMessage => 'Transfer ownership or delete the group before leaving it yourself.';
 
   @override
   String get createGroupTitle => 'Create Group';
@@ -689,6 +724,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupSettingsRoleMember => 'Member';
+
+  @override
+  String get groupSettingsPromoteTitle => 'Promote to Admin';
+
+  @override
+  String groupSettingsPromoteMessage(String displayName) {
+    return 'Promote $displayName to admin?';
+  }
+
+  @override
+  String get groupSettingsPromoteAction => 'Promote';
+
+  @override
+  String groupSettingsPromoted(String displayName) {
+    return '$displayName is now an admin.';
+  }
+
+  @override
+  String get groupSettingsDemoteTitle => 'Demote to Member';
+
+  @override
+  String groupSettingsDemoteMessage(String displayName) {
+    return 'Remove admin access for $displayName?';
+  }
+
+  @override
+  String get groupSettingsDemoteAction => 'Demote';
+
+  @override
+  String groupSettingsDemoted(String displayName) {
+    return '$displayName is now a member.';
+  }
+
+  @override
+  String get groupSettingsTransferOwnershipTitle => 'Transfer Ownership';
+
+  @override
+  String groupSettingsTransferOwnershipMessage(String displayName) {
+    return 'Transfer ownership to $displayName? You will remain in the group as an admin.';
+  }
+
+  @override
+  String get groupSettingsTransferOwnershipAction => 'Transfer ownership';
+
+  @override
+  String groupSettingsOwnershipTransferred(String displayName) {
+    return '$displayName is now the group owner.';
+  }
+
+  @override
+  String get groupOwnerCannotLeave => 'Transfer ownership or delete the group before leaving it yourself.';
 
   @override
   String groupSettingsTimeAgoDays(int count) {

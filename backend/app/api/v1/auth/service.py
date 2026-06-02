@@ -8,6 +8,7 @@ from app.auth.password import hash_password, verify_password
 from app.auth.steam import get_steam_profile, validate_steam_login
 from app.core.error_codes import ErrorCode
 from app.core.exceptions import ConflictError, UnauthorizedError, ValidationError
+from app.db.repositories.revoked_auth_link_repo import RevokedAuthLinkRepository
 from app.db.repositories.user_repo import UserRepository
 from app.redis.client import redis_pool
 
@@ -118,7 +119,15 @@ async def steam_auth(db: AsyncSession, openid_params: dict):
         raise ValidationError(str(e), code=ErrorCode.AUTH_STEAM_OPENID_INVALID)
 
     repo = UserRepository(db)
+    revoked_repo = RevokedAuthLinkRepository(db)
     user = await repo.get_by_steam_id(steam_id)
+    revoked_link = await revoked_repo.get("steam", steam_id)
+
+    if user is None and revoked_link is not None:
+        raise ConflictError(
+            "This Steam login was disconnected. Sign in with another method and relink Steam from profile.",
+            code=ErrorCode.AUTH_STEAM_RELINK_REQUIRED,
+        )
 
     if user is None:
         profile = await get_steam_profile(steam_id)
@@ -147,7 +156,15 @@ async def apple_auth(
     email = apple_info.get("email")
 
     repo = UserRepository(db)
+    revoked_repo = RevokedAuthLinkRepository(db)
     user = await repo.get_by_apple_id(apple_id)
+    revoked_link = await revoked_repo.get("apple", apple_id)
+
+    if user is None and revoked_link is not None:
+        raise ConflictError(
+            "This Apple login was disconnected. Sign in with another method and relink Apple from profile.",
+            code=ErrorCode.AUTH_APPLE_RELINK_REQUIRED,
+        )
 
     if user is None:
         name = display_name or email or f"Apple_{apple_id[:8]}"

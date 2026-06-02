@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination
-version: "1.5"
+version: "1.8"
 status: in-progress
-last_updated: "2026-06-01"
+last_updated: "2026-06-03"
 sub_project: 2
 ---
 
@@ -12,9 +12,9 @@ sub_project: 2
 
 ## Overview
 
-This spec covers **Sub-Project 2: Real-Time Coordination**. It builds on the Core Platform foundation from [2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) and defines the realtime architecture required for live presence, readiness signaling, lightweight group activity, and session scheduling.
+This spec covers **Sub-Project 2: Real-Time Coordination**. It builds on the Core Platform foundation from [2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) and defines the realtime architecture required for live presence, readiness signaling, scheduled readiness, lightweight group activity, and session scheduling.
 
-The goal of SP2 is to make coordination feel immediate: a user can mark themselves as ready, other group members see that status update live, and the app can grow into session proposals and RSVP flows on top of the same transport and event model.
+The goal of SP2 is to make coordination feel immediate: a user can mark themselves as ready, other group members see that status update live, and the app can grow into both scheduled personal availability publication and explicit session proposals on top of the same transport and event model.
 
 ---
 
@@ -33,12 +33,12 @@ Phase 1 delivers **presence only**. Session scheduling, activity feed, and relat
 
 ### Display Priority
 When rendering a member's single status badge:
-1. `offline` if the user has no active WebSocket connection
-2. `ready` if the user is ready in that group and the ready expiry has not passed
+1. `ready` if the user is ready in that group and the ready expiry has not passed
+2. `offline` if the user has no active WebSocket connection
 3. `away` if connected but the client reported background/inactive
 4. `online` otherwise
 
-Ready remains visible even when the user backgrounds the app while still connected; only disconnect clears ready from the badge (ready metadata may still persist server-side until expiry or manual clear).
+Ready remains visible even when the user backgrounds the app or disconnects. Connection-derived presence remains secondary context and must not clear or re-broadcast ready by itself while the ready window is still active.
 
 ---
 
@@ -54,14 +54,22 @@ Ready remains visible even when the user backgrounds the app while still connect
 - backend and frontend test coverage for phase-1 realtime behavior
 
 ### Planned Later (Phase 2+)
-- group activity events for session lifecycle
-- session scheduling data model and CRUD contract
-- REST bootstrap endpoints for sessions/presence beyond WebSocket snapshots
+- scheduled ready windows with multiple future slots per member
+- group calendar views for scheduled ready windows
+- recurring-availability overlay/filter that consumes SP1 `preferred_gaming_hours` data without redefining it inside SP2
+- group activity events for scheduled-ready and session lifecycle changes
+- session scheduling data model and CRUD contract for RSVP-based plans
+- REST bootstrap endpoints for scheduled-ready windows, sessions, and richer presence beyond WebSocket snapshots
 
 ### Out of Scope
 - push notifications (SP4)
 - game matching and Steam library sync (SP3)
 - public lobbies and open matchmaking (SP5)
+
+SP2 deliberately separates:
+- **Recurring profile availability (SP1)** -- durable, profile-owned weekly preferences such as "usually evenings on weekdays"
+- **Scheduled ready windows (SP2)** -- near-term, user-published "I expect to be ready at these times" slots that can be shown live in a group calendar
+- **Session proposals (SP2)** -- explicit group play plans with RSVP and optional game context
 
 ---
 
@@ -140,7 +148,14 @@ Connection presence is **not** user-set directly in phase 1.
 - `ready` is stored per `(group_id, user_id)`
 - toggled explicitly by the user in group context
 - persists across disconnect until cleared manually or by the 8-hour fallback expiry
-- while a user is offline, other members still render them as `offline` even if ready metadata remains stored for reconnect
+- while a user is offline, other members still render them as `ready` if the ready window is active; `offline` remains secondary metadata rather than the primary badge
+
+### Scheduled Ready Windows (Planned Phase 2+)
+- A scheduled ready window is a future slot published by one member for one group, e.g. "today 20:00-23:00" or "Saturday all day"
+- A member may publish multiple future windows at once
+- Scheduled ready windows are not RSVP objects and do not imply that anyone else has committed to attend
+- Scheduled ready windows complement the immediate `ready` toggle rather than replacing it
+- Calendar surfaces may combine these windows with SP1 recurring profile availability for comparison, but the two datasets remain distinct
 
 ### Redis Structures
 - `user:{id}:connection` -- hash: `{state, since}` where `state` is `online` or `away`
@@ -160,8 +175,10 @@ When a client connects:
 5. broadcast `user_online` to other connected members
 
 The snapshot payload contains, per group:
-- connected members with derived `connection`
+- members who are currently connected and/or currently ready, with derived `connection`
 - group-scoped `ready`, `ready_since`, and `ready_expires_at` when applicable
+
+Presence changes such as `user_online`, `user_offline`, and `connection_changed` must not emit a synthetic `ready_changed` event. A `ready_changed` event only represents an actual ready transition, such as a user toggling ready, a scheduled-ready start, manual clear, or expiry.
 
 Example snapshot fragment:
 
@@ -209,7 +226,44 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 
 ---
 
-## Session Scheduling (Planned Phase 2+)
+## Planned Phase 2+ Coordination Models
+
+### Scheduled Ready Windows
+
+#### Durable PostgreSQL Model
+
+**ScheduledReadyWindow**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID | Primary key |
+| group_id | UUID | FK -> Group |
+| user_id | UUID | FK -> User |
+| starts_at | TIMESTAMP | Start of the published ready window |
+| ends_at | TIMESTAMP | End of the published ready window |
+| source | VARCHAR | `manual` for direct entry; room for future derived/imported variants if needed |
+| created_at | TIMESTAMP | Auto-set |
+| updated_at | TIMESTAMP | Auto-updated |
+
+#### REST Contract (Planned)
+- `GET /api/v1/groups/{group_id}/scheduled-ready`
+- `POST /api/v1/groups/{group_id}/scheduled-ready`
+- `PATCH /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
+- `DELETE /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
+
+#### WebSocket Commands (Planned)
+- `scheduled_ready_upsert`
+- `scheduled_ready_delete`
+
+#### WebSocket Events (Planned)
+- `scheduled_ready_updated`
+- `scheduled_ready_deleted`
+
+#### Calendar Surface Rules
+- The primary group calendar view shows scheduled ready windows for all visible members in the selected time range
+- A filter/toggle may switch the same calendar into a recurring-availability comparison mode backed by SP1 `preferred_gaming_hours`
+- Recurring availability is read-only inside this comparison surface unless the user explicitly navigates to profile editing
+
+### Session Scheduling
 
 ### Durable PostgreSQL Model
 
@@ -239,17 +293,25 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 
 ### REST Contract (Planned)
 - `GET /api/v1/groups/{group_id}/presence`
+- `GET /api/v1/groups/{group_id}/scheduled-ready`
 - `GET /api/v1/groups/{group_id}/sessions`
+- `POST /api/v1/groups/{group_id}/scheduled-ready`
 - `POST /api/v1/groups/{group_id}/sessions`
+- `PATCH /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
 - `PATCH /api/v1/groups/{group_id}/sessions/{session_id}`
+- `DELETE /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
 - `POST /api/v1/groups/{group_id}/sessions/{session_id}/rsvp`
 
 ### WebSocket Commands (Planned)
+- `scheduled_ready_upsert`
+- `scheduled_ready_delete`
 - `session_propose`
 - `session_update`
 - `session_rsvp`
 
 ### WebSocket Events (Planned)
+- `scheduled_ready_updated`
+- `scheduled_ready_deleted`
 - `session_proposed`
 - `session_updated`
 - `session_rsvp_updated`
@@ -274,6 +336,7 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 - group member rows use a single live-status composition built from `UserAvatar` + `StatusIndicator`
 - group detail screens expose a group-scoped ready toggle for the current user; the toggle is disabled unless the WebSocket is `connected`, shows reconnect/offline hints otherwise, and `toggleReady` rejects commands that cannot be delivered (no optimistic ready flip while disconnected)
 - member surfaces app-wide consume `groupMemberStatusProvider` rather than computing status locally
+- later SP2 group surfaces may expose a calendar that can switch between scheduled-ready windows and recurring profile-availability comparison without collapsing those concepts into one model
 
 ### Configuration
 - REST and WebSocket base URLs must be environment-configurable
@@ -308,12 +371,13 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 - ready toggle tests: group-scoped ready on/off fan-out
 - lifecycle tests: background/resume transitions emit `connection_changed`
 - ready expiry tests: stale ready clears and fan-out reflects the cleared state
+- reconnect tests: offline-but-ready members remain present in snapshots without an extra reconnect `ready_changed`
 
 ### Flutter
 - `WebSocketClient` tests: connect, decode, disconnect, reconnect with fresh token, command send helpers, connection-state transitions, await `channel.ready` before marking connected, `presence_snapshot` cache for late subscribers and cache clear on disconnect
-- provider tests: auth transition triggers connect/disconnect, snapshot merge, bootstrap hydration when snapshot arrives before listener attach, legacy snapshot wire-format normalization, ready updates, ready expiry, lifecycle-derived away handling, connection-state provider sync, ready toggle rejection while disconnected/reconnecting
+- provider tests: auth transition triggers connect/disconnect, snapshot merge, bootstrap hydration when snapshot arrives before listener attach, legacy snapshot wire-format normalization, offline-ready snapshot hydration, ready updates, ready expiry, lifecycle-derived away handling, ready-first status derivation across offline/away changes, connection-state provider sync, ready toggle rejection while disconnected/reconnecting
 - widget tests: member list/status rendering from live provider state
-- integration tests: login -> open group -> receive live ready change
+- integration tests: still planned for a full login -> open group -> receive live ready change path; current shipped coverage remains unit/widget focused
 
 ### CI Requirements
 - `flutter analyze`
@@ -343,3 +407,6 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 | 2026-06-01 | Flutter Architecture | Document `WebSocketClient` `presence_snapshot` cache and presence provider bootstrap hydration from cache | Fix lost bootstrap when broadcast event stream has no late-subscriber replay |
 | 2026-06-01 | Flutter Architecture | Require `WebSocketClient` to await `channel.ready` before transport `connected`; presence provider re-hydrates on connection-state transitions and normalizes legacy snapshot wire format (`statuses`/`state`) | Live web login showed self offline because bootstrap used pre-SP2 payload shape and transport could report connected before handshake completion |
 | 2026-06-01 | Product Rules / Display Priority | Correct badge precedence to `offline → ready → away → online`; ready stays visible when a connected user backgrounds | Live observation showed away overriding ready after lifecycle `connection_changed`; backend stores ready and connection independently |
+| 2026-06-02 | Planned Phase 2+ scope | Added scheduled ready windows, group calendar views, and recurring-availability overlay semantics as SP2 coordination features distinct from RSVP-based session proposals | Classifies the next coordination feature batch without conflating profile availability, near-term readiness publication, and explicit session planning |
+| 2026-06-03 | Reconnect fan-out / Testing | Re-publish persisted `ready_changed` state after first-connection reconnect and align the testing section with the currently shipped provider/unit coverage | Fixes the audit-found gap where already-connected observers saw a reconnecting ready user return as merely online |
+| 2026-06-03 | Product Rules / Bootstrap Strategy / Testing | Promote `ready` to the primary visible status even while offline, include offline-but-ready members in snapshots, and forbid synthetic `ready_changed` re-emission from presence-only transitions | Aligns the realtime contract with the companion-app model where ready is the durable user signal and future notifications should only key off actual ready transitions |

@@ -33,3 +33,7 @@ class User(Base):
     updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), onupdate=func.now()
     )
+
+    @property
+    def has_password_login(self) -> bool:
+        return self.password_hash is not None

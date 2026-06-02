@@ -8,7 +8,9 @@ from app.api.v1.groups.schemas import (
     CreateGroupRequest,
     GroupMemberResponse,
     GroupResponse,
+    TransferOwnershipRequest,
     UpdateGroupRequest,
+    UpdateMemberRoleRequest,
 )
 from app.auth.dependencies import get_current_user
 from app.db.database import get_db
@@ -63,10 +65,10 @@ async def preview_group_by_invite_code(
 @router.get("/{group_id}", response_model=GroupResponse)
 async def get_group(
     group_id: uuid.UUID,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.get_group(db, group_id)
+    return await service.get_group(db, group_id, current_user)
 
 
 @router.patch("/{group_id}", response_model=GroupResponse)
@@ -100,10 +102,10 @@ async def delete_group(
 @router.get("/{group_id}/members", response_model=list[GroupMemberResponse])
 async def list_members(
     group_id: uuid.UUID,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_members(db, group_id)
+    return await service.list_members(db, group_id, current_user)
 
 
 @router.post("/join/{code}", response_model=GroupResponse)
@@ -123,3 +125,33 @@ async def remove_member(
     db: AsyncSession = Depends(get_db),
 ):
     await service.remove_member(db, group_id, current_user, user_id)
+
+
+@router.delete("/{group_id}/leave", status_code=204)
+async def leave_group(
+    group_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.leave_group(db, group_id, current_user)
+
+
+@router.patch("/{group_id}/members/{user_id}/role", status_code=204)
+async def update_member_role(
+    group_id: uuid.UUID,
+    user_id: uuid.UUID,
+    data: UpdateMemberRoleRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.update_member_role(db, group_id, current_user, user_id, data.role)
+
+
+@router.post("/{group_id}/transfer-ownership", status_code=204)
+async def transfer_ownership(
+    group_id: uuid.UUID,
+    data: TransferOwnershipRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.transfer_ownership(db, group_id, current_user, data.user_id)

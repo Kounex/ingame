@@ -87,10 +87,14 @@ class AuthRepository {
     return User.fromJson(response.data['user'] as Map<String, dynamic>);
   }
 
-  Future<User> appleAuth(String identityToken) async {
+  Future<User> appleAuth(String identityToken, {String? displayName}) async {
     final response = await dio.post(
       ApiEndpoints.appleAuth,
-      data: {'identity_token': identityToken},
+      data: {
+        'identity_token': identityToken,
+        if (displayName != null && displayName.trim().isNotEmpty)
+          'display_name': displayName,
+      },
     );
     await storage.saveTokens(
       accessToken: response.data['access_token'] as String,

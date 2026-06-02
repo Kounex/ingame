@@ -8,6 +8,7 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str | None = None
     display_name: str
+    has_password_login: bool
     avatar_url: str | None = None
     bio: str | None = None
     timezone: str

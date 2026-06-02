@@ -70,6 +70,7 @@
   "commonRemove": "Remove",
   "commonDeny": "Deny",
   "commonShare": "Share",
+  "commonClose": "Close",
   "navigationGroups": "Groups",
   "navigationHome": "Home",
   "navigationDiscover": "Discover",
@@ -100,7 +101,7 @@
   "onboardingAvatarUrlLabel": "Avatar URL",
   "onboardingAvatarUrlHint": "Link to your avatar image (optional)",
   "onboardingGamingTitle": "Gaming Preferences",
-  "onboardingGamingSubtitle": "Select at least one time slot so groups can see when you play.",
+  "onboardingGamingSubtitle": "Add your usual time slots now or skip this step and set them later.",
   "onboardingConnectSteamTitle": "Connect Steam",
   "onboardingConnectSteamSubtitle": "Link your account later in settings",
   "timeSlotMorningLabel": "Morning",
@@ -194,7 +195,8 @@
   "profileConnectedAccountsEmailPassword": "Email & Password",
   "profileConnectedAccountsSteam": "Steam",
   "profileConnectedAccountsApple": "Apple",
-  "profileDisconnectTitle": "Disconnect {provider}",
+  "profileConnectedTapToDisconnect": "Connected. Tap to disconnect.",
+  "profileDisconnectTitle": "Disconnect {provider}?",
   "@profileDisconnectTitle": {
     "placeholders": {
       "provider": {
@@ -202,7 +204,7 @@
       }
     }
   },
-  "profileDisconnectMessage": "Are you sure you want to disconnect your {provider} account?",
+  "profileDisconnectMessage": "You won't be able to sign in with {provider} after this.",
   "@profileDisconnectMessage": {
     "placeholders": {
       "provider": {
@@ -210,6 +212,10 @@
       }
     }
   },
+  "profileDisconnectSessionNotice": "Your current session will stay active on this device.",
+  "profileDisconnectKeepAnotherMethod": "Make sure another sign-in method is already connected before you continue.",
+  "profileDisconnectSteamFeatureNotice": "Steam-connected features will stay unavailable until you relink Steam.",
+  "profileDisconnectAction": "Disconnect",
   "profileDisconnectFailed": "Failed to disconnect {provider}: {message}",
   "@profileDisconnectFailed": {
     "placeholders": {
@@ -221,6 +227,15 @@
       }
     }
   },
+  "profileDisconnectedSuccess": "{provider} disconnected.",
+  "@profileDisconnectedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLastAuthMethodRequired": "Add another sign-in method before disconnecting this one.",
   "profileSteamLinkedSuccess": "Steam account linked successfully",
   "profileLinkSteamFailed": "Failed to link Steam: {message}",
   "@profileLinkSteamFailed": {
@@ -282,6 +297,8 @@
     }
   },
   "commonAdd": "Add",
+  "authSteamRelinkRequired": "This Steam login was disconnected. Sign in with another method and relink Steam from Profile.",
+  "authAppleRelinkRequired": "This Apple login was disconnected. Sign in with another method and relink Apple from Profile.",
   "groupTitleFallback": "Group",
   "groupVisibilityPublic": "Public",
   "groupVisibilityPrivate": "Private",
@@ -296,6 +313,7 @@
   "groupDetailSectionMembers": "Members",
   "groupDetailLeaveTitle": "Leave Group",
   "groupDetailLeaveMessage": "Are you sure you want to leave this group?",
+  "groupDetailOwnerLeaveMessage": "Transfer ownership or delete the group before leaving it yourself.",
   "createGroupTitle": "Create Group",
   "createGroupNameLabel": "Group Name",
   "createGroupNameHint": "Enter a name for your group",
@@ -363,6 +381,61 @@
   "groupSettingsApproveTooltip": "Approve",
   "groupSettingsDenyTooltip": "Deny",
   "groupSettingsRoleMember": "Member",
+  "groupSettingsPromoteTitle": "Promote to Admin",
+  "groupSettingsPromoteMessage": "Promote {displayName} to admin?",
+  "@groupSettingsPromoteMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsPromoteAction": "Promote",
+  "groupSettingsPromoted": "{displayName} is now an admin.",
+  "@groupSettingsPromoted": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsDemoteTitle": "Demote to Member",
+  "groupSettingsDemoteMessage": "Remove admin access for {displayName}?",
+  "@groupSettingsDemoteMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsDemoteAction": "Demote",
+  "groupSettingsDemoted": "{displayName} is now a member.",
+  "@groupSettingsDemoted": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsTransferOwnershipTitle": "Transfer Ownership",
+  "groupSettingsTransferOwnershipMessage": "Transfer ownership to {displayName}? You will remain in the group as an admin.",
+  "@groupSettingsTransferOwnershipMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsTransferOwnershipAction": "Transfer ownership",
+  "groupSettingsOwnershipTransferred": "{displayName} is now the group owner.",
+  "@groupSettingsOwnershipTransferred": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupOwnerCannotLeave": "Transfer ownership or delete the group before leaving it yourself.",
   "groupSettingsTimeAgoDays": "{count}d ago",
   "@groupSettingsTimeAgoDays": {
     "placeholders": {

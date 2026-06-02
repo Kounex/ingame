@@ -1,6 +1,7 @@
 import 'package:cue/cue.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
 
@@ -36,10 +37,16 @@ class InGameApp extends ConsumerWidget {
         supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
+          Widget appChild = child!;
+
           if (kDebugMode) {
-            return CueDebugTools(child: child!);
+            appChild = CueDebugTools(child: appChild);
           }
-          return child!;
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: AppTheme.darkSystemUiOverlayStyle,
+            child: appChild,
+          );
         },
       ),
     );

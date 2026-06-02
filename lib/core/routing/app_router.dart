@@ -27,10 +27,12 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Listenable that fires when auth state changes, used by GoRouter's
 /// refreshListenable to re-evaluate redirects without rebuilding the router.
-final _authRefreshListenableProvider = Provider<ValueNotifier<AuthState?>>((ref) {
+final _authRefreshListenableProvider = Provider<ValueNotifier<AuthState?>>((
+  ref,
+) {
   final notifier = ValueNotifier<AuthState?>(null);
   ref.listen(authNotifierProvider, (_, next) {
-    notifier.value = next.valueOrNull;
+    notifier.value = next.value;
   });
   ref.onDispose(notifier.dispose);
   return notifier;
@@ -46,14 +48,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final normalizedCurrentLocation = normalizeRouteLocation(currentLocation);
       final authState = ref.read(authNotifierProvider);
       final isAuthenticated = authState.maybeWhen(
-        data: (s) => s.maybeWhen(
-          authenticated: (_) => true,
-          orElse: () => false,
-        ),
+        data: (s) =>
+            s.maybeWhen(authenticated: (_) => true, orElse: () => false),
         orElse: () => false,
       );
 
-      final isAuthRoute = state.matchedLocation == RoutePaths.login ||
+      final isAuthRoute =
+          state.matchedLocation == RoutePaths.login ||
           state.matchedLocation == RoutePaths.register ||
           state.matchedLocation == RoutePaths.steamAuth;
       final isOnboarding = state.matchedLocation == RoutePaths.onboarding;
@@ -128,7 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: RouteNames.joinGroup,
         pageBuilder: (context, state) {
           final code = state.pathParameters['code']!;
-          return fadeSlideTransition(
+          return adaptiveRoutePage(
             key: state.pageKey,
             child: JoinGroupScreen(inviteCode: code),
           );
@@ -136,13 +137,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoutePaths.legacyJoinGroup,
-        redirect: (_, state) =>
-            '/join/${state.pathParameters['code'] ?? ''}',
+        redirect: (_, state) => '/join/${state.pathParameters['code'] ?? ''}',
       ),
       GoRoute(
         path: RoutePaths.onboarding,
         name: RouteNames.onboarding,
-        pageBuilder: (context, state) => fadeSlideTransition(
+        pageBuilder: (context, state) => adaptiveRoutePage(
           key: state.pageKey,
           child: const OnboardingScreen(),
         ),
@@ -164,7 +164,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'groups/create',
                     name: RouteNames.createGroup,
-                    pageBuilder: (context, state) => fadeSlideTransition(
+                    pageBuilder: (context, state) => adaptiveRoutePage(
                       key: state.pageKey,
                       child: const CreateGroupScreen(),
                     ),
@@ -174,7 +174,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     name: RouteNames.groupDetail,
                     pageBuilder: (context, state) {
                       final id = state.pathParameters['id']!;
-                      return fadeSlideTransition(
+                      return adaptiveRoutePage(
                         key: state.pageKey,
                         child: GroupDetailScreen(groupId: id),
                       );
@@ -185,7 +185,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                         name: RouteNames.groupSettings,
                         pageBuilder: (context, state) {
                           final id = state.pathParameters['id']!;
-                          return fadeSlideTransition(
+                          return adaptiveRoutePage(
                             key: state.pageKey,
                             child: GroupSettingsScreen(groupId: id),
                           );
@@ -216,7 +216,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     name: RouteNames.editProfile,
-                    pageBuilder: (context, state) => fadeSlideTransition(
+                    pageBuilder: (context, state) => adaptiveRoutePage(
                       key: state.pageKey,
                       child: const EditProfileScreen(),
                     ),

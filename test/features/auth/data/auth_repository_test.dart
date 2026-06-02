@@ -72,4 +72,47 @@ void main() {
     expect(storage.accessToken, 'access-token');
     expect(storage.refreshToken, 'refresh-token');
   });
+
+  test('apple auth includes optional display name in request body', () async {
+    final dio = Dio();
+    final storage = _FakeStorage();
+    final repository = AuthRepository(dio: dio, storage: storage);
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          expect(options.path, ApiEndpoints.appleAuth);
+          expect(options.data, {
+            'identity_token': 'apple-token',
+            'display_name': 'René Kounex',
+          });
+
+          handler.resolve(
+            Response(
+              requestOptions: options,
+              data: {
+                'access_token': 'access-token',
+                'refresh_token': 'refresh-token',
+                'user': {
+                  'id': 'user-1',
+                  'display_name': 'René Kounex',
+                  'timezone': 'Europe/Berlin',
+                  'apple_id': 'apple-user-123',
+                },
+              },
+            ),
+          );
+        },
+      ),
+    );
+
+    final user = await repository.appleAuth(
+      'apple-token',
+      displayName: 'René Kounex',
+    );
+
+    expect(user.displayName, 'René Kounex');
+    expect(storage.accessToken, 'access-token');
+    expect(storage.refreshToken, 'refresh-token');
+  });
 }

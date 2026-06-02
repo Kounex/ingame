@@ -29,8 +29,8 @@ class _RecordingWebSocketClient extends WebSocketClient {
   @override
   bool get isConnected => connectionState == WebSocketConnectionState.connected;
 
-  WebSocketConnectionState connectionState =
-      WebSocketConnectionState.connected;
+  @override
+  WebSocketConnectionState connectionState = WebSocketConnectionState.connected;
 
   @override
   void send(Map<String, dynamic> message) {
@@ -185,11 +185,7 @@ void main() {
             {
               'group_id': groupId,
               'members': [
-                {
-                  'user_id': selfUserId,
-                  'connection': 'online',
-                  'ready': false,
-                },
+                {'user_id': selfUserId, 'connection': 'online', 'ready': false},
               ],
             },
           ],
@@ -198,7 +194,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(
-        container.read(presenceNotifierProvider)[groupId]?[selfUserId]?.connection,
+        container
+            .read(presenceNotifierProvider)[groupId]?[selfUserId]
+            ?.connection,
         'online',
       );
       expect(
@@ -263,11 +261,7 @@ void main() {
             {
               'group_id': groupId,
               'members': [
-                {
-                  'user_id': selfUserId,
-                  'connection': 'online',
-                  'ready': false,
-                },
+                {'user_id': selfUserId, 'connection': 'online', 'ready': false},
               ],
             },
           ],
@@ -334,11 +328,7 @@ void main() {
             {
               'group_id': groupId,
               'members': [
-                {
-                  'user_id': selfUserId,
-                  'connection': 'online',
-                  'ready': false,
-                },
+                {'user_id': selfUserId, 'connection': 'online', 'ready': false},
               ],
             },
           ],
@@ -393,11 +383,7 @@ void main() {
           {
             'group_id': groupId,
             'members': [
-              {
-                'user_id': selfUserId,
-                'connection': 'online',
-                'ready': false,
-              },
+              {'user_id': selfUserId, 'connection': 'online', 'ready': false},
             ],
           },
         ],
@@ -426,7 +412,8 @@ void main() {
           groupMemberStatusProvider((groupId: groupId, userId: selfUserId)),
         ),
         UserStatus.online,
-        reason: 'login loading must not permanently clear hydrated self presence',
+        reason:
+            'login loading must not permanently clear hydrated self presence',
       );
     },
   );
@@ -505,16 +492,8 @@ void main() {
             {
               'group_id': 'group-1',
               'members': [
-                {
-                  'user_id': 'user-1',
-                  'connection': 'online',
-                  'ready': false,
-                },
-                {
-                  'user_id': 'user-2',
-                  'connection': 'online',
-                  'ready': false,
-                },
+                {'user_id': 'user-1', 'connection': 'online', 'ready': false},
+                {'user_id': 'user-2', 'connection': 'online', 'ready': false},
               ],
             },
           ],
@@ -555,51 +534,54 @@ void main() {
     },
   );
 
-  test('presence snapshot stores connection and ready metadata per member', () async {
-    final wsClient = _RecordingWebSocketClient();
-    final container = ProviderContainer(
-      overrides: [
-        authNotifierProvider.overrideWith(
-          () => _FakeAuthNotifier(
-            const AuthState.authenticated(
-              User(id: 'user-1', displayName: 'Me', timezone: 'UTC'),
+  test(
+    'presence snapshot stores connection and ready metadata per member',
+    () async {
+      final wsClient = _RecordingWebSocketClient();
+      final container = ProviderContainer(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => _FakeAuthNotifier(
+              const AuthState.authenticated(
+                User(id: 'user-1', displayName: 'Me', timezone: 'UTC'),
+              ),
             ),
           ),
-        ),
-        websocketClientProvider.overrideWithValue(wsClient),
-      ],
-    );
-    addTearDown(container.dispose);
+          websocketClientProvider.overrideWithValue(wsClient),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    await container.read(authNotifierProvider.future);
-    container.read(presenceNotifierProvider);
+      await container.read(authNotifierProvider.future);
+      container.read(presenceNotifierProvider);
 
-    final expiresAt =
-        (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString();
-    wsClient.emit({
-      'type': 'presence_snapshot',
-      'groups': [
-        {
-          'group_id': 'group-1',
-          'members': [
-            {
-              'user_id': 'user-2',
-              'connection': 'online',
-              'ready': true,
-              'ready_since': '100',
-              'ready_expires_at': expiresAt,
-            },
-          ],
-        },
-      ],
-    });
-    await Future<void>.delayed(Duration.zero);
+      final expiresAt = (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600)
+          .toString();
+      wsClient.emit({
+        'type': 'presence_snapshot',
+        'groups': [
+          {
+            'group_id': 'group-1',
+            'members': [
+              {
+                'user_id': 'user-2',
+                'connection': 'online',
+                'ready': true,
+                'ready_since': '100',
+                'ready_expires_at': expiresAt,
+              },
+            ],
+          },
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
 
-    final status = container.read(
-      groupMemberStatusProvider((groupId: 'group-1', userId: 'user-2')),
-    );
-    expect(status, UserStatus.ready);
-  });
+      final status = container.read(
+        groupMemberStatusProvider((groupId: 'group-1', userId: 'user-2')),
+      );
+      expect(status, UserStatus.ready);
+    },
+  );
 
   test('connection_changed away and active update derived status', () async {
     final wsClient = _RecordingWebSocketClient();
@@ -697,8 +679,8 @@ void main() {
       'user_id': 'user-2',
       'ready': true,
       'ready_since': '100',
-      'ready_expires_at':
-          (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString(),
+      'ready_expires_at': (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600)
+          .toString(),
     });
     await Future<void>.delayed(Duration.zero);
 
@@ -709,10 +691,7 @@ void main() {
       UserStatus.ready,
     );
 
-    notifier.handleReadyExpiry(
-      groupId: 'group-1',
-      userId: 'user-2',
-    );
+    notifier.handleReadyExpiry(groupId: 'group-1', userId: 'user-2');
 
     expect(
       container.read(
@@ -722,7 +701,7 @@ void main() {
     );
   });
 
-  test('user_offline marks member offline', () async {
+  test('user_offline marks non-ready member offline', () async {
     final wsClient = _RecordingWebSocketClient();
     final container = ProviderContainer(
       overrides: [
@@ -769,7 +748,7 @@ void main() {
     );
   });
 
-  test('ready_changed does not flip offline member back to online', () async {
+  test('ready_changed keeps offline member visible as ready', () async {
     final wsClient = _RecordingWebSocketClient();
     final container = ProviderContainer(
       overrides: [
@@ -801,8 +780,8 @@ void main() {
       'user_id': 'user-2',
       'ready': true,
       'ready_since': '100',
-      'ready_expires_at':
-          (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600).toString(),
+      'ready_expires_at': (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600)
+          .toString(),
     });
     await Future<void>.delayed(Duration.zero);
 
@@ -810,7 +789,55 @@ void main() {
       container.read(
         groupMemberStatusProvider((groupId: 'group-1', userId: 'user-2')),
       ),
-      UserStatus.offline,
+      UserStatus.ready,
+    );
+  });
+
+  test('offline ready member from snapshot still renders as ready', () async {
+    final wsClient = _RecordingWebSocketClient();
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(
+            const AuthState.authenticated(
+              User(id: 'user-1', displayName: 'Me', timezone: 'UTC'),
+            ),
+          ),
+        ),
+        websocketClientProvider.overrideWithValue(wsClient),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(authNotifierProvider.future);
+    container.read(presenceNotifierProvider);
+
+    wsClient.emit({
+      'type': 'presence_snapshot',
+      'groups': [
+        {
+          'group_id': 'group-1',
+          'members': [
+            {
+              'user_id': 'user-2',
+              'connection': 'offline',
+              'ready': true,
+              'ready_since': '100',
+              'ready_expires_at':
+                  (DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600)
+                      .toString(),
+            },
+          ],
+        },
+      ],
+    });
+    await Future<void>.delayed(Duration.zero);
+
+    expect(
+      container.read(
+        groupMemberStatusProvider((groupId: 'group-1', userId: 'user-2')),
+      ),
+      UserStatus.ready,
     );
   });
 
@@ -863,12 +890,12 @@ void main() {
     },
   );
 
-  test('deriveMemberStatus prioritizes offline then ready then away', () {
+  test('deriveMemberStatus prioritizes ready before offline and away', () {
     expect(
       deriveMemberStatus(
         const MemberPresenceState(connection: 'offline', ready: true),
       ),
-      UserStatus.offline,
+      UserStatus.ready,
     );
     expect(
       deriveMemberStatus(

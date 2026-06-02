@@ -18,6 +18,37 @@ def _auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
+async def _create_group_and_get_member(
+    client: AsyncClient,
+    owner_token: str,
+    member_email: str,
+    *,
+    group_name: str,
+):
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(owner_token),
+        json={"name": group_name},
+    )
+    group_id = create_resp.json()["id"]
+    invite_code = create_resp.json()["invite_code"]
+
+    member_token = await _register_and_get_token(client, member_email)
+    await client.post(
+        f"/api/v1/groups/join/{invite_code}",
+        headers=_auth(member_token),
+    )
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members", headers=_auth(owner_token)
+    )
+    member_user_id = next(
+        member["user_id"]
+        for member in members_resp.json()
+        if member["role"] == "member"
+    )
+    return group_id, invite_code, member_token, member_user_id
+
+
 @pytest.mark.asyncio
 async def test_create_group(client: AsyncClient):
     token = await _register_and_get_token(client)
@@ -119,6 +150,46 @@ async def test_list_members(client: AsyncClient):
     members = response.json()
     assert len(members) == 1
     assert members[0]["role"] == "owner"
+
+
+@pytest.mark.asyncio
+async def test_non_member_cannot_read_private_group_details(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "privateowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={"name": "Private Group"},
+    )
+    group_id = create_resp.json()["id"]
+
+    token_stranger = await _register_and_get_token(client, "stranger@test.com")
+    response = await client.get(
+        f"/api/v1/groups/{group_id}",
+        headers=_auth(token_stranger),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.member_required"
+
+
+@pytest.mark.asyncio
+async def test_non_member_cannot_list_private_group_members(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "memberowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={"name": "Roster Group"},
+    )
+    group_id = create_resp.json()["id"]
+
+    token_stranger = await _register_and_get_token(client, "rosterstranger@test.com")
+    response = await client.get(
+        f"/api/v1/groups/{group_id}/members",
+        headers=_auth(token_stranger),
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.member_required"
 
 
 @pytest.mark.asyncio
@@ -327,3 +398,195 @@ async def test_non_admin_cannot_list_join_requests_returns_error_code(
 
     assert response.status_code == 403
     assert response.json()["code"] == "join_request.admin_or_owner_required"
+
+
+@pytest.mark.asyncio
+async def test_owner_can_promote_and_demote_member(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "promoteowner@test.com")
+    group_id, _, _, member_user_id = await _create_group_and_get_member(
+        client,
+        token_owner,
+        "promotemember@test.com",
+        group_name="Promote Group",
+    )
+
+    promote_resp = await client.patch(
+        f"/api/v1/groups/{group_id}/members/{member_user_id}/role",
+        headers=_auth(token_owner),
+        json={"role": "admin"},
+    )
+    assert promote_resp.status_code == 204
+
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members", headers=_auth(token_owner)
+    )
+    promoted = next(
+        member for member in members_resp.json() if member["user_id"] == member_user_id
+    )
+    assert promoted["role"] == "admin"
+
+    demote_resp = await client.patch(
+        f"/api/v1/groups/{group_id}/members/{member_user_id}/role",
+        headers=_auth(token_owner),
+        json={"role": "member"},
+    )
+    assert demote_resp.status_code == 204
+
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members", headers=_auth(token_owner)
+    )
+    demoted = next(
+        member for member in members_resp.json() if member["user_id"] == member_user_id
+    )
+    assert demoted["role"] == "member"
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_change_member_roles(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "roleowner@test.com")
+    group_id, invite_code, admin_token, admin_user_id = await _create_group_and_get_member(
+        client,
+        token_owner,
+        "roleadmin@test.com",
+        group_name="Role Group",
+    )
+    await client.patch(
+        f"/api/v1/groups/{group_id}/members/{admin_user_id}/role",
+        headers=_auth(token_owner),
+        json={"role": "admin"},
+    )
+
+    token_target = await _register_and_get_token(client, "roletarget@test.com")
+    await client.post(
+        f"/api/v1/groups/join/{invite_code}",
+        headers=_auth(token_target),
+    )
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members",
+        headers=_auth(token_owner),
+    )
+    target_user_id = next(
+        member["user_id"]
+        for member in members_resp.json()
+        if member["user_id"] not in {admin_user_id, members_resp.json()[0]["user_id"]}
+    )
+
+    response = await client.patch(
+        f"/api/v1/groups/{group_id}/members/{target_user_id}/role",
+        headers=_auth(admin_token),
+        json={"role": "admin"},
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.owner_required"
+
+
+@pytest.mark.asyncio
+async def test_owner_can_transfer_ownership_and_old_owner_becomes_admin(
+    client: AsyncClient,
+):
+    token_owner = await _register_and_get_token(client, "transferowner@test.com")
+    group_id, _, _, member_user_id = await _create_group_and_get_member(
+        client,
+        token_owner,
+        "transfermember@test.com",
+        group_name="Transfer Group",
+    )
+
+    response = await client.post(
+        f"/api/v1/groups/{group_id}/transfer-ownership",
+        headers=_auth(token_owner),
+        json={"user_id": member_user_id},
+    )
+    assert response.status_code == 204
+
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members", headers=_auth(token_owner)
+    )
+    roles_by_user = {
+        member["user_id"]: member["role"] for member in members_resp.json()
+    }
+    owner_membership = next(
+        member for member in members_resp.json() if member["role"] == "admin"
+    )
+    assert roles_by_user[member_user_id] == "owner"
+    assert owner_membership["role"] == "admin"
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_transfer_ownership(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "transferblock@test.com")
+    group_id, invite_code, admin_token, admin_user_id = await _create_group_and_get_member(
+        client,
+        token_owner,
+        "transferadmin@test.com",
+        group_name="Transfer Block Group",
+    )
+    await client.patch(
+        f"/api/v1/groups/{group_id}/members/{admin_user_id}/role",
+        headers=_auth(token_owner),
+        json={"role": "admin"},
+    )
+    token_member = await _register_and_get_token(client, "transfermember2@test.com")
+    await client.post(
+        f"/api/v1/groups/join/{invite_code}",
+        headers=_auth(token_member),
+    )
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members",
+        headers=_auth(token_owner),
+    )
+    target_user_id = next(
+        member["user_id"]
+        for member in members_resp.json()
+        if member["user_id"] not in {admin_user_id}
+        and member["role"] == "member"
+    )
+
+    response = await client.post(
+        f"/api/v1/groups/{group_id}/transfer-ownership",
+        headers=_auth(admin_token),
+        json={"user_id": target_user_id},
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.owner_required"
+
+
+@pytest.mark.asyncio
+async def test_owner_cannot_leave_group_until_ownership_changes(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "leaveowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={"name": "Leave Group"},
+    )
+    group_id = create_resp.json()["id"]
+
+    response = await client.delete(
+        f"/api/v1/groups/{group_id}/leave",
+        headers=_auth(token_owner),
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.owner_cannot_leave"
+
+
+@pytest.mark.asyncio
+async def test_non_owner_can_leave_group(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "memberleaveowner@test.com")
+    group_id, _, member_token, member_user_id = await _create_group_and_get_member(
+        client,
+        token_owner,
+        "memberleave@test.com",
+        group_name="Member Leave Group",
+    )
+
+    response = await client.delete(
+        f"/api/v1/groups/{group_id}/leave",
+        headers=_auth(member_token),
+    )
+    assert response.status_code == 204
+
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members", headers=_auth(token_owner)
+    )
+    remaining_user_ids = {member["user_id"] for member in members_resp.json()}
+    assert member_user_id not in remaining_user_ids

@@ -70,6 +70,7 @@
   "commonRemove": "Entfernen",
   "commonDeny": "Ablehnen",
   "commonShare": "Teilen",
+  "commonClose": "Schließen",
   "navigationGroups": "Gruppen",
   "navigationHome": "Start",
   "navigationDiscover": "Entdecken",
@@ -100,7 +101,7 @@
   "onboardingAvatarUrlLabel": "Avatar-URL",
   "onboardingAvatarUrlHint": "Link zu deinem Avatarbild (optional)",
   "onboardingGamingTitle": "Gaming-Präferenzen",
-  "onboardingGamingSubtitle": "Wähle mindestens ein Zeitfenster, damit Gruppen sehen können, wann du spielst.",
+  "onboardingGamingSubtitle": "Füge jetzt deine üblichen Zeitfenster hinzu oder überspringe diesen Schritt und stelle sie später ein.",
   "onboardingConnectSteamTitle": "Steam verbinden",
   "onboardingConnectSteamSubtitle": "Verknüpfe dein Konto später in den Einstellungen",
   "timeSlotMorningLabel": "Morgen",
@@ -194,7 +195,8 @@
   "profileConnectedAccountsEmailPassword": "E-Mail und Passwort",
   "profileConnectedAccountsSteam": "Steam",
   "profileConnectedAccountsApple": "Apple",
-  "profileDisconnectTitle": "{provider} trennen",
+  "profileConnectedTapToDisconnect": "Verbunden. Tippe zum Trennen.",
+  "profileDisconnectTitle": "{provider} trennen?",
   "@profileDisconnectTitle": {
     "placeholders": {
       "provider": {
@@ -202,7 +204,7 @@
       }
     }
   },
-  "profileDisconnectMessage": "Moechtest du dein {provider}-Konto wirklich trennen?",
+  "profileDisconnectMessage": "Du kannst dich danach nicht mehr mit {provider} anmelden.",
   "@profileDisconnectMessage": {
     "placeholders": {
       "provider": {
@@ -210,6 +212,10 @@
       }
     }
   },
+  "profileDisconnectSessionNotice": "Deine aktuelle Sitzung auf diesem Gerät bleibt aktiv.",
+  "profileDisconnectKeepAnotherMethod": "Stelle sicher, dass bereits eine andere Anmeldemethode mit diesem Konto verbunden ist, bevor du fortfährst.",
+  "profileDisconnectSteamFeatureNotice": "Steam-bezogene Funktionen bleiben deaktiviert, bis du Steam erneut verknüpfst.",
+  "profileDisconnectAction": "Trennen",
   "profileDisconnectFailed": "{provider} konnte nicht getrennt werden: {message}",
   "@profileDisconnectFailed": {
     "placeholders": {
@@ -221,6 +227,15 @@
       }
     }
   },
+  "profileDisconnectedSuccess": "{provider} getrennt.",
+  "@profileDisconnectedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLastAuthMethodRequired": "Fuege zuerst eine weitere Anmeldemethode hinzu, bevor du diese trennst.",
   "profileSteamLinkedSuccess": "Steam-Konto erfolgreich verknuepft",
   "profileLinkSteamFailed": "Steam konnte nicht verknuepft werden: {message}",
   "@profileLinkSteamFailed": {
@@ -282,6 +297,8 @@
     }
   },
   "commonAdd": "Hinzufuegen",
+  "authSteamRelinkRequired": "Diese Steam-Anmeldung wurde getrennt. Melde dich mit einer anderen Methode an und verknuepfe Steam anschliessend im Profil erneut.",
+  "authAppleRelinkRequired": "Diese Apple-Anmeldung wurde getrennt. Melde dich mit einer anderen Methode an und verknuepfe Apple anschliessend im Profil erneut.",
   "groupTitleFallback": "Gruppe",
   "groupVisibilityPublic": "Oeffentlich",
   "groupVisibilityPrivate": "Privat",
@@ -296,6 +313,7 @@
   "groupDetailSectionMembers": "Mitglieder",
   "groupDetailLeaveTitle": "Gruppe verlassen",
   "groupDetailLeaveMessage": "Moechtest du diese Gruppe wirklich verlassen?",
+  "groupDetailOwnerLeaveMessage": "Übertrage zuerst den Besitz oder lösche die Gruppe, bevor du sie selbst verlässt.",
   "createGroupTitle": "Gruppe erstellen",
   "createGroupNameLabel": "Gruppenname",
   "createGroupNameHint": "Gib einen Namen fuer deine Gruppe ein",
@@ -363,6 +381,61 @@
   "groupSettingsApproveTooltip": "Genehmigen",
   "groupSettingsDenyTooltip": "Ablehnen",
   "groupSettingsRoleMember": "Mitglied",
+  "groupSettingsPromoteTitle": "Zum Admin machen",
+  "groupSettingsPromoteMessage": "{displayName} zum Admin machen?",
+  "@groupSettingsPromoteMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsPromoteAction": "Befördern",
+  "groupSettingsPromoted": "{displayName} ist jetzt Admin.",
+  "@groupSettingsPromoted": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsDemoteTitle": "Zum Mitglied herabstufen",
+  "groupSettingsDemoteMessage": "Adminrechte für {displayName} entfernen?",
+  "@groupSettingsDemoteMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsDemoteAction": "Herabstufen",
+  "groupSettingsDemoted": "{displayName} ist jetzt Mitglied.",
+  "@groupSettingsDemoted": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsTransferOwnershipTitle": "Besitz übertragen",
+  "groupSettingsTransferOwnershipMessage": "Den Gruppenbesitz an {displayName} übertragen? Du bleibst als Admin in der Gruppe.",
+  "@groupSettingsTransferOwnershipMessage": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsTransferOwnershipAction": "Besitz übertragen",
+  "groupSettingsOwnershipTransferred": "{displayName} ist jetzt Gruppenbesitzer.",
+  "@groupSettingsOwnershipTransferred": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupOwnerCannotLeave": "Übertrage zuerst den Besitz oder lösche die Gruppe, bevor du sie selbst verlässt.",
   "groupSettingsTimeAgoDays": "vor {count} T",
   "@groupSettingsTimeAgoDays": {
     "placeholders": {

@@ -109,6 +109,7 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   _ConnectedAccountsCard(
                     email: user.email,
+                    hasPasswordLogin: user.hasPasswordLogin,
                     steamId: user.steamId,
                     appleId: user.appleId,
                   ),
@@ -481,13 +482,31 @@ class _SlotChip extends StatelessWidget {
 }
 
 class _ConnectedAccountsCard extends ConsumerWidget {
-  const _ConnectedAccountsCard({this.email, this.steamId, this.appleId});
+  const _ConnectedAccountsCard({
+    this.email,
+    required this.hasPasswordLogin,
+    this.steamId,
+    this.appleId,
+  });
 
   final String? email;
+  final bool hasPasswordLogin;
   final String? steamId;
   final String? appleId;
 
-  Future<bool?> _confirmDisconnect(BuildContext context, String provider) {
+  int _authMethodCount() {
+    var count = 0;
+    if (hasPasswordLogin) count++;
+    if (steamId != null) count++;
+    if (appleId != null) count++;
+    return count;
+  }
+
+  Future<bool?> _confirmDisconnect(
+    BuildContext context, {
+    required String provider,
+    required bool includeSteamWarning,
+  }) {
     final l10n = context.l10n;
     return showDialog<bool>(
       context: context,
@@ -495,7 +514,21 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.backgroundLight,
         title: Text(l10n.profileDisconnectTitle(provider)),
-        content: Text(l10n.profileDisconnectMessage(provider)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.profileDisconnectMessage(provider)),
+            const SizedBox(height: AppSpacing.sm),
+            Text(l10n.profileDisconnectSessionNotice),
+            if (includeSteamWarning) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(l10n.profileDisconnectSteamFeatureNotice),
+            ],
+            const SizedBox(height: AppSpacing.sm),
+            Text(l10n.profileDisconnectKeepAnotherMethod),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -504,7 +537,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
-              l10n.profileDisconnectTitle(provider),
+              l10n.profileDisconnectAction,
               style: const TextStyle(color: AppColors.error),
             ),
           ),
@@ -520,11 +553,27 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 
   Future<void> _handleSteamTap(BuildContext context, WidgetRef ref) async {
     if (steamId != null) {
-      final confirmed = await _confirmDisconnect(context, 'Steam');
+      if (_authMethodCount() <= 1) {
+        AppToast.error(context, context.l10n.profileLastAuthMethodRequired);
+        return;
+      }
+      final confirmed = await _confirmDisconnect(
+        context,
+        provider: context.l10n.profileConnectedAccountsSteam,
+        includeSteamWarning: true,
+      );
       if (confirmed != true || !context.mounted) return;
       try {
         await ref.read(profileRepositoryProvider).unlinkSteam();
         _refreshProviders(ref);
+        if (context.mounted) {
+          AppToast.success(
+            context,
+            context.l10n.profileDisconnectedSuccess(
+              context.l10n.profileConnectedAccountsSteam,
+            ),
+          );
+        }
       } catch (e) {
         if (context.mounted) {
           AppToast.error(
@@ -556,7 +605,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
   }
 
   Future<void> _handleEmailTap(BuildContext context, WidgetRef ref) async {
-    if (email != null) return;
+    if (hasPasswordLogin) return;
 
     final result = await showDialog<({String email, String password})>(
       context: context,
@@ -591,11 +640,27 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 
   Future<void> _handleAppleTap(BuildContext context, WidgetRef ref) async {
     if (appleId != null) {
-      final confirmed = await _confirmDisconnect(context, 'Apple');
+      if (_authMethodCount() <= 1) {
+        AppToast.error(context, context.l10n.profileLastAuthMethodRequired);
+        return;
+      }
+      final confirmed = await _confirmDisconnect(
+        context,
+        provider: context.l10n.profileConnectedAccountsApple,
+        includeSteamWarning: false,
+      );
       if (confirmed != true || !context.mounted) return;
       try {
         await ref.read(profileRepositoryProvider).unlinkApple();
         _refreshProviders(ref);
+        if (context.mounted) {
+          AppToast.success(
+            context,
+            context.l10n.profileDisconnectedSuccess(
+              context.l10n.profileConnectedAccountsApple,
+            ),
+          );
+        }
       } catch (e) {
         if (context.mounted) {
           AppToast.error(
@@ -609,15 +674,18 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       }
     } else {
       try {
-        final token = await OAuthLauncher.launchAppleSignIn();
+        final appleSignIn = await OAuthLauncher.launchAppleSignIn();
         if (!context.mounted) return;
-        await ref.read(profileRepositoryProvider).linkApple(token);
+        await ref.read(profileRepositoryProvider).linkApple(
+              appleSignIn.identityToken,
+            );
         _refreshProviders(ref);
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileAppleLinkedSuccess);
         }
       } on SignInWithAppleAuthorizationException catch (e) {
         if (e.code == AuthorizationErrorCode.canceled) return;
+        debugPrint('Apple link auth exception: code=${e.code} message=$e');
         if (context.mounted) {
           AppToast.error(context, context.l10n.profileAppleSignInFailed);
         }
@@ -635,7 +703,6 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasEmail = email != null;
     final steamConnected = steamId != null;
     final appleConnected = appleId != null;
 
@@ -649,9 +716,8 @@ class _ConnectedAccountsCard extends ConsumerWidget {
           _AccountRow(
             icon: Icons.email_outlined,
             label: context.l10n.profileConnectedAccountsEmailPassword,
-            connected: hasEmail,
-            subtitle: hasEmail ? email : null,
-            onTap: hasEmail ? null : () => _handleEmailTap(context, ref),
+            connected: hasPasswordLogin,
+            onTap: hasPasswordLogin ? null : () => _handleEmailTap(context, ref),
           ),
           Divider(
             color: AppColors.glassBorder.withValues(alpha: 0.4),
@@ -661,6 +727,8 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             icon: Icons.gamepad_outlined,
             label: context.l10n.profileConnectedAccountsSteam,
             connected: steamConnected,
+            statusText:
+                steamConnected ? context.l10n.profileConnectedTapToDisconnect : null,
             onTap: () => _handleSteamTap(context, ref),
           ),
           Divider(
@@ -671,6 +739,8 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             icon: Icons.apple,
             label: context.l10n.profileConnectedAccountsApple,
             connected: appleConnected,
+            statusText:
+                appleConnected ? context.l10n.profileConnectedTapToDisconnect : null,
             onTap: () => _handleAppleTap(context, ref),
           ),
         ],
@@ -684,14 +754,14 @@ class _AccountRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.connected,
-    this.subtitle,
+    this.statusText,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool connected;
-  final String? subtitle;
+  final String? statusText;
   final VoidCallback? onTap;
 
   @override
@@ -732,7 +802,7 @@ class _AccountRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    subtitle ??
+                    statusText ??
                         (connected
                             ? context.l10n.profileConnected
                             : context.l10n.profileNotConnected),
@@ -746,18 +816,20 @@ class _AccountRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (connected)
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary.withValues(alpha: 0.5),
+                size: 20,
+              )
+            else if (connected)
               const Icon(
                 Icons.check_circle,
                 color: AppColors.success,
                 size: 20,
               )
-            else if (onTap != null)
-              Icon(
-                Icons.chevron_right,
-                color: AppColors.textTertiary.withValues(alpha: 0.5),
-                size: 20,
-              ),
+            else
+              const SizedBox(width: 20),
           ],
         ),
       ),

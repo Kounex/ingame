@@ -34,21 +34,27 @@ sealed class AppFailure {
     return switch (failure.code) {
       'auth.invalid_credentials' => l10n.errorInvalidCredentials,
       'auth.email_taken' || 'user.email_taken' => l10n.registerEmailTaken,
+      'auth.steam_relink_required' => l10n.authSteamRelinkRequired,
+      'auth.apple_relink_required' => l10n.authAppleRelinkRequired,
       'user.steam_account_already_linked' ||
       'user.apple_account_already_linked' ||
       'group.member_already_exists' ||
       'join_request.pending_already_exists' => l10n.errorAlreadyExists,
       'group.delete_requires_owner' ||
+      'group.owner_required' ||
       'group.admin_or_owner_required' ||
       'join_request.admin_or_owner_required' => l10n.errorNoPermission,
+      'group.owner_cannot_leave' => l10n.groupOwnerCannotLeave,
       'group.invite_code_invalid' ||
       'group.not_found' ||
       'join_request.not_found' ||
       'user.not_found' => l10n.errorNotFound,
       'auth.steam_openid_invalid' ||
       'auth.apple_token_invalid' ||
-      'user.email_password_already_set' ||
-      'user.last_auth_method_required' => l10n.errorCheckInput,
+      'group.invalid_role_change' ||
+      'group.transfer_invalid_target' ||
+      'user.email_password_already_set' => l10n.errorCheckInput,
+      'user.last_auth_method_required' => l10n.profileLastAuthMethodRequired,
       'auth.missing_credentials' ||
       'auth.access_token_invalid' ||
       'auth.access_token_type_invalid' ||

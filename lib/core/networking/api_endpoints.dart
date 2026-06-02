@@ -39,6 +39,11 @@ class ApiEndpoints {
   static const String groups = '/groups';
   static String group(String id) => '/groups/$id';
   static String groupMembers(String id) => '/groups/$id/members';
+  static String groupMemberRole(String groupId, String userId) =>
+      '/groups/$groupId/members/$userId/role';
+  static String transferGroupOwnership(String groupId) =>
+      '/groups/$groupId/transfer-ownership';
+  static String leaveGroup(String groupId) => '/groups/$groupId/leave';
   static String previewJoinByCode(String code) => '/groups/join/$code';
   static String joinByCode(String code) => '/groups/join/$code';
   static const String discoverGroups = '/groups/discover';

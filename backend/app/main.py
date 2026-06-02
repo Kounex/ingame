@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 app = FastAPI(
     title="InGame API",
-    version="0.2.5",
+    version="0.3.0",
     docs_url="/api/v1/docs",
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,

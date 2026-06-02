@@ -1,8 +1,8 @@
 ---
 spec: core-platform
-version: "2.28"
+version: "2.36"
 status: complete
-last_updated: "2026-06-01"
+last_updated: "2026-06-02"
 sub_project: 1
 ---
 
@@ -33,11 +33,10 @@ This spec covers **Sub-Project 1: Core Platform** -- the foundational layer that
 - **Riverpod** -- state management and dependency injection
 - **GoRouter** -- declarative routing with deep linking and auth guards
 - **freezed** -- immutable domain models with copyWith, pattern matching
-- **openapi_generator (dart-dio)** -- auto-generated API client from backend's OpenAPI spec
 - **flutter_secure_storage** -- secure token persistence (iOS/Android); on web, falls back to `SharedPreferences` (localStorage) since `flutter_secure_storage` is unreliable in browsers
 - **flutter_web_auth_2** -- OAuth browser flows (Steam OpenID 2.0 callback handling)
 - **sign_in_with_apple** -- Apple Sign-In (iOS/macOS native, web JS-based)
-- **dio** -- HTTP client (used by generated API code)
+- **dio** -- HTTP client used by the handwritten Flutter repositories
 - **cue** -- physics-first animation library for future transitions, motion systems, and reusable animation scenes
 - **flutter_localizations + intl + gen_l10n** -- official Flutter localization stack with generated `AppLocalizations` and English/German ARB catalogs
 
@@ -110,6 +109,14 @@ PostgreSQL    Redis       External Services
 6. Dio interceptor attaches access token to all API requests
 7. On 401, interceptor attempts token refresh; if refresh fails, redirect to login
 
+### Recovery Email Requirement
+- Every account must finish onboarding with an email address on file for recovery and account communication.
+- If the initial auth method exposes an email address (email/password registration, Apple Sign-In), onboarding shows the email field beneath display name and pre-populates it from auth.
+- If the initial auth method does not expose an email address (currently Steam OpenID), onboarding requires the user to enter one manually before completion.
+- The onboarding email field follows the same uniqueness validation rules as registration email entry.
+- Onboarding persists that recovery email through `PATCH /api/v1/users/me` alongside the other profile-step fields; the backend enforces the same uniqueness rule as registration while keeping `has_password_login=false` unless `POST /api/v1/users/me/set-email-password` is used.
+- Having a recovery email on file does not imply password login is enabled; social-auth users may still add a password later from profile settings.
+
 ### Availability Checks
 Before submitting registration, the frontend validates uniqueness of email and display name via debounced async calls:
 - `POST /api/v1/auth/check-email` -- body: `{"value": "..."}`, returns `{"available": true/false}`
@@ -118,7 +125,7 @@ Before submitting registration, the frontend validates uniqueness of email and d
 Display name comparison is case-insensitive.
 
 ### Account Linking
-Users who register with email can later link Steam or Apple accounts in profile settings. Steam-only users (no email/password) can add an email/password to their account later via profile settings, enabling email-based login as an alternative. Linking is always explicit and user-initiated.
+Users who register with email can later link Steam or Apple accounts in profile settings. Social-auth users keep a recovery email on file from onboarding (auth-provided when available, otherwise manually entered) and can add a password later via profile settings to enable email/password login as an alternative. Linking is always explicit and user-initiated.
 
 **Backend endpoints:**
 - `POST /api/v1/users/me/link-steam` -- validates Steam OpenID params, checks no conflict, sets `steam_id`
@@ -130,26 +137,34 @@ Conflict detection: if another user already has the target `steam_id` or `apple_
 
 **Add email/password (social-only users):**
 - `POST /api/v1/users/me/set-email-password` -- body: `{"email": "...", "password": "..."}`. Sets `email` + `password_hash` on the user. Returns 409 if user already has email/password or if email is taken by another user. Flutter shows a dialog from the Connected Accounts card.
+- User-facing auth responses and `GET /users/me` include `has_password_login`, derived from whether `password_hash` is present. Flutter uses that explicit flag for the `Email & Password` connected-state instead of inferring it from `email`.
 
 **Lockout guard:** Unlinking Steam or Apple is rejected with 422 if it would remove the user's only login method. The backend counts auth methods (`email+password`, `steam_id`, `apple_id`) and requires at least 1 to remain after unlinking.
+
+**Revoked provider lifecycle:** Unlinking Steam or Apple also writes a durable revoked-provider record keyed by `{provider, external_id}`. Future direct provider login with that same Steam/Apple identity is blocked with a relink-required error until the user signs in through another method and relinks the provider from profile. The current authenticated session remains valid after unlink; the revoke only affects future sign-in attempts with the removed provider.
 
 **Flutter implementation:** The `OAuthLauncher` utility (`lib/features/auth/data/oauth_launcher.dart`) provides shared methods for both login and profile linking flows:
 - `launchSteamAuth()` -- builds Steam OpenID URL, launches browser via `flutter_web_auth_2`, returns callback params
 - `launchAppleSignIn()` -- launches Apple Sign-In, returns identity token. On web, passes `WebAuthenticationOptions` with `APPLE_SERVICE_ID` env and redirect URI.
 - Profile's Connected Accounts card triggers these flows directly; on success calls the profile repository's link methods and refreshes both profile and auth providers
+- The profile screen shows the email address in the Account section, while Connected Accounts treats `Email & Password` as a pure auth-method row whose state comes from `has_password_login`
+- Connected Steam/Apple rows remain actionable while linked, show destructive education before unlink, and confirm that the current session stays active while future provider sign-ins are disabled until relinked
+- Successful unlink now shows explicit localized success feedback, and last-method attempts surface a localized \"add another sign-in method first\" message instead of a generic validation error
+- Steam unlink currently clears only the auth link; future Steam-backed features (such as planned library sync) must gate on an active `steam_id` and remain unavailable until Steam is relinked
 - OAuth/browser failures are mapped through locale-aware user-facing messages so login/profile linking flows do not fall back to inline English copy
 
 **Platform callback configuration:**
 
 | Platform | Steam callback | Apple Sign-In | Config file(s) |
 |----------|---------------|---------------|----------------|
-| **iOS** | `ingame://auth/steam/callback` via `CFBundleURLTypes` | Native AuthenticationServices via `Runner.entitlements` | `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements` |
+| **iOS** | `ingame://auth/steam/callback` via `CFBundleURLTypes` | Native AuthenticationServices via `Runner.entitlements`, applied through the Runner target's `CODE_SIGN_ENTITLEMENTS` build setting | `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements`, `ios/Runner.xcodeproj/project.pbxproj` |
 | **Android** | `ingame://` scheme via `CallbackActivity` intent filter | N/A (Apple Sign-In not on Android) | `android/app/src/main/AndroidManifest.xml` |
 | **Web** | `{origin}/auth/steam-callback.html` static HTML page posts result via `window.opener.postMessage` and falls back to `localStorage` when opener state is unavailable | `{origin}/auth/apple-callback.html` + `WebAuthenticationOptions(clientId, redirectUri)` | `web/auth/steam-callback.html`, `web/auth/apple-callback.html` |
 | **macOS** | `ingame://auth/steam/callback` via `CFBundleURLTypes` | Native AuthenticationServices via entitlements | `macos/Runner/Info.plist`, `macos/Runner/*.entitlements` |
 
 - `flutter_web_auth_2` always receives the valid custom scheme `ingame`; on web that value is ignored and the flow resolves via `postMessage` from the callback HTML page
 - Apple Service ID for web is configured via `--dart-define=APPLE_SERVICE_ID=com.ingame.web` at build time
+- iOS now uses Flutter's generated Swift Package Manager plugin integration for app/runtime plugins; stale CocoaPods project wiring and Pod support-file includes were removed so native auth/build flows rely on the SPM-managed setup only
 
 ---
 
@@ -172,6 +187,17 @@ Conflict detection: if another user already has the target `steam_id` or `apple_
 | apple_id | VARCHAR | Unique, nullable |
 | created_at | TIMESTAMP | Auto-set |
 | updated_at | TIMESTAMP | Auto-updated |
+
+`preferred_gaming_hours` remains the recurring profile-availability field for SP1. It may be empty, can be captured coarsely during onboarding, and can later be refined per day from profile editing. It is intentionally distinct from any future game/genre preference model in SP3.
+
+**RevokedAuthLink**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID | Primary key |
+| user_id | UUID | FK -> User that revoked the provider |
+| provider | VARCHAR | `steam` or `apple` |
+| external_id | VARCHAR | Provider subject / external account ID |
+| revoked_at | TIMESTAMP | Auto-set |
 
 **Group**
 | Column | Type | Notes |
@@ -196,6 +222,45 @@ Conflict detection: if another user already has the target `steam_id` or `apple_
 | role | VARCHAR | "owner" / "admin" / "member" |
 | joined_at | TIMESTAMP | Auto-set |
 | Unique constraint | | (user_id, group_id) |
+
+### Group RBAC
+
+Group roles are part of the Core Platform contract and use three levels:
+
+| Role | Purpose |
+|------|---------|
+| `owner` | Final authority for the group; can manage admins and destructive group actions |
+| `admin` | Trusted manager for day-to-day group administration without ownership transfer or destructive ownership-only powers |
+| `member` | Standard participant in the group |
+
+#### Action Matrix
+
+| Action | Owner | Admin | Member |
+|--------|-------|-------|--------|
+| View group details and members | Yes | Yes | Yes |
+| Open/share invite UI | Yes | Yes | Yes |
+| Leave group | Yes, unless ownership transfer/delete is required first | Yes | Yes |
+| Edit name / description / avatar | Yes | Yes | No |
+| Change discoverability / join mode | Yes | Yes | No |
+| View pending join requests | Yes | Yes | No |
+| Approve / deny join requests | Yes | Yes | No |
+| Remove non-owner members | Yes | Yes | No |
+| Promote member to admin | Yes | No | No |
+| Demote admin to member | Yes | No | No |
+| Transfer ownership | Yes | No | No |
+| Delete group | Yes | No | No |
+
+#### Enforcement Notes
+- Backend authorization is the source of truth; Flutter must mirror the same matrix to avoid presenting unavailable actions.
+- Settings and moderation screens should only expose actions available to the current member role.
+- Owner-only actions stay owner-only even if an admin can see most group-management surfaces.
+- Group membership is the minimum requirement for reading member-scoped group surfaces; non-members should not be treated as if they have read access to private group details just because they are authenticated.
+
+#### RBAC Endpoint Contract
+- `PATCH /api/v1/groups/{group_id}/members/{user_id}/role` -- owner-only role change between `admin` and `member`; cannot be used on the current owner. Returns 204.
+- `POST /api/v1/groups/{group_id}/transfer-ownership` -- owner-only ownership transfer with body `{"user_id": "..."}`. The target must already be a non-owner member. On success, the target becomes `owner` and the previous owner is demoted to `admin`. Returns 204.
+- `DELETE /api/v1/groups/{group_id}/leave` -- self-leave endpoint aligned with Flutter's leave-group flow. Returns 204 for admin/member self-leave, and 403 `group.owner_cannot_leave` while the caller is still the owner.
+- `DELETE /api/v1/groups/{group_id}/members/{user_id}` remains the remove-member route for owner/admin moderation of other non-owner members.
 
 **JoinRequest**
 | Column | Type | Notes |
@@ -269,7 +334,7 @@ lib/
       app_router.dart
       route_normalization.dart        # Canonicalizes auth redirect targets and strips stale query params
       route_names.dart
-      page_transitions.dart          # fadeSlideTransition for GoRouter push routes
+      page_transitions.dart          # adaptiveRoutePage (web fade/slide, native mobile pages)
     storage/
       secure_storage.dart
       preferences.dart
@@ -277,9 +342,7 @@ lib/
       extensions.dart
       validators.dart
 
-  generated/                         # Auto-generated from OpenAPI spec
-    api/
-    models/
+  generated/                         # Reserved for optional future generated artifacts
 
   l10n/
     app_en.arb
@@ -308,7 +371,7 @@ lib/
     onboarding/
       presentation/
         providers/
-          onboarding_provider.dart   # needsOnboardingProvider (checks bio + gaming hours)
+          onboarding_provider.dart   # needsOnboardingProvider (checks recovery email + bio; recurring availability is optional)
         screens/
           onboarding_screen.dart     # 3-page PageView wizard (Welcome, Profile Setup, Gaming Preferences)
 
@@ -371,21 +434,20 @@ lib/
 ### Key Patterns
 - Each feature has `data/`, `domain/`, `presentation/` subdirectories
 - Providers (Riverpod) live in `presentation/providers/`
-- Repositories in `data/` call the generated API client and map DTOs to freezed domain models
+- Repositories in `data/` call handwritten Dio endpoints and map JSON payloads to freezed domain models
 - Domain models are freezed classes (immutable, copyWith, pattern matching)
 - `core/` is the shared foundation; `shared/` holds cross-feature widgets
 - User-facing Flutter copy is localized through generated `AppLocalizations`; widgets use `context.l10n`, while non-widget helpers (e.g. validators / API error mappers) use a locale-aware fallback accessor
 - The maintained localization sweep covers shared widgets, auth/onboarding/group/profile flows, and supporting validator/error/helper copy so user-visible inline English does not drift back into the app
 - User-visible failures that survive rebuilds are modeled as typed `AppFailure` values instead of already-localized strings, and widgets resolve the current text from `context.l10n` at display time.
 - Form screens with visible validation output re-run validation after a locale change, while untouched forms stay quiet until the user interacts.
-- Generated API code (`generated/`) is never manually edited
+- If generated API code is reintroduced later, treat it as read-only and never manually edit it
 
 ### API Contract Pipeline
 1. Backend defines Pydantic schemas (single source of truth)
 2. FastAPI auto-generates OpenAPI spec at `/api/v1/openapi.json`
-3. `scripts/generate-api-client.sh` runs `openapi_generator` to produce Dart DTOs and API client
-4. Repositories map generated DTOs to freezed domain models
-5. CI validates generated code is up-to-date
+3. Flutter repositories consume that contract through handwritten Dio calls and matching freezed/domain models
+4. CI validates backend/frontend contract alignment and spec freshness
 
 ---
 
@@ -482,11 +544,11 @@ backend/
 - **Popup menus**: `ThemeData.popupMenuTheme` is customized globally so overflow menus match the glassmorphism surface styling instead of default Material gray menus.
 
 ### Animation Principles
-- **Page transitions**: fade+slide (300ms ease-in-out) via `fadeSlideTransition` on all detail/sub-routes within the shell and focused flows
+- **Page transitions**: platform-aware by default. Web can keep richer custom transitions such as `fadeSlideTransition`, while iOS and Android should preserve native push/pop behavior and native back/drag gestures for in-app navigation
 - **StatusIndicator pulse**: Cue-driven 1500ms ease-in-out loop for `ready` state, with expanding ring + glow while preserving static rendering for other statuses
 - **GlassCard entry**: optional Cue-driven fade+scale-in (350ms, from 96% scale), staggerable via `animationDelay`
 - **Cue motion surfaces (first pass)**: Cue now powers app-root debug tooling, `GlassCard` entry, `AppToast` show/hide, social login hover emphasis, onboarding step-indicator transitions, onboarding time-slot selection motion, and `StatusIndicator` ready-pulse motion
-- **Deferred from first Cue pass**: GoRouter page transitions and `GlassButton` disabled opacity remain on their current implementations until a later motion pass
+- **Deferred from first Cue pass**: custom GoRouter page-transition polish on web and `GlassButton` disabled opacity remain on their current implementations until a later motion pass
 - Smooth transitions on state changes throughout
 
 ### Responsive Layout
@@ -500,9 +562,13 @@ backend/
 ## User Flows (Core Platform)
 
 ### Flow 1: First-Time User
-Open app -> Welcome screen -> Register (email, Steam, or Apple) -> Onboarding wizard (3-step PageView: Welcome, Profile Setup, Gaming Preferences) -> Home (groups list)
+Open app -> Welcome screen -> Register (email, Steam, or Apple) -> Onboarding wizard (3-step PageView: Welcome, Profile Setup, Recurring Availability) -> Home (groups list)
 
-**Onboarding redirect:** GoRouter checks `needsOnboardingProvider` after auth. If the user lacks a bio or gaming hours, they're redirected to `/onboarding`. If onboarding interrupted another destination such as `/join/:code`, the router preserves that `from` target and restores it once onboarding is complete. `OnboardingScreen` also exits immediately once onboarding is no longer required, so users are not left stranded on `/onboarding`.
+**Onboarding profile step:** The Profile Setup step contains display name followed by email. If auth already provided an email, the field is prefilled and editable. If auth did not provide one, the field is blank and required before the user can finish onboarding so every account has a recovery email. The email field reuses the same frontend validation and availability checks as registration.
+
+**Onboarding recurring availability step:** The third step captures optional recurring availability preferences. It can stay empty without blocking onboarding completion. When present, onboarding may use coarse time-slot presets; edit profile remains the place to refine availability per day.
+
+**Onboarding redirect:** GoRouter checks `needsOnboardingProvider` after auth. If the user lacks a recovery email or bio, they're redirected to `/onboarding`. Recurring availability no longer blocks completion. If onboarding interrupted another destination such as `/join/:code`, the router preserves that `from` target and restores it once onboarding is complete. `OnboardingScreen` also exits immediately once onboarding is no longer required, so users are not left stranded on `/onboarding`.
 
 **Redirect normalization:** Auth/onboarding redirect carriers normalize their route locations and preserve only the whitelisted `from` query so stale or nested auth query params do not leak into later navigation.
 
@@ -519,6 +585,8 @@ Home -> "Discover" tab -> Browse/search groups (excludes groups user is already 
 
 **Join request approval flow:** Group Settings screen shows a "PENDING REQUESTS (N)" section between MEMBERS and DANGER ZONE. Each request shows the user avatar, display name, relative timestamp, and approve (green) / deny (red) buttons. Deny prompts a confirmation dialog. Resolving a request auto-refreshes the group detail. A badge on the Settings menu item indicates pending request count.
 
+**RBAC note:** Pending-request moderation belongs to owners and admins only. Regular members may still browse the group but should not see moderation controls.
+
 ### Flow 5: View Group & Members
 Home -> Tap group card -> Group detail (member list, group info chips)
 
@@ -527,6 +595,8 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 - **Invite** -- opens a bottom sheet containing the `InviteLinkShare` card (invite code display + copy/share buttons)
 - **Settings** -- navigates to `GroupSettingsScreen` (edit name/description, toggle discoverability/join mode, manage members, delete group)
 - **Leave Group** -- confirmation dialog, then removes membership and navigates back
+
+**RBAC note:** The app bar menu is role-aware. Invite and Leave stay available to all members. Settings remains reachable only when the user has at least one settings action available, and the screen itself must show only the controls allowed by the current role.
 
 ### Navigation Structure
 
@@ -572,16 +642,14 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 ## Testing Strategy
 
 ### Flutter
-- **Unit tests**: repositories (mocked API client), providers (Riverpod test utilities), domain model serialization
+- **Unit tests**: repositories, providers (Riverpod test utilities), domain model serialization, and focused realtime/networking helpers
 - **Widget tests**: individual screens with mocked providers, form validation, locale-switch revalidation, and localization delegates enabled where migrated screens use `context.l10n`
-- **Integration tests**: critical flows (register -> create group -> invite) via `integration_test`
+- **Integration tests**: still planned for the highest-value end-to-end flows; current shipped coverage relies primarily on repository/provider/widget regression tests
 
-### Backend (34 tests passing)
-- **Auth tests** (11): register, login, refresh tokens, duplicate email, availability checks
-- **User tests** (8): get/update profile, Steam link/unlink/conflict, get by ID, unauthorized access
-- **Group tests** (12): CRUD, discover exclusion, invite join, join request approve/deny flow, member removal, owner-only delete
-- **WebSocket tests** (4): auth validation, presence snapshot bootstrap, and multi-user status broadcast behavior
-- **Infrastructure**: async SQLite test DB, FakeRedis mock, httpx AsyncClient with dependency overrides
+### Backend
+- **API tests**: auth, users, groups, join requests, and contract-sensitive business rules such as relink guards, recovery-email onboarding, and group RBAC
+- **Realtime tests**: WebSocket auth, presence snapshots, ready fan-out, lifecycle transitions, expiry handling, and reconnect-ready restoration
+- **Infrastructure**: async SQLite test DB, FakeRedis mock, and httpx AsyncClient with dependency overrides
 
 ### Cross-Cutting
 - **API contract tests**: validate OpenAPI spec matches Flutter expectations
@@ -688,3 +756,12 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-01 | Error Handling / Flutter App Architecture | Added backend error codes, typed Flutter failures, and locale-aware form revalidation | Prevents frozen translated errors, removes raw exception text from key UI surfaces, and gives Flutter a stable machine-readable API error contract |
 | 2026-06-01 | Release / SP1 Sign-Off | Marked SP1 complete for shipping at `v0.2.5` | Structured error handling and locale-aware validation were the final SP1 contract items before SP2 realtime work begins |
 | 2026-06-01 | Release versioning | Retargeted unpublished release metadata from `v0.3.0` to `v0.2.5` | Keeps SP1 sign-off references aligned with the chosen patch-line cut before publish |
+| 2026-06-02 | Authentication / Platform Config | Removed stale CocoaPods integration from iOS and aligned the project with Flutter's generated Swift Package Manager plugin setup | Eliminates Flutter's iOS SPM migration warning while keeping native Apple Sign-In entitlements/build wiring intact |
+| 2026-06-02 | Authentication / Platform Config | Wired `Runner/Runner.entitlements` into the signed iOS Runner target build settings | Fixes device-side Apple Sign-In failures caused by the entitlements file existing in the repo without being applied to the built app |
+| 2026-06-02 | Profile / Auth Contracts | Added `has_password_login` to user responses and decoupled email display from password-login state in profile | Prevents Apple/social accounts with an email but no password from being shown as if email/password login were already enabled |
+| 2026-06-02 | Authentication / Onboarding | Required a recovery email during onboarding for all auth methods | Provider-supplied emails are prefilled, while provider flows without email exposure (currently Steam) must collect one manually before onboarding can finish |
+| 2026-06-02 | Account Linking / Revoke Lifecycle | Added revoked-provider tracking, relink-required direct login guards, and destructive unlink UX semantics | Prevents unlinked Steam/Apple identities from silently creating duplicate accounts while making unlink consequences explicit and keeping current sessions intact |
+| 2026-06-02 | Authentication / Onboarding / Users API | Made onboarding enforce and persist the recovery email contract through `PATCH /users/me` | Closes the remaining spec drift where Steam-style accounts could finish onboarding without an email on file |
+| 2026-06-02 | Group RBAC / Onboarding / Navigation | Added an explicit owner-admin-member action matrix, made recurring availability optional during onboarding, and documented platform-aware page transitions that preserve native mobile gestures | Classifies the next SP1-owned feature batch before implementation and resolves terminology drift between recurring availability and future game preferences |
+| 2026-06-02 | Group RBAC / Onboarding / Navigation | Implemented owner-only role-management endpoints, owner-leave guard semantics, optional onboarding availability completion, and adaptive mobile-vs-web route pages | Records the concrete SP1 completion contract now that the backend routes, Flutter gating, and router behavior are live |
+| 2026-06-03 | Groups / Spec Hygiene / Testing | Enforced member-only access for private group detail/member reads, aligned the documented Flutter client architecture with handwritten Dio repositories, and updated testing strategy wording to match current coverage | Closes the largest SP1 audit drift and removes stale claims about generated clients, exact test counts, and integration-test coverage |

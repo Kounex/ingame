@@ -14,6 +14,8 @@ class ErrorCode(str, Enum):
     AUTH_REFRESH_TOKEN_USER_NOT_FOUND = "auth.refresh_token_user_not_found"
     AUTH_STEAM_OPENID_INVALID = "auth.steam_openid_invalid"
     AUTH_APPLE_TOKEN_INVALID = "auth.apple_token_invalid"
+    AUTH_STEAM_RELINK_REQUIRED = "auth.steam_relink_required"
+    AUTH_APPLE_RELINK_REQUIRED = "auth.apple_relink_required"
 
     USER_NOT_FOUND = "user.not_found"
     USER_STEAM_ACCOUNT_ALREADY_LINKED = "user.steam_account_already_linked"
@@ -28,8 +30,13 @@ class ErrorCode(str, Enum):
     GROUP_MEMBER_ALREADY_EXISTS = "group.member_already_exists"
     GROUP_DELETE_REQUIRES_OWNER = "group.delete_requires_owner"
     GROUP_ADMIN_OR_OWNER_REQUIRED = "group.admin_or_owner_required"
+    GROUP_OWNER_REQUIRED = "group.owner_required"
     GROUP_OWNER_CANNOT_BE_REMOVED = "group.owner_cannot_be_removed"
+    GROUP_OWNER_CANNOT_LEAVE = "group.owner_cannot_leave"
     GROUP_MEMBER_NOT_FOUND = "group.member_not_found"
+    GROUP_INVALID_ROLE_CHANGE = "group.invalid_role_change"
+    GROUP_TRANSFER_INVALID_TARGET = "group.transfer_invalid_target"
+    GROUP_MEMBER_REQUIRED = "group.member_required"
 
     JOIN_REQUEST_NOT_FOUND = "join_request.not_found"
     JOIN_REQUEST_PENDING_ALREADY_EXISTS = "join_request.pending_already_exists"

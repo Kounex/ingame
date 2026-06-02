@@ -371,6 +371,12 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get commonShare;
 
+  /// No description provided for @commonClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonClose;
+
   /// No description provided for @navigationGroups.
   ///
   /// In en, this message translates to:
@@ -554,7 +560,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingGamingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Select at least one time slot so groups can see when you play.'**
+  /// **'Add your usual time slots now or skip this step and set them later.'**
   String get onboardingGamingSubtitle;
 
   /// No description provided for @onboardingConnectSteamTitle.
@@ -929,23 +935,65 @@ abstract class AppLocalizations {
   /// **'Apple'**
   String get profileConnectedAccountsApple;
 
+  /// No description provided for @profileConnectedTapToDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected. Tap to disconnect.'**
+  String get profileConnectedTapToDisconnect;
+
   /// No description provided for @profileDisconnectTitle.
   ///
   /// In en, this message translates to:
-  /// **'Disconnect {provider}'**
+  /// **'Disconnect {provider}?'**
   String profileDisconnectTitle(String provider);
 
   /// No description provided for @profileDisconnectMessage.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to disconnect your {provider} account?'**
+  /// **'You won\'t be able to sign in with {provider} after this.'**
   String profileDisconnectMessage(String provider);
+
+  /// No description provided for @profileDisconnectSessionNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current session will stay active on this device.'**
+  String get profileDisconnectSessionNotice;
+
+  /// No description provided for @profileDisconnectKeepAnotherMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure another sign-in method is already connected before you continue.'**
+  String get profileDisconnectKeepAnotherMethod;
+
+  /// No description provided for @profileDisconnectSteamFeatureNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam-connected features will stay unavailable until you relink Steam.'**
+  String get profileDisconnectSteamFeatureNotice;
+
+  /// No description provided for @profileDisconnectAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get profileDisconnectAction;
 
   /// No description provided for @profileDisconnectFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to disconnect {provider}: {message}'**
   String profileDisconnectFailed(String provider, String message);
+
+  /// No description provided for @profileDisconnectedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} disconnected.'**
+  String profileDisconnectedSuccess(String provider);
+
+  /// No description provided for @profileLastAuthMethodRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another sign-in method before disconnecting this one.'**
+  String get profileLastAuthMethodRequired;
 
   /// No description provided for @profileSteamLinkedSuccess.
   ///
@@ -1103,6 +1151,18 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get commonAdd;
 
+  /// No description provided for @authSteamRelinkRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This Steam login was disconnected. Sign in with another method and relink Steam from Profile.'**
+  String get authSteamRelinkRequired;
+
+  /// No description provided for @authAppleRelinkRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This Apple login was disconnected. Sign in with another method and relink Apple from Profile.'**
+  String get authAppleRelinkRequired;
+
   /// No description provided for @groupTitleFallback.
   ///
   /// In en, this message translates to:
@@ -1186,6 +1246,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to leave this group?'**
   String get groupDetailLeaveMessage;
+
+  /// No description provided for @groupDetailOwnerLeaveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer ownership or delete the group before leaving it yourself.'**
+  String get groupDetailOwnerLeaveMessage;
 
   /// No description provided for @createGroupTitle.
   ///
@@ -1378,6 +1444,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Member'**
   String get groupSettingsRoleMember;
+
+  /// No description provided for @groupSettingsPromoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote to Admin'**
+  String get groupSettingsPromoteTitle;
+
+  /// No description provided for @groupSettingsPromoteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote {displayName} to admin?'**
+  String groupSettingsPromoteMessage(String displayName);
+
+  /// No description provided for @groupSettingsPromoteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote'**
+  String get groupSettingsPromoteAction;
+
+  /// No description provided for @groupSettingsPromoted.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} is now an admin.'**
+  String groupSettingsPromoted(String displayName);
+
+  /// No description provided for @groupSettingsDemoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Demote to Member'**
+  String get groupSettingsDemoteTitle;
+
+  /// No description provided for @groupSettingsDemoteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove admin access for {displayName}?'**
+  String groupSettingsDemoteMessage(String displayName);
+
+  /// No description provided for @groupSettingsDemoteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Demote'**
+  String get groupSettingsDemoteAction;
+
+  /// No description provided for @groupSettingsDemoted.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} is now a member.'**
+  String groupSettingsDemoted(String displayName);
+
+  /// No description provided for @groupSettingsTransferOwnershipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer Ownership'**
+  String get groupSettingsTransferOwnershipTitle;
+
+  /// No description provided for @groupSettingsTransferOwnershipMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer ownership to {displayName}? You will remain in the group as an admin.'**
+  String groupSettingsTransferOwnershipMessage(String displayName);
+
+  /// No description provided for @groupSettingsTransferOwnershipAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer ownership'**
+  String get groupSettingsTransferOwnershipAction;
+
+  /// No description provided for @groupSettingsOwnershipTransferred.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} is now the group owner.'**
+  String groupSettingsOwnershipTransferred(String displayName);
+
+  /// No description provided for @groupOwnerCannotLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer ownership or delete the group before leaving it yourself.'**
+  String get groupOwnerCannotLeave;
 
   /// No description provided for @groupSettingsTimeAgoDays.
   ///

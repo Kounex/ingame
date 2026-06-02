@@ -153,6 +153,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonShare => 'Teilen';
 
   @override
+  String get commonClose => 'Schließen';
+
+  @override
   String get navigationGroups => 'Gruppen';
 
   @override
@@ -243,7 +246,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingGamingTitle => 'Gaming-Präferenzen';
 
   @override
-  String get onboardingGamingSubtitle => 'Wähle mindestens ein Zeitfenster, damit Gruppen sehen können, wann du spielst.';
+  String get onboardingGamingSubtitle => 'Füge jetzt deine üblichen Zeitfenster hinzu oder überspringe diesen Schritt und stelle sie später ein.';
 
   @override
   String get onboardingConnectSteamTitle => 'Steam verbinden';
@@ -440,19 +443,42 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileConnectedAccountsApple => 'Apple';
 
   @override
+  String get profileConnectedTapToDisconnect => 'Verbunden. Tippe zum Trennen.';
+
+  @override
   String profileDisconnectTitle(String provider) {
-    return '$provider trennen';
+    return '$provider trennen?';
   }
 
   @override
   String profileDisconnectMessage(String provider) {
-    return 'Moechtest du dein $provider-Konto wirklich trennen?';
+    return 'Du kannst dich danach nicht mehr mit $provider anmelden.';
   }
+
+  @override
+  String get profileDisconnectSessionNotice => 'Deine aktuelle Sitzung auf diesem Gerät bleibt aktiv.';
+
+  @override
+  String get profileDisconnectKeepAnotherMethod => 'Stelle sicher, dass bereits eine andere Anmeldemethode mit diesem Konto verbunden ist, bevor du fortfährst.';
+
+  @override
+  String get profileDisconnectSteamFeatureNotice => 'Steam-bezogene Funktionen bleiben deaktiviert, bis du Steam erneut verknüpfst.';
+
+  @override
+  String get profileDisconnectAction => 'Trennen';
 
   @override
   String profileDisconnectFailed(String provider, String message) {
     return '$provider konnte nicht getrennt werden: $message';
   }
+
+  @override
+  String profileDisconnectedSuccess(String provider) {
+    return '$provider getrennt.';
+  }
+
+  @override
+  String get profileLastAuthMethodRequired => 'Fuege zuerst eine weitere Anmeldemethode hinzu, bevor du diese trennst.';
 
   @override
   String get profileSteamLinkedSuccess => 'Steam-Konto erfolgreich verknuepft';
@@ -543,6 +569,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonAdd => 'Hinzufuegen';
 
   @override
+  String get authSteamRelinkRequired => 'Diese Steam-Anmeldung wurde getrennt. Melde dich mit einer anderen Methode an und verknuepfe Steam anschliessend im Profil erneut.';
+
+  @override
+  String get authAppleRelinkRequired => 'Diese Apple-Anmeldung wurde getrennt. Melde dich mit einer anderen Methode an und verknuepfe Apple anschliessend im Profil erneut.';
+
+  @override
   String get groupTitleFallback => 'Gruppe';
 
   @override
@@ -583,6 +615,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get groupDetailLeaveMessage => 'Moechtest du diese Gruppe wirklich verlassen?';
+
+  @override
+  String get groupDetailOwnerLeaveMessage => 'Übertrage zuerst den Besitz oder lösche die Gruppe, bevor du sie selbst verlässt.';
 
   @override
   String get createGroupTitle => 'Gruppe erstellen';
@@ -689,6 +724,57 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get groupSettingsRoleMember => 'Mitglied';
+
+  @override
+  String get groupSettingsPromoteTitle => 'Zum Admin machen';
+
+  @override
+  String groupSettingsPromoteMessage(String displayName) {
+    return '$displayName zum Admin machen?';
+  }
+
+  @override
+  String get groupSettingsPromoteAction => 'Befördern';
+
+  @override
+  String groupSettingsPromoted(String displayName) {
+    return '$displayName ist jetzt Admin.';
+  }
+
+  @override
+  String get groupSettingsDemoteTitle => 'Zum Mitglied herabstufen';
+
+  @override
+  String groupSettingsDemoteMessage(String displayName) {
+    return 'Adminrechte für $displayName entfernen?';
+  }
+
+  @override
+  String get groupSettingsDemoteAction => 'Herabstufen';
+
+  @override
+  String groupSettingsDemoted(String displayName) {
+    return '$displayName ist jetzt Mitglied.';
+  }
+
+  @override
+  String get groupSettingsTransferOwnershipTitle => 'Besitz übertragen';
+
+  @override
+  String groupSettingsTransferOwnershipMessage(String displayName) {
+    return 'Den Gruppenbesitz an $displayName übertragen? Du bleibst als Admin in der Gruppe.';
+  }
+
+  @override
+  String get groupSettingsTransferOwnershipAction => 'Besitz übertragen';
+
+  @override
+  String groupSettingsOwnershipTransferred(String displayName) {
+    return '$displayName ist jetzt Gruppenbesitzer.';
+  }
+
+  @override
+  String get groupOwnerCannotLeave => 'Übertrage zuerst den Besitz oder lösche die Gruppe, bevor du sie selbst verlässt.';
 
   @override
   String groupSettingsTimeAgoDays(int count) {

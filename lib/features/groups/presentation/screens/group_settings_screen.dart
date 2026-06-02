@@ -122,9 +122,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
     try {
       final repo = ref.read(groupsRepositoryProvider);
       await repo.removeMember(widget.groupId, userId);
-      ref
-          .read(groupDetailNotifierProvider(widget.groupId).notifier)
-          .refresh();
+      ref.read(groupDetailNotifierProvider(widget.groupId).notifier).refresh();
       if (mounted) {
         AppToast.success(
           context,
@@ -243,11 +241,116 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
     }
   }
 
+  Future<void> _changeMemberRole(
+    String userId,
+    String displayName, {
+    required String nextRole,
+  }) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.backgroundLight,
+        title: Text(
+          nextRole == 'admin'
+              ? l10n.groupSettingsPromoteTitle
+              : l10n.groupSettingsDemoteTitle,
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          nextRole == 'admin'
+              ? l10n.groupSettingsPromoteMessage(displayName)
+              : l10n.groupSettingsDemoteMessage(displayName),
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              nextRole == 'admin'
+                  ? l10n.groupSettingsPromoteAction
+                  : l10n.groupSettingsDemoteAction,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref
+          .read(groupDetailNotifierProvider(widget.groupId).notifier)
+          .updateMemberRole(userId, nextRole);
+      if (mounted) {
+        AppToast.success(
+          context,
+          nextRole == 'admin'
+              ? l10n.groupSettingsPromoted(displayName)
+              : l10n.groupSettingsDemoted(displayName),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
+      }
+    }
+  }
+
+  Future<void> _transferOwnership(String userId, String displayName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.backgroundLight,
+        title: Text(
+          context.l10n.groupSettingsTransferOwnershipTitle,
+          style: const TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          context.l10n.groupSettingsTransferOwnershipMessage(displayName),
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(context.l10n.groupSettingsTransferOwnershipAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref
+          .read(groupDetailNotifierProvider(widget.groupId).notifier)
+          .transferOwnership(userId);
+      if (mounted) {
+        AppToast.success(
+          context,
+          context.l10n.groupSettingsOwnershipTransferred(displayName),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, ApiError.userMessage(e, context.l10n));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final detailAsync =
-        ref.watch(groupDetailNotifierProvider(widget.groupId));
+    final detailAsync = ref.watch(groupDetailNotifierProvider(widget.groupId));
     final l10n = context.l10n;
+    final canManageSettings = detailAsync.value?.canManageSettings ?? false;
 
     return Container(
       decoration: const BoxDecoration(
@@ -262,12 +365,11 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
         appBar: GlassAppBar(
           title: l10n.groupSettingsTitle,
           leading: IconButton(
-            icon:
-                const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
           ),
           actions: [
-            if (_hasChanges)
+            if (_hasChanges && canManageSettings)
               TextButton(
                 onPressed: _isSaving ? null : _saveChanges,
                 child: _isSaving
@@ -299,6 +401,18 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
           ),
           data: (detail) {
             _initFromGroup(detail);
+            if (!detail.canManageSettings) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    l10n.errorNoPermission,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            }
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
@@ -307,7 +421,9 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _SectionLabel(l10n.groupSettingsSectionGroupInfo.toUpperCase()),
+                  _SectionLabel(
+                    l10n.groupSettingsSectionGroupInfo.toUpperCase(),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   GlassCard(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -331,7 +447,9 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _SectionLabel(l10n.groupSettingsSectionVisibility.toUpperCase()),
+                  _SectionLabel(
+                    l10n.groupSettingsSectionVisibility.toUpperCase(),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   GlassCard(
                     padding: const EdgeInsets.symmetric(
@@ -345,10 +463,12 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                           title: l10n.createGroupDiscoverableTitle,
                           subtitle: l10n.createGroupDiscoverableSubtitle,
                           value: _isDiscoverable,
-                          onChanged: (v) {
-                            setState(() => _isDiscoverable = v);
-                            _markChanged();
-                          },
+                          onChanged: detail.canManageSettings
+                              ? (v) {
+                                  setState(() => _isDiscoverable = v);
+                                  _markChanged();
+                                }
+                              : null,
                         ),
                         if (_isDiscoverable) ...[
                           const Divider(
@@ -365,6 +485,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                                   '${l10n.groupJoinModeApprovalLabel} - ${l10n.groupJoinModeApprovalDescription}',
                             },
                             value: _joinMode,
+                            enabled: detail.canManageSettings,
                             onChanged: (v) {
                               setState(() => _joinMode = v);
                               _markChanged();
@@ -376,7 +497,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _SectionLabel(
-                    l10n.groupSettingsSectionMembers(detail.members.length)
+                    l10n
+                        .groupSettingsSectionMembers(detail.members.length)
                         .toUpperCase(),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -386,9 +508,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     ),
                     child: Column(
                       children: [
-                        for (var i = 0;
-                            i < detail.members.length;
-                            i++) ...[
+                        for (var i = 0; i < detail.members.length; i++) ...[
                           if (i > 0)
                             const Divider(
                               color: AppColors.glassBorder,
@@ -397,11 +517,32 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                           _MemberSettingsRow(
                             groupId: widget.groupId,
                             member: detail.members[i],
-                            onRemove: detail.members[i].role != 'owner'
+                            onRemove: detail.canRemoveMember(detail.members[i])
                                 ? () => _removeMember(
-                                      detail.members[i].userId,
-                                      detail.members[i].displayName,
-                                    )
+                                    detail.members[i].userId,
+                                    detail.members[i].displayName,
+                                  )
+                                : null,
+                            onPromote: detail.canPromote(detail.members[i])
+                                ? () => _changeMemberRole(
+                                    detail.members[i].userId,
+                                    detail.members[i].displayName,
+                                    nextRole: 'admin',
+                                  )
+                                : null,
+                            onDemote: detail.canDemote(detail.members[i])
+                                ? () => _changeMemberRole(
+                                    detail.members[i].userId,
+                                    detail.members[i].displayName,
+                                    nextRole: 'member',
+                                  )
+                                : null,
+                            onTransferOwnership:
+                                detail.canTransferOwnershipTo(detail.members[i])
+                                ? () => _transferOwnership(
+                                    detail.members[i].userId,
+                                    detail.members[i].displayName,
+                                  )
                                 : null,
                           ),
                         ],
@@ -409,7 +550,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  if (detail.pendingRequests.isNotEmpty) ...[
+                  if (detail.canManageRequests &&
+                      detail.pendingRequests.isNotEmpty) ...[
                     _SectionLabel(
                       l10n
                           .groupSettingsSectionPendingRequests(
@@ -424,9 +566,11 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       ),
                       child: Column(
                         children: [
-                          for (var i = 0;
-                              i < detail.pendingRequests.length;
-                              i++) ...[
+                          for (
+                            var i = 0;
+                            i < detail.pendingRequests.length;
+                            i++
+                          ) ...[
                             if (i > 0)
                               const Divider(
                                 color: AppColors.glassBorder,
@@ -447,34 +591,38 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     ),
                     const SizedBox(height: AppSpacing.lg),
                   ],
-                  const SizedBox(height: AppSpacing.xl),
-                  _SectionLabel(l10n.groupSettingsSectionDangerZone.toUpperCase()),
-                  const SizedBox(height: AppSpacing.sm),
-                  GlassCard(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          l10n.groupSettingsDangerDescription,
-                          style: const TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        GlassButton(
-                          onPressed: _deleteGroup,
-                          variant: GlassButtonVariant.ghost,
-                          child: Text(
-                            l10n.groupSettingsDeleteTitle,
-                            style: const TextStyle(color: AppColors.error),
-                          ),
-                        ),
-                      ],
+                  if (detail.canDeleteGroup) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    _SectionLabel(
+                      l10n.groupSettingsSectionDangerZone.toUpperCase(),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.sm),
+                    GlassCard(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            l10n.groupSettingsDangerDescription,
+                            style: const TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          GlassButton(
+                            onPressed: _deleteGroup,
+                            variant: GlassButtonVariant.ghost,
+                            child: Text(
+                              l10n.groupSettingsDeleteTitle,
+                              style: const TextStyle(color: AppColors.error),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
                 ],
               ),
             );
@@ -513,14 +661,14 @@ class _SettingsSwitch extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.value,
-    required this.onChanged,
+    this.onChanged,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -570,6 +718,7 @@ class _SettingsRadio extends StatelessWidget {
     required this.title,
     required this.options,
     required this.value,
+    required this.enabled,
     required this.onChanged,
   });
 
@@ -577,6 +726,7 @@ class _SettingsRadio extends StatelessWidget {
   final String title;
   final Map<String, String> options;
   final String value;
+  final bool enabled;
   final ValueChanged<String> onChanged;
 
   @override
@@ -588,8 +738,7 @@ class _SettingsRadio extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 12),
-            child:
-                Icon(icon, size: 20, color: AppColors.textTertiary),
+            child: Icon(icon, size: 20, color: AppColors.textTertiary),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -607,11 +756,12 @@ class _SettingsRadio extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 for (final entry in options.entries)
                   InkWell(
-                    onTap: () => onChanged(entry.key),
+                    onTap: enabled ? () => onChanged(entry.key) : null,
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.xs + 2),
+                        vertical: AppSpacing.xs + 2,
+                      ),
                       child: Row(
                         children: [
                           Icon(
@@ -653,11 +803,17 @@ class _MemberSettingsRow extends ConsumerWidget {
     required this.groupId,
     required this.member,
     this.onRemove,
+    this.onPromote,
+    this.onDemote,
+    this.onTransferOwnership,
   });
 
   final String groupId;
   final dynamic member;
   final VoidCallback? onRemove;
+  final VoidCallback? onPromote;
+  final VoidCallback? onDemote;
+  final VoidCallback? onTransferOwnership;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -709,24 +865,62 @@ class _MemberSettingsRow extends ConsumerWidget {
                 Text(
                   _roleLabel(role),
                   style: TextStyle(
-                    color: isOwner
-                        ? AppColors.primary
-                        : AppColors.textTertiary,
+                    color: isOwner ? AppColors.primary : AppColors.textTertiary,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          if (onRemove != null)
-            IconButton(
+          if (onPromote != null ||
+              onDemote != null ||
+              onTransferOwnership != null ||
+              onRemove != null)
+            PopupMenuButton<_MemberAction>(
               icon: const Icon(
-                Icons.remove_circle_outline,
-                color: AppColors.error,
+                Icons.more_horiz,
+                color: AppColors.textSecondary,
                 size: 20,
               ),
-              onPressed: onRemove,
-              tooltip: context.l10n.groupSettingsRemoveTooltip,
+              onSelected: (action) {
+                switch (action) {
+                  case _MemberAction.promote:
+                    onPromote?.call();
+                  case _MemberAction.demote:
+                    onDemote?.call();
+                  case _MemberAction.transferOwnership:
+                    onTransferOwnership?.call();
+                  case _MemberAction.remove:
+                    onRemove?.call();
+                }
+              },
+              itemBuilder: (context) => [
+                if (onPromote != null)
+                  PopupMenuItem(
+                    value: _MemberAction.promote,
+                    child: Text(context.l10n.groupSettingsPromoteAction),
+                  ),
+                if (onDemote != null)
+                  PopupMenuItem(
+                    value: _MemberAction.demote,
+                    child: Text(context.l10n.groupSettingsDemoteAction),
+                  ),
+                if (onTransferOwnership != null)
+                  PopupMenuItem(
+                    value: _MemberAction.transferOwnership,
+                    child: Text(
+                      context.l10n.groupSettingsTransferOwnershipAction,
+                    ),
+                  ),
+                if (onRemove != null)
+                  PopupMenuItem(
+                    value: _MemberAction.remove,
+                    child: Text(
+                      context.l10n.commonRemove,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                  ),
+              ],
             ),
         ],
       ),
@@ -761,6 +955,8 @@ class _MemberSettingsRow extends ConsumerWidget {
     };
   }
 }
+
+enum _MemberAction { promote, demote, transferOwnership, remove }
 
 class _JoinRequestRow extends StatelessWidget {
   const _JoinRequestRow({

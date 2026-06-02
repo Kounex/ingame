@@ -342,4 +342,53 @@ void main() {
     expect(find.text('English'), findsOneWidget);
     expect(prefs.getString('locale_code'), 'en');
   });
+
+  testWidgets(
+    'profile shows email separately from password login state for Apple-only accounts',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      const email = 'apple-only@test.com';
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+            profileNotifierProvider.overrideWith(
+              () => _FakeProfileNotifier(
+                const User(
+                  id: 'user-apple-only',
+                  displayName: 'Apple Only',
+                  email: email,
+                  appleId: 'apple-id-123',
+                  timezone: 'UTC',
+                ),
+              ),
+            ),
+          ],
+          child: const _LocaleHarness(home: ProfileScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(email), findsOneWidget);
+
+      final emailPasswordRow = find.ancestor(
+        of: find.text('Email & Password'),
+        matching: find.byType(InkWell),
+      );
+
+      expect(
+        find.descendant(
+          of: emailPasswordRow,
+          matching: find.text('Not connected'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: emailPasswordRow, matching: find.text(email)),
+        findsNothing,
+      );
+    },
+  );
 }

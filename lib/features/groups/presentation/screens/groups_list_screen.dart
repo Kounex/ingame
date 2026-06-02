@@ -62,7 +62,7 @@ class GroupsListScreen extends ConsumerWidget {
             );
           },
         ),
-        floatingActionButton: groupsAsync.valueOrNull?.isNotEmpty == true
+        floatingActionButton: groupsAsync.value?.isNotEmpty == true
             ? FloatingActionButton(
                 onPressed: () => context.goNamed(RouteNames.createGroup),
                 backgroundColor: AppColors.primary,

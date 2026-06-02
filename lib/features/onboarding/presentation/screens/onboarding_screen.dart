@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:cue/cue.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/localization/locale_aware_form_state_mixin.dart';
+import '../../../../core/networking/app_failure.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/routing/route_names.dart';
 import '../../../../core/routing/route_normalization.dart';
@@ -14,9 +17,10 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/tappable.dart';
+import '../../../auth/data/auth_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../providers/onboarding_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../providers/onboarding_provider.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -29,42 +33,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     with LocaleAwareFormStateMixin {
   final _pageController = PageController();
   final _formKey = GlobalKey<FormState>();
+  static const _debounceDuration = Duration(milliseconds: 600);
+
   int _currentPage = 0;
 
   late TextEditingController _displayNameController;
+  late TextEditingController _emailController;
   late TextEditingController _bioController;
   late TextEditingController _avatarUrlController;
+  Timer? _emailDebounce;
+  String? _initialEmail;
 
   final Set<String> _selectedTimeSlots = {};
   bool _isSaving = false;
   bool _hasAttemptedProfileValidation = false;
+  bool _emailChecking = false;
+  AppFailure? _emailAvailabilityError;
 
   List<(String, String, String, IconData)> _timeSlots(BuildContext context) => [
-        (
-          'morning',
-          context.l10n.timeSlotMorningLabel,
-          context.l10n.timeSlotMorningSubtitle,
-          Icons.wb_sunny_outlined,
-        ),
-        (
-          'afternoon',
-          context.l10n.timeSlotAfternoonLabel,
-          context.l10n.timeSlotAfternoonSubtitle,
-          Icons.wb_cloudy_outlined,
-        ),
-        (
-          'evening',
-          context.l10n.timeSlotEveningLabel,
-          context.l10n.timeSlotEveningSubtitle,
-          Icons.nights_stay_outlined,
-        ),
-        (
-          'night',
-          context.l10n.timeSlotNightLabel,
-          context.l10n.timeSlotNightSubtitle,
-          Icons.dark_mode_outlined,
-        ),
-      ];
+    (
+      'morning',
+      context.l10n.timeSlotMorningLabel,
+      context.l10n.timeSlotMorningSubtitle,
+      Icons.wb_sunny_outlined,
+    ),
+    (
+      'afternoon',
+      context.l10n.timeSlotAfternoonLabel,
+      context.l10n.timeSlotAfternoonSubtitle,
+      Icons.wb_cloudy_outlined,
+    ),
+    (
+      'evening',
+      context.l10n.timeSlotEveningLabel,
+      context.l10n.timeSlotEveningSubtitle,
+      Icons.nights_stay_outlined,
+    ),
+    (
+      'night',
+      context.l10n.timeSlotNightLabel,
+      context.l10n.timeSlotNightSubtitle,
+      Icons.dark_mode_outlined,
+    ),
+  ];
 
   @override
   void initState() {
@@ -75,20 +86,90 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           data: (s) => s.maybeWhen(authenticated: (u) => u, orElse: () => null),
           orElse: () => null,
         );
+    _initialEmail = user?.email?.trim();
     _displayNameController = TextEditingController(
       text: user?.displayName ?? '',
     );
+    _emailController = TextEditingController(text: user?.email ?? '');
     _bioController = TextEditingController();
     _avatarUrlController = TextEditingController();
+    _emailController.addListener(_onEmailChanged);
   }
 
   @override
   void dispose() {
+    _emailDebounce?.cancel();
     _pageController.dispose();
+    _emailController.removeListener(_onEmailChanged);
     _displayNameController.dispose();
+    _emailController.dispose();
     _bioController.dispose();
     _avatarUrlController.dispose();
     super.dispose();
+  }
+
+  void _onEmailChanged() {
+    _emailDebounce?.cancel();
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty || FormValidators.email(email) != null) {
+      setState(() {
+        _emailChecking = false;
+        _emailAvailabilityError = null;
+      });
+      return;
+    }
+
+    if (email == _initialEmail) {
+      setState(() {
+        _emailChecking = false;
+        _emailAvailabilityError = null;
+      });
+      return;
+    }
+
+    setState(() => _emailChecking = true);
+
+    _emailDebounce = Timer(_debounceDuration, () async {
+      try {
+        final repo = ref.read(authRepositoryProvider);
+        final available = await repo.checkEmailAvailable(email);
+        if (!mounted || _emailController.text.trim() != email) return;
+        setState(() {
+          _emailChecking = false;
+          _emailAvailabilityError = available
+              ? null
+              : const LocalizedFailure(AppFailureMessageKey.registerEmailTaken);
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _emailChecking = false);
+      }
+    });
+  }
+
+  Widget _buildAvailabilityIndicator({
+    required bool checking,
+    required AppFailure? error,
+  }) {
+    if (checking) {
+      return const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.textTertiary,
+        ),
+      );
+    }
+    if (error != null) {
+      return const Icon(
+        Icons.cancel_outlined,
+        color: AppColors.error,
+        size: 20,
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   void _goToPage(int page) {
@@ -133,11 +214,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   Future<void> _finish() async {
-    if (_selectedTimeSlots.isEmpty) {
-      AppToast.error(
-        context,
-        context.l10n.onboardingTimeSlotRequired,
-      );
+    _hasAttemptedProfileValidation = true;
+    if (!_formKey.currentState!.validate()) {
+      _goToPage(1);
+      return;
+    }
+
+    if (_emailChecking) {
+      AppToast.error(context, context.l10n.errorCheckInput);
       return;
     }
 
@@ -145,6 +229,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     final gamingHours = _buildGamingHours();
     final updates = <String, dynamic>{
+      'email': _emailController.text.trim(),
       'display_name': _displayNameController.text.trim(),
       'bio': _bioController.text.trim().isEmpty
           ? context.l10n.onboardingDefaultBio
@@ -173,9 +258,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authUser = ref
+        .watch(authNotifierProvider)
+        .maybeWhen(
+          data: (state) => state.maybeWhen(
+            authenticated: (user) => user,
+            orElse: () => null,
+          ),
+          orElse: () => null,
+        );
+
+    if (authUser != null) {
+      if (_displayNameController.text.isEmpty &&
+          authUser.displayName.isNotEmpty) {
+        _displayNameController.text = authUser.displayName;
+      }
+      if ((_initialEmail == null || _initialEmail!.isEmpty) &&
+          authUser.email != null &&
+          authUser.email!.trim().isNotEmpty) {
+        _initialEmail = authUser.email!.trim();
+        if (_emailController.text.isEmpty) {
+          _emailController.text = authUser.email!;
+        }
+      }
+    }
+
     revalidateFormOnLocaleChange(
       formKey: _formKey,
-      shouldRevalidate: _currentPage == 1 && _hasAttemptedProfileValidation,
+      shouldRevalidate:
+          _currentPage == 1 &&
+          (_hasAttemptedProfileValidation || _emailAvailabilityError != null),
     );
 
     ref.listen<bool>(needsOnboardingProvider, (_, needsOnboarding) {
@@ -211,8 +323,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     _ProfileSetupPage(
                       formKey: _formKey,
                       displayNameController: _displayNameController,
+                      emailController: _emailController,
                       bioController: _bioController,
                       avatarUrlController: _avatarUrlController,
+                      emailChecking: _emailChecking,
+                      emailAvailabilityError: _emailAvailabilityError,
+                      buildAvailabilityIndicator: _buildAvailabilityIndicator,
                       onBack: () => _goToPage(0),
                       onNext: () => _goToPage(2),
                     ),
@@ -332,7 +448,10 @@ class _WelcomePage extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             context.l10n.onboardingWelcomeSubtitle,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
             textAlign: TextAlign.center,
           ),
           const Spacer(flex: 2),
@@ -340,7 +459,7 @@ class _WelcomePage extends StatelessWidget {
             width: double.infinity,
             child: GlassButton(
               onPressed: onGetStarted,
-                child: Text(context.l10n.onboardingGetStarted),
+              child: Text(context.l10n.onboardingGetStarted),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -354,16 +473,25 @@ class _ProfileSetupPage extends StatelessWidget {
   const _ProfileSetupPage({
     required this.formKey,
     required this.displayNameController,
+    required this.emailController,
     required this.bioController,
     required this.avatarUrlController,
+    required this.emailChecking,
+    required this.emailAvailabilityError,
+    required this.buildAvailabilityIndicator,
     required this.onBack,
     required this.onNext,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController displayNameController;
+  final TextEditingController emailController;
   final TextEditingController bioController;
   final TextEditingController avatarUrlController;
+  final bool emailChecking;
+  final AppFailure? emailAvailabilityError;
+  final Widget Function({required bool checking, required AppFailure? error})
+  buildAvailabilityIndicator;
   final VoidCallback onBack;
   final VoidCallback onNext;
 
@@ -388,7 +516,10 @@ class _ProfileSetupPage extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               context.l10n.onboardingProfileSubtitle,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             GlassCard(
@@ -402,6 +533,28 @@ class _ProfileSetupPage extends StatelessWidget {
                     hint: context.l10n.onboardingDisplayNameHint,
                     prefixIcon: Icons.person_outline,
                     validator: FormValidators.displayName,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  GlassInput(
+                    controller: emailController,
+                    label: context.l10n.loginEmailLabel,
+                    hint: context.l10n.loginEmailHint,
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: Icons.email_outlined,
+                    suffixIcon: buildAvailabilityIndicator(
+                      checking: emailChecking,
+                      error: emailAvailabilityError,
+                    ),
+                    validator: (value) {
+                      final base = FormValidators.email(value);
+                      if (base != null) return base;
+                      if (emailAvailabilityError != null) {
+                        return emailAvailabilityError!.userMessage(
+                          context.l10n,
+                        );
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: AppSpacing.md),
                   GlassInput(
@@ -485,7 +638,10 @@ class _GamingPreferencesPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             context.l10n.onboardingGamingSubtitle,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: AppSpacing.xl),
           GlassCard(
@@ -669,7 +825,10 @@ class _TimeSlotTile extends StatelessWidget {
                   Actor(
                     acts: [
                       .decorate(
-                        color: const .tween(Colors.transparent, AppColors.primary),
+                        color: const .tween(
+                          Colors.transparent,
+                          AppColors.primary,
+                        ),
                         borderRadius: .fixed(BorderRadius.circular(999)),
                         border: .tween(
                           Border.all(color: AppColors.textTertiary, width: 1.5),

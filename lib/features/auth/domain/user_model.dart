@@ -9,6 +9,7 @@ abstract class User with _$User {
     required String id,
     required String displayName,
     String? email,
+    @Default(false) bool hasPasswordLogin,
     String? avatarUrl,
     String? bio,
     required String timezone,

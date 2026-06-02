@@ -32,6 +32,7 @@ async def update_me(
     updated = await service.update_profile(
         db,
         current_user,
+        email=data.email,
         display_name=data.display_name,
         avatar_url=data.avatar_url,
         bio=data.bio,

@@ -68,11 +68,29 @@ class GroupsRepository {
   }
 
   Future<void> leaveGroup(String groupId) async {
-    await dio.delete('${ApiEndpoints.group(groupId)}/leave');
+    await dio.delete(ApiEndpoints.leaveGroup(groupId));
   }
 
   Future<void> removeMember(String groupId, String userId) async {
     await dio.delete('${ApiEndpoints.groupMembers(groupId)}/$userId');
+  }
+
+  Future<void> updateMemberRole(
+    String groupId,
+    String userId,
+    String role,
+  ) async {
+    await dio.patch(
+      ApiEndpoints.groupMemberRole(groupId, userId),
+      data: {'role': role},
+    );
+  }
+
+  Future<void> transferOwnership(String groupId, String userId) async {
+    await dio.post(
+      ApiEndpoints.transferGroupOwnership(groupId),
+      data: {'user_id': userId},
+    );
   }
 
   Future<List<Group>> discoverGroups({String? search}) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
@@ -38,6 +39,13 @@ class AppColors {
 
 class AppTheme {
   AppTheme._();
+
+  static const SystemUiOverlayStyle darkSystemUiOverlayStyle =
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      );
 
   static ThemeData get darkTheme {
     final textTheme = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
@@ -86,6 +94,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        systemOverlayStyle: darkSystemUiOverlayStyle,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

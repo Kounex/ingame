@@ -5,6 +5,7 @@ from app.redis.client import redis_pool
 
 CONNECTION_ONLINE = "online"
 CONNECTION_AWAY = "away"
+CONNECTION_OFFLINE = "offline"
 READY_TTL_SECONDS = 8 * 60 * 60
 
 
@@ -38,8 +39,8 @@ async def get_user_connection(user_id: str) -> str:
     redis = redis_pool.client
     data = await redis.hgetall(_connection_key(user_id))
     if not data:
-        return CONNECTION_ONLINE
-    return data.get("state", CONNECTION_ONLINE)
+        return CONNECTION_OFFLINE
+    return data.get("state", CONNECTION_OFFLINE)
 
 
 async def clear_user_connection(user_id: str) -> None:
@@ -100,10 +101,13 @@ async def get_group_online_members(group_id: str) -> set[str]:
 
 async def get_group_presence_snapshot(group_id: str) -> dict:
     await sweep_expired_ready(group_id)
-    online_user_ids = sorted(await get_group_online_members(group_id))
+    redis = redis_pool.client
+    online_user_ids = await get_group_online_members(group_id)
+    ready_user_ids = set(await redis.smembers(_group_ready_users_key(group_id)))
+    user_ids = sorted(online_user_ids | ready_user_ids)
     members: list[dict] = []
 
-    for user_id in online_user_ids:
+    for user_id in user_ids:
         connection = await get_user_connection(user_id)
         ready_data = await get_group_ready(group_id, user_id)
         member: dict = {

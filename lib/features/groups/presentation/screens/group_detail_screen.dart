@@ -11,6 +11,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/providers/websocket_provider.dart';
+import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -40,24 +41,20 @@ class GroupDetailScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: detailAsync.valueOrNull?.group.name ?? l10n.groupTitleFallback,
+          title: detailAsync.value?.group.name ?? l10n.groupTitleFallback,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
           ),
-          actions: detailAsync.valueOrNull != null
+          actions: detailAsync.value != null
               ? [
                   PopupMenuButton<_GroupAction>(
                     icon: const Icon(
                       Icons.more_vert,
                       color: AppColors.textSecondary,
                     ),
-                    onSelected: (action) => _onMenuAction(
-                      context,
-                      ref,
-                      action,
-                      detailAsync.valueOrNull!.group.inviteCode,
-                    ),
+                    onSelected: (action) =>
+                        _onMenuAction(context, ref, action, detailAsync.value!),
                     itemBuilder: (_) => [
                       PopupMenuItem(
                         value: _GroupAction.invite,
@@ -66,16 +63,16 @@ class GroupDetailScreen extends ConsumerWidget {
                           label: l10n.groupDetailMenuInvite,
                         ),
                       ),
-                      PopupMenuItem(
-                        value: _GroupAction.settings,
-                        child: _MenuRow(
-                          icon: Icons.settings_outlined,
-                          label: l10n.groupDetailMenuSettings,
-                          badgeCount:
-                              detailAsync.valueOrNull?.pendingRequests.length ??
-                                  0,
+                      if (detailAsync.value!.canManageSettings)
+                        PopupMenuItem(
+                          value: _GroupAction.settings,
+                          child: _MenuRow(
+                            icon: Icons.settings_outlined,
+                            label: l10n.groupDetailMenuSettings,
+                            badgeCount:
+                                detailAsync.value?.pendingRequests.length ?? 0,
+                          ),
                         ),
-                      ),
                       const PopupMenuDivider(),
                       PopupMenuItem(
                         value: _GroupAction.leave,
@@ -94,14 +91,16 @@ class GroupDetailScreen extends ConsumerWidget {
           loading: () => const LoadingIndicator(),
           error: (error, _) => ErrorDisplay(
             message: ApiError.userMessage(error, context.l10n),
-            onRetry: () =>
-                ref.read(groupDetailNotifierProvider(groupId).notifier).refresh(),
+            onRetry: () => ref
+                .read(groupDetailNotifierProvider(groupId).notifier)
+                .refresh(),
           ),
           data: (detail) => RefreshIndicator(
             color: AppColors.primary,
             backgroundColor: AppColors.backgroundLight,
-            onRefresh: () =>
-                ref.read(groupDetailNotifierProvider(groupId).notifier).refresh(),
+            onRefresh: () => ref
+                .read(groupDetailNotifierProvider(groupId).notifier)
+                .refresh(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -193,18 +192,18 @@ class GroupDetailScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     _GroupAction action,
-    String inviteCode,
+    GroupDetailState detail,
   ) {
     switch (action) {
       case _GroupAction.invite:
-        _showInviteSheet(context, inviteCode);
+        _showInviteSheet(context, detail.group.inviteCode);
       case _GroupAction.settings:
         context.goNamed(
           RouteNames.groupSettings,
           pathParameters: {'id': groupId},
         );
       case _GroupAction.leave:
-        _showLeaveDialog(context, ref);
+        _showLeaveDialog(context, ref, detail);
     }
   }
 
@@ -249,7 +248,11 @@ class GroupDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showLeaveDialog(BuildContext context, WidgetRef ref) {
+  void _showLeaveDialog(
+    BuildContext context,
+    WidgetRef ref,
+    GroupDetailState detail,
+  ) {
     showDialog(
       context: context,
       useRootNavigator: true,
@@ -260,7 +263,9 @@ class GroupDetailScreen extends ConsumerWidget {
           style: const TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
-          context.l10n.groupDetailLeaveMessage,
+          detail.isOwner
+              ? context.l10n.groupDetailOwnerLeaveMessage
+              : context.l10n.groupDetailLeaveMessage,
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
@@ -269,15 +274,28 @@ class GroupDetailScreen extends ConsumerWidget {
             child: Text(context.l10n.commonCancel),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref
-                  .read(groupsNotifierProvider.notifier)
-                  .leaveGroup(groupId);
-              if (context.mounted) context.pop();
-            },
+            onPressed: detail.isOwner
+                ? () => Navigator.pop(ctx)
+                : () async {
+                    Navigator.pop(ctx);
+                    try {
+                      await ref
+                          .read(groupsNotifierProvider.notifier)
+                          .leaveGroup(groupId);
+                      if (context.mounted) context.pop();
+                    } catch (error) {
+                      if (context.mounted) {
+                        AppToast.error(
+                          context,
+                          ApiError.userMessage(error, context.l10n),
+                        );
+                      }
+                    }
+                  },
             child: Text(
-              context.l10n.groupDetailMenuLeave,
+              detail.isOwner
+                  ? context.l10n.commonClose
+                  : context.l10n.groupDetailMenuLeave,
               style: const TextStyle(color: AppColors.error),
             ),
           ),
@@ -309,10 +327,7 @@ class _MenuRow extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: color),
         const SizedBox(width: AppSpacing.sm + 4),
-        Text(
-          label,
-          style: TextStyle(color: color, fontSize: 14),
-        ),
+        Text(label, style: TextStyle(color: color, fontSize: 14)),
         if (badgeCount > 0) ...[
           const SizedBox(width: AppSpacing.sm),
           Container(
@@ -346,8 +361,7 @@ class _ReadyToggleCard extends ConsumerWidget {
     final l10n = context.l10n;
     final isReady = ref.watch(currentUserReadyProvider(groupId));
     final connectionState = ref.watch(websocketConnectionStateProvider);
-    final isConnected =
-        connectionState == WebSocketConnectionState.connected;
+    final isConnected = connectionState == WebSocketConnectionState.connected;
     final hintText = switch (connectionState) {
       WebSocketConnectionState.connected => l10n.groupDetailReadyToggleHint,
       WebSocketConnectionState.connecting =>
@@ -417,10 +431,7 @@ class _InfoChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
       ],
     );

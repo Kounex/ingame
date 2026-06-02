@@ -1,8 +1,8 @@
 ---
 spec: roadmap
-version: "1.16"
+version: "1.20"
 status: active
-last_updated: "2026-06-01"
+last_updated: "2026-06-02"
 ---
 
 # InGame -- Product Roadmap
@@ -49,7 +49,7 @@ graph LR
 |---|-------------|--------|------|------------|
 | 1 | Core Platform | Complete | [spec](2026-05-30-core-platform-design.md) | -- |
 | 2 | Real-Time Coordination | In Progress | [spec](2026-05-30-real-time-coordination-design.md) | SP1 |
-| 3 | Game Matching | Planned | -- | SP1, SP2 |
+| 3 | Game Matching | Planned | [spec](2026-06-02-game-matching-design.md) | SP1, SP2 |
 | 4 | Settings & Notifications | Planned | -- | SP2 |
 | 5 | Open Matching (V2) | Planned | -- | SP3, SP4 |
 
@@ -63,11 +63,12 @@ graph LR
 
 **Key features delivered:**
 - Email/password, Steam OAuth (OpenID 2.0), and Apple Sign-In authentication
+- Recovery email required by onboarding for every account, with auth-provided email prefill when available
 - Account linking (connect/disconnect Steam and Apple from profile)
 - Add email/password for social-only users; unlink lockout guard
 - User profiles with gaming hours (intelligent schedule display), bio, avatar
-- Groups with invite codes, discoverable directory, join requests with admin approval
-- First-time user onboarding wizard (3-step)
+- Groups with invite codes, discoverable directory, join requests with admin approval, and full owner/admin/member RBAC management
+- First-time user onboarding wizard (3-step) with optional recurring-availability capture
 - English and German localization across the app shell, shared widgets, validators/error surfaces, and auth/onboarding/group/profile flows, with German catalog wording normalized for native spelling
 - System-locale default with manual language switching on login and in profile preferences
 - Structured backend error codes plus locale-reactive Flutter error/validation handling so persisted failures switch language without requiring a refetch or re-entry
@@ -76,16 +77,17 @@ graph LR
 - Reusable `InGameLogo` brand widget with gradient styling
 - Platform-authentic social login buttons (Steam brand palette, Apple HIG)
 - Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus, and existing page transitions where retained
+- Platform-aware route pages so web keeps custom fade/slide while iOS/Android preserve native navigation gestures
 - Helm chart + Kustomize overlays for OpenShift deployment
-- 40 backend tests (auth, users, groups, WebSocket)
+- Backend coverage across auth, users, groups, and realtime/WebSocket behavior
 
-**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.25)
+**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.36)
 
 ---
 
 ### SP2: Real-Time Coordination
 
-**Goal:** Let users signal "ready to game" and coordinate gaming sessions with their groups in real time.
+**Goal:** Let users signal "ready to game" and coordinate both short-horizon availability and group play plans with their groups in real time.
 
 **Phase 1 (in progress): presence-first kickoff**
 - **Derived connection presence** -- online/offline from WebSocket lifecycle; away from app background/inactive
@@ -93,46 +95,55 @@ graph LR
 - **App-wide live member status** -- member surfaces consume one presence provider contract
 
 **Planned later in SP2:**
+- **Scheduled ready windows** -- members can publish multiple future "ready to play" windows without creating a formal RSVP event
+- **Group calendar views** -- shared calendar surfaces show scheduled ready windows and can optionally overlay each member's recurring profile availability from SP1
 - **Session scheduling** -- propose a future time slot for a gaming session; group members RSVP (in/out/maybe); reminders when session is approaching
 - **Activity feed** -- lightweight event stream in each group (e.g., "Alex is ready to game", "Session proposed for tonight 8 PM")
 
+SP2 intentionally distinguishes two coordination models:
+- **Scheduled personal readiness** -- "I expect to be ready at these times"
+- **Session proposals** -- "Let's play this session together and RSVP"
+
 **Technical scope:**
 - Redis pub/sub channels per group for real-time event fan-out
-- WebSocket event handlers for status changes, session proposals, RSVPs
+- WebSocket event handlers for status changes, scheduled-ready updates, session proposals, RSVPs
 - `StatusIndicator` widget integration (already built in SP1, needs wiring to live data)
-- New data models: `Session` (proposed time, game, RSVPs), status state machine
-- Backend: status store in Redis, session CRUD in PostgreSQL
-- Flutter: real-time providers that listen to WebSocket events and update UI
+- New data models: scheduled-ready windows for personal availability publication plus `Session` for explicit group proposals
+- Backend: status store in Redis, scheduled-ready/session persistence in PostgreSQL where durable history is needed
+- Flutter: real-time providers, ready scheduling flows, and calendar surfaces that listen to live updates and can combine SP2 events with SP1 recurring availability data
 
 **Depends on:** SP1
 
 **Estimated effort:** Medium-large (core feature of the app, involves real-time infrastructure)
 
-**Spec:** [docs/specs/2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md) (v1.1)
+**Spec:** [docs/specs/2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md) (v1.6)
 
 ---
 
 ### SP3: Game Matching
 
-**Goal:** Help friends find games they can play together by syncing game libraries and surfacing common titles.
+**Goal:** Help friends find games they can play together by building a generic game library, ingesting owned titles from linked providers, and surfacing common interests.
 
 **Key features:**
-- **Steam library sync** -- pull a user's owned games via the Steam Web API (using their linked `steam_id`); periodic background refresh
-- **Game library display** -- show owned games on user profiles; browsable/searchable
+- **Generic game catalog** -- durable shared catalog of games and derived genres that is not tied to one provider's schema
+- **Provider-specific library sync** -- pull a user's owned games from linked providers, starting with the Steam Web API via `steam_id`
+- **Game library display** -- show owned games on user profiles and group/library surfaces; browsable/searchable
 - **Games in common** -- group view showing which games all (or N) members own, sorted by overlap count
-- **Genre/preference tagging** -- users tag favorite genres or games; used to suggest groups in the directory and improve matching
+- **Genre metadata from game data** -- genres come from catalog/provider metadata rather than manual freeform creation
 - **Game suggestions** -- "You and 3 others own Valheim -- play together?"
 
 **Technical scope:**
-- Steam Web API integration (`IPlayerService/GetOwnedGames`, `ISteamApps/GetAppList` for metadata)
-- `Game` data model (app_id, name, icon, genres) and `UserGame` junction table
+- Generic `Game`, `GameGenre`, and `UserGame` data models with provider link tables/identifiers where needed
+- Steam Web API integration (`IPlayerService/GetOwnedGames`, `ISteamApps/GetAppList` for first-party ingestion and metadata bootstrap)
 - Background sync worker (could use Celery/ARQ or a simple async task runner)
-- Matching algorithm: group members' libraries intersected, ranked by recency/playtime
-- Flutter: game library screen, games-in-common group view, preference editor
+- Matching algorithm: group members' libraries intersected, ranked by overlap and freshness metadata
+- Flutter: game library screen, games-in-common group view, and generic catalog-backed preference editor where needed
 
 **Depends on:** SP1, SP2 (uses online status to highlight "ready to play" users who share a game)
 
 **Estimated effort:** Medium (Steam API integration is well-documented; matching logic is straightforward)
+
+**Spec:** [docs/specs/2026-06-02-game-matching-design.md](2026-06-02-game-matching-design.md) (v1.0)
 
 ---
 
@@ -226,3 +237,7 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-01 | SP1 release sign-off (`v0.2.5`) | Declared SP1 complete for shipping at `v0.2.5` after structured error handling, locale-aware form revalidation, and CI stabilization landed on `dev` |
 | 2026-06-01 | Release versioning | Retargeted unpublished release metadata from `v0.3.0` to `v0.2.5` | Keeps roadmap release references aligned with the chosen patch-line cut before publish |
 | 2026-06-01 | SP2 phase-1 kickoff | Marked SP2 in progress and documented the presence-first slice: derived connection presence, group-scoped ready with 8-hour expiry, lifecycle-driven away, and app-wide member rendering | Approved SP2 presence-first kickoff plan |
+| 2026-06-02 | SP1 recovery email contract | Documented that onboarding must collect an email for every account, prefilling provider-supplied values and requiring manual entry for Steam-style providers | Reduces permanent lockout risk for providers that do not expose an email address |
+| 2026-06-02 | SP ownership clarification | Clarified that group RBAC, recurring availability UX, and platform-native transition polish stay in SP1; scheduled ready windows and calendar views belong to SP2; and SP3 now owns a generic game catalog plus provider-specific library ingestion | Classifies the next planned feature batch before implementation and avoids mixing coordination and matching scope |
+| 2026-06-02 | SP1 completion follow-through | Marked group RBAC hardening, optional onboarding availability, and platform-native mobile transitions as delivered in SP1 | Keeps the roadmap aligned with the now-implemented SP1 completion slice |
+| 2026-06-03 | Audit follow-through | Removed stale SP1 test/spec metadata and aligned the roadmap with the current maintained SP1 spec version after audit-driven authorization and realtime fixes | Keeps roadmap claims trustworthy after the repo-wide spec review |

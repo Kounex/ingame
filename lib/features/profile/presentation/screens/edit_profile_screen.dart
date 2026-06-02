@@ -36,7 +36,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   @override
   void initState() {
     super.initState();
-    final user = ref.read(profileNotifierProvider).valueOrNull;
+    final user = ref.read(profileNotifierProvider).value;
     _displayNameController =
         TextEditingController(text: user?.displayName ?? '');
     _bioController = TextEditingController(text: user?.bio ?? '');
@@ -81,7 +81,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(profileNotifierProvider).valueOrNull;
+    final user = ref.watch(profileNotifierProvider).value;
 
     revalidateFormOnLocaleChange(
       formKey: _formKey,

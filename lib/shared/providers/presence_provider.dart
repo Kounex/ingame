@@ -34,8 +34,9 @@ class MemberPresenceState {
       connection: connection ?? this.connection,
       ready: ready ?? this.ready,
       readySince: clearReadySince ? null : (readySince ?? this.readySince),
-      readyExpiresAt:
-          clearReadyExpiresAt ? null : (readyExpiresAt ?? this.readyExpiresAt),
+      readyExpiresAt: clearReadyExpiresAt
+          ? null
+          : (readyExpiresAt ?? this.readyExpiresAt),
     );
   }
 }
@@ -55,8 +56,9 @@ class PresenceNotifier
       _cancelAllExpiryTimers();
     });
 
-    final authState = ref.watch(authNotifierProvider).valueOrNull;
-    final isUnauthenticated = authState?.maybeWhen(
+    final authState = ref.watch(authNotifierProvider).value;
+    final isUnauthenticated =
+        authState?.maybeWhen(
           unauthenticated: () => true,
           orElse: () => false,
         ) ??
@@ -67,10 +69,8 @@ class PresenceNotifier
       return _trackedState;
     }
 
-    final isAuthenticated = authState?.maybeWhen(
-          authenticated: (_) => true,
-          orElse: () => false,
-        ) ??
+    final isAuthenticated =
+        authState?.maybeWhen(authenticated: (_) => true, orElse: () => false) ??
         false;
 
     if (!isAuthenticated) {
@@ -103,7 +103,7 @@ class PresenceNotifier
       return false;
     }
 
-    final authState = ref.read(authNotifierProvider).valueOrNull;
+    final authState = ref.read(authNotifierProvider).value;
     final userId = authState?.maybeWhen(
       authenticated: (user) => user.id,
       orElse: () => null,
@@ -111,8 +111,10 @@ class PresenceNotifier
     if (userId != null) {
       if (ready) {
         final expiresAt =
-            DateTime.now().add(const Duration(hours: 8)).millisecondsSinceEpoch ~/
-                1000;
+            DateTime.now()
+                .add(const Duration(hours: 8))
+                .millisecondsSinceEpoch ~/
+            1000;
         final since = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         _applyReadyChanged({
           'group_id': groupId,
@@ -130,10 +132,9 @@ class PresenceNotifier
       }
     }
 
-    ref.read(websocketClientProvider).sendReadyToggle(
-          groupId: groupId,
-          ready: ready,
-        );
+    ref
+        .read(websocketClientProvider)
+        .sendReadyToggle(groupId: groupId, ready: ready);
     return true;
   }
 
@@ -169,7 +170,7 @@ class PresenceNotifier
         _updateMember(
           groupId: event['group_id'] as String?,
           userId: event['user_id'] as String?,
-          update: (_) => const MemberPresenceState(connection: 'offline'),
+          update: (current) => current.copyWith(connection: 'offline'),
         );
         break;
       case 'connection_changed':
@@ -236,7 +237,9 @@ class PresenceNotifier
         if (onlineUserIds is List) {
           for (final rawUserId in onlineUserIds) {
             if (rawUserId is! String) continue;
-            members[rawUserId] = const MemberPresenceState(connection: 'online');
+            members[rawUserId] = const MemberPresenceState(
+              connection: 'online',
+            );
           }
         }
       }
@@ -275,7 +278,8 @@ class PresenceNotifier
   }
 
   MemberPresenceState _memberFromWire(Map rawMember) {
-    final wireState = rawMember['connection'] as String? ??
+    final wireState =
+        rawMember['connection'] as String? ??
         rawMember['state'] as String? ??
         'offline';
     final readyFromState = wireState == 'ready';
@@ -302,7 +306,7 @@ class PresenceNotifier
       _updateMember(
         groupId: groupId,
         userId: userId,
-        update: (_) => const MemberPresenceState(connection: 'offline'),
+        update: (current) => current.copyWith(connection: 'offline'),
       );
       return;
     }
@@ -386,11 +390,11 @@ class PresenceNotifier
 }
 
 UserStatus deriveMemberStatus(MemberPresenceState? member) {
+  if (member?.ready ?? false) {
+    return UserStatus.ready;
+  }
   if (member == null || member.connection == 'offline') {
     return UserStatus.offline;
-  }
-  if (member.ready) {
-    return UserStatus.ready;
   }
   if (member.connection == 'away') {
     return UserStatus.away;
@@ -398,22 +402,21 @@ UserStatus deriveMemberStatus(MemberPresenceState? member) {
   return UserStatus.online;
 }
 
-final presenceNotifierProvider = NotifierProvider<
-    PresenceNotifier, Map<String, Map<String, MemberPresenceState>>>(
-  PresenceNotifier.new,
-);
+final presenceNotifierProvider =
+    NotifierProvider<
+      PresenceNotifier,
+      Map<String, Map<String, MemberPresenceState>>
+    >(PresenceNotifier.new);
 
-final groupMemberStatusProvider = Provider.family<UserStatus, GroupUserPresenceKey>((
-  ref,
-  key,
-) {
-  final presence = ref.watch(presenceNotifierProvider);
-  return deriveMemberStatus(presence[key.groupId]?[key.userId]);
-});
+final groupMemberStatusProvider =
+    Provider.family<UserStatus, GroupUserPresenceKey>((ref, key) {
+      final presence = ref.watch(presenceNotifierProvider);
+      return deriveMemberStatus(presence[key.groupId]?[key.userId]);
+    });
 
 final currentUserReadyProvider = Provider.family<bool, String>((ref, groupId) {
   final presence = ref.watch(presenceNotifierProvider);
-  final authState = ref.watch(authNotifierProvider).valueOrNull;
+  final authState = ref.watch(authNotifierProvider).value;
   final userId = authState?.maybeWhen(
     authenticated: (user) => user.id,
     orElse: () => null,

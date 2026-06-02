@@ -60,4 +60,38 @@ void main() {
 
     expect(failure.userMessage(), 'Custom server detail');
   });
+
+  test('maps revoked Steam login code to relink guidance', () {
+    final failure = ApiError.toFailure(
+      dioException(
+        statusCode: 409,
+        data: {
+          'detail': 'This Steam login was disconnected.',
+          'code': 'auth.steam_relink_required',
+        },
+      ),
+    );
+
+    expect(
+      failure.userMessage(),
+      'Diese Steam-Anmeldung wurde getrennt. Melde dich mit einer anderen Methode an und verknuepfe Steam anschliessend im Profil erneut.',
+    );
+  });
+
+  test('maps last auth method guard to explicit disconnect guidance', () {
+    final failure = ApiError.toFailure(
+      dioException(
+        statusCode: 422,
+        data: {
+          'detail': 'Cannot remove your only login method.',
+          'code': 'user.last_auth_method_required',
+        },
+      ),
+    );
+
+    expect(
+      failure.userMessage(),
+      'Fuege zuerst eine weitere Anmeldemethode hinzu, bevor du diese trennst.',
+    );
+  });
 }

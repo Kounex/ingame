@@ -7,10 +7,9 @@ final needsOnboardingProvider = Provider<bool>((ref) {
   return authState.maybeWhen(
     data: (s) => s.maybeWhen(
       authenticated: (user) {
+        final hasEmail = user.email != null && user.email!.trim().isNotEmpty;
         final hasBio = user.bio != null && user.bio!.isNotEmpty;
-        final hasGamingHours = user.preferredGamingHours != null &&
-            user.preferredGamingHours!.isNotEmpty;
-        return !hasBio || !hasGamingHours;
+        return !hasEmail || !hasBio;
       },
       orElse: () => false,
     ),

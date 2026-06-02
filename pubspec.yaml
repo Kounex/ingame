@@ -1,7 +1,7 @@
 name: ingame
 description: Social gaming coordination app - find time to play with friends.
 publish_to: 'none'
-version: 0.2.5+5
+version: 0.3.0+6
 
 environment:
   sdk: ^3.12.0
@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
 
   # State management
-  flutter_riverpod: ^2.6.1
+  flutter_riverpod: ^3.3.1
 
   # Routing
   go_router: ^17.2.3
@@ -31,8 +31,8 @@ dependencies:
   shared_preferences: ^2.5.5
 
   # Auth
-  flutter_web_auth_2: ^4.0.1
-  sign_in_with_apple: ^6.1.4
+  flutter_web_auth_2: ^5.0.3
+  sign_in_with_apple: ^8.1.0
 
   # UI
   cupertino_icons: ^1.0.9

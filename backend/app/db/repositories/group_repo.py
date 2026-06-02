@@ -117,6 +117,32 @@ class GroupRepository:
         )
         return result.scalar_one_or_none()
 
+    async def update_membership_role(
+        self, group_id: uuid.UUID, user_id: uuid.UUID, role: str
+    ) -> GroupMembership | None:
+        membership = await self.get_membership(group_id, user_id)
+        if membership is None:
+            return None
+        membership.role = role
+        await self.session.flush()
+        await self.session.refresh(membership)
+        return membership
+
+    async def transfer_ownership(
+        self, group_id: uuid.UUID, current_owner_id: uuid.UUID, new_owner_id: uuid.UUID
+    ) -> tuple[GroupMembership, GroupMembership] | None:
+        current_owner = await self.get_membership(group_id, current_owner_id)
+        new_owner = await self.get_membership(group_id, new_owner_id)
+        if current_owner is None or new_owner is None:
+            return None
+
+        current_owner.role = "admin"
+        new_owner.role = "owner"
+        await self.session.flush()
+        await self.session.refresh(current_owner)
+        await self.session.refresh(new_owner)
+        return current_owner, new_owner
+
     async def list_members(self, group_id: uuid.UUID) -> list[GroupMembership]:
         result = await self.session.execute(
             select(GroupMembership).where(GroupMembership.group_id == group_id)

@@ -30,7 +30,7 @@ class _PresenceLifecycleBinderState extends ConsumerState<PresenceLifecycleBinde
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final authState = ref.read(authNotifierProvider).valueOrNull;
+    final authState = ref.read(authNotifierProvider).value;
     final isAuthenticated = authState?.maybeWhen(
           authenticated: (_) => true,
           orElse: () => false,

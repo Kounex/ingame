@@ -76,22 +76,15 @@ class _FakeGroupsRepository extends GroupsRepository {
   }
 }
 
-User _userMissingOnboardingData() => const User(
-  id: 'user-1',
-  displayName: 'New Player',
-  timezone: 'UTC',
-);
+User _userMissingOnboardingData() =>
+    const User(id: 'user-1', displayName: 'New Player', timezone: 'UTC');
 
 User _completedUser() => const User(
   id: 'user-1',
   displayName: 'Ready Player',
+  email: 'ready@test.com',
   bio: 'InGame player',
   timezone: 'UTC',
-  preferredGamingHours: {
-    'monday': [
-      {'start': '18:00', 'end': '22:00'},
-    ],
-  },
 );
 
 void main() {
@@ -134,51 +127,50 @@ void main() {
     },
   );
 
-  testWidgets(
-    'join link redirect to onboarding preserves return target',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      late _FakeAuthNotifier authNotifier;
-      final container = ProviderContainer(
-        overrides: [
-          authNotifierProvider.overrideWith(
-            () => authNotifier = _FakeAuthNotifier(
-              AuthState.authenticated(_userMissingOnboardingData()),
-            ),
-          ),
-          groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
-          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final router = container.read(routerProvider);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: router,
-            supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+  testWidgets('join link redirect to onboarding preserves return target', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    late _FakeAuthNotifier authNotifier;
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => authNotifier = _FakeAuthNotifier(
+            AuthState.authenticated(_userMissingOnboardingData()),
           ),
         ),
-      );
+        groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
+        preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      router.go('/join/ABC123');
-      await tester.pumpAndSettle();
+    final router = container.read(routerProvider);
 
-      expect(find.byType(OnboardingScreen), findsOneWidget);
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        '/onboarding?from=%2Fjoin%2FABC123',
-      );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: router,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+        ),
+      ),
+    );
 
-      // ignore: unused_local_variable
-      final _ = authNotifier;
-    },
-  );
+    router.go('/join/ABC123');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    expect(
+      router.routeInformationProvider.value.uri.toString(),
+      '/onboarding?from=%2Fjoin%2FABC123',
+    );
+
+    // ignore: unused_local_variable
+    final _ = authNotifier;
+  });
 
   testWidgets(
     'onboarding route redirects to preserved target once onboarding is complete',
@@ -219,55 +211,109 @@ void main() {
       authNotifier.setAuthState(AuthState.authenticated(_completedUser()));
       await tester.pumpAndSettle();
 
-      expect(router.routeInformationProvider.value.uri.toString(), '/join/ABC123');
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        '/join/ABC123',
+      );
     },
   );
 
-  testWidgets(
-    'intentional logout from profile lands on clean login route',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      late _FakeAuthNotifier authNotifier;
-      final container = ProviderContainer(
-        overrides: [
-          authNotifierProvider.overrideWith(
-            () => authNotifier = _FakeAuthNotifier(
-              AuthState.authenticated(_completedUser()),
+  testWidgets('authenticated user without recovery email stays in onboarding', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(
+            const AuthState.authenticated(
+              User(
+                id: 'user-1',
+                displayName: 'Steam Player',
+                bio: 'Bio set',
+                timezone: 'UTC',
+                preferredGamingHours: {
+                  'monday': [
+                    {'start': '18:00', 'end': '22:00'},
+                  ],
+                },
+              ),
             ),
           ),
-          profileNotifierProvider.overrideWith(
-            () => _FakeProfileNotifier(_completedUser()),
-          ),
-          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
-        ],
-      );
-      addTearDown(container.dispose);
+        ),
+        preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      final router = container.read(routerProvider);
+    final router = container.read(routerProvider);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: router,
-            supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: router,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+        ),
+      ),
+    );
+
+    router.go('/');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    expect(
+      router.routeInformationProvider.value.uri.toString(),
+      '/onboarding?from=%2F',
+    );
+  });
+
+  testWidgets('intentional logout from profile lands on clean login route', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    late _FakeAuthNotifier authNotifier;
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => authNotifier = _FakeAuthNotifier(
+            AuthState.authenticated(_completedUser()),
           ),
         ),
-      );
+        profileNotifierProvider.overrideWith(
+          () => _FakeProfileNotifier(_completedUser()),
+        ),
+        preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      router.go('/profile');
-      await tester.pumpAndSettle();
+    final router = container.read(routerProvider);
 
-      expect(find.text('Logout'), findsOneWidget);
-      await tester.ensureVisible(find.text('Logout'));
-      await tester.tap(find.text('Logout'));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: router,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+        ),
+      ),
+    );
 
-      expect(router.routeInformationProvider.value.uri.toString(), '/login');
+    router.go('/profile');
+    await tester.pumpAndSettle();
 
-      final _ = authNotifier;
-    },
-  );
+    expect(find.text('Logout'), findsOneWidget);
+    await tester.ensureVisible(find.text('Logout'));
+    await tester.tap(find.text('Logout'));
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.toString(), '/login');
+
+    final _ = authNotifier;
+  });
 }

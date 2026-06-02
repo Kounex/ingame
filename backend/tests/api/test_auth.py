@@ -1,5 +1,6 @@
 import pytest
 from httpx import AsyncClient
+from unittest.mock import AsyncMock, patch
 
 
 @pytest.mark.asyncio
@@ -178,3 +179,211 @@ async def test_check_display_name_taken(client: AsyncClient):
     )
     assert response.status_code == 200
     assert response.json()["available"] is False
+
+
+@pytest.mark.asyncio
+async def test_apple_auth_success(client: AsyncClient):
+    with patch(
+        "app.api.v1.auth.service.validate_apple_token",
+        new_callable=AsyncMock,
+        return_value={"sub": "apple-user-123", "email": "apple@example.com"},
+    ):
+        response = await client.post(
+            "/api/v1/auth/apple",
+            json={
+                "identity_token": "apple.identity.token",
+                "display_name": "René Kounex",
+            },
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert "refresh_token" in data
+    assert data["user"]["apple_id"] == "apple-user-123"
+    assert data["user"]["email"] == "apple@example.com"
+    assert data["user"]["display_name"] == "René Kounex"
+
+
+@pytest.mark.asyncio
+async def test_apple_auth_invalid_token_returns_validation_code(client: AsyncClient):
+    with patch(
+        "app.api.v1.auth.service.validate_apple_token",
+        new_callable=AsyncMock,
+        side_effect=ValueError("Apple token verification failed"),
+    ):
+        response = await client.post(
+            "/api/v1/auth/apple",
+            json={"identity_token": "invalid.apple.token"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "auth.apple_token_invalid"
+
+
+@pytest.mark.asyncio
+async def test_steam_auth_success(client: AsyncClient):
+    with (
+        patch(
+            "app.api.v1.auth.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000001",
+        ),
+        patch(
+            "app.api.v1.auth.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam User",
+                "avatar_url": "https://steamcdn.test/avatar.jpg",
+            },
+        ),
+    ):
+        response = await client.post(
+            "/api/v1/auth/steam",
+            json={
+                "openid_params": {
+                    "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000001"
+                }
+            },
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["steam_id"] == "76561198000000001"
+    assert data["user"]["display_name"] == "Steam User"
+
+
+@pytest.mark.asyncio
+async def test_steam_auth_after_unlink_requires_relink_from_profile(client: AsyncClient):
+    register = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "steam-relink@example.com",
+            "password": "securepass123",
+            "display_name": "Steam Relink",
+        },
+    )
+    token = register.json()["access_token"]
+    fake_params = {
+        "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000007"
+    }
+
+    with patch(
+        "app.api.v1.users.service.validate_steam_login",
+        new_callable=AsyncMock,
+        return_value="76561198000000007",
+    ):
+        await client.post(
+            "/api/v1/users/me/link-steam",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"openid_params": fake_params},
+        )
+
+    await client.delete(
+        "/api/v1/users/me/link-steam",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    with patch(
+        "app.api.v1.auth.service.validate_steam_login",
+        new_callable=AsyncMock,
+        return_value="76561198000000007",
+    ):
+        response = await client.post(
+            "/api/v1/auth/steam",
+            json={"openid_params": fake_params},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "auth.steam_relink_required"
+
+
+@pytest.mark.asyncio
+async def test_apple_auth_after_unlink_requires_relink_from_profile(client: AsyncClient):
+    with patch(
+        "app.api.v1.auth.service.validate_apple_token",
+        new_callable=AsyncMock,
+        return_value={"sub": "apple-relink-123", "email": "apple-relink@test.com"},
+    ):
+        auth_response = await client.post(
+            "/api/v1/auth/apple",
+            json={
+                "identity_token": "apple.identity.token",
+                "display_name": "Apple Relink",
+            },
+        )
+
+    token = auth_response.json()["access_token"]
+    unlink = await client.delete(
+        "/api/v1/users/me/link-apple",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert unlink.status_code == 422
+
+    set_password = await client.post(
+        "/api/v1/users/me/set-email-password",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"email": "apple-relink@test.com", "password": "securepass123"},
+    )
+    assert set_password.status_code == 200
+
+    unlink = await client.delete(
+        "/api/v1/users/me/link-apple",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert unlink.status_code == 200
+
+    with patch(
+        "app.api.v1.auth.service.validate_apple_token",
+        new_callable=AsyncMock,
+        return_value={"sub": "apple-relink-123", "email": "apple-relink@test.com"},
+    ):
+        response = await client.post(
+            "/api/v1/auth/apple",
+            json={"identity_token": "apple.identity.token"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "auth.apple_relink_required"
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_remains_usable_after_unlink(client: AsyncClient):
+    register = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "unlink-refresh@example.com",
+            "password": "securepass123",
+            "display_name": "Refresh After Unlink",
+        },
+    )
+    access_token = register.json()["access_token"]
+    refresh_token = register.json()["refresh_token"]
+    fake_params = {
+        "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000009"
+    }
+
+    with patch(
+        "app.api.v1.users.service.validate_steam_login",
+        new_callable=AsyncMock,
+        return_value="76561198000000009",
+    ):
+        await client.post(
+            "/api/v1/users/me/link-steam",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={"openid_params": fake_params},
+        )
+
+    unlink = await client.delete(
+        "/api/v1/users/me/link-steam",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert unlink.status_code == 200
+
+    refresh = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": refresh_token},
+    )
+
+    assert refresh.status_code == 200
+    assert "access_token" in refresh.json()

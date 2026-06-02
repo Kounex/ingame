@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -77,15 +78,19 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> appleLogin() async {
     state = const AsyncValue.data(AuthState.loading());
     try {
-      final identityToken = await OAuthLauncher.launchAppleSignIn();
+      final appleSignIn = await OAuthLauncher.launchAppleSignIn();
       final repo = ref.read(authRepositoryProvider);
-      final user = await repo.appleAuth(identityToken);
+      final user = await repo.appleAuth(
+        appleSignIn.identityToken,
+        displayName: appleSignIn.displayName,
+      );
       state = AsyncValue.data(AuthState.authenticated(user));
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
         state = const AsyncValue.data(AuthState.unauthenticated());
         return;
       }
+      debugPrint('Apple sign-in auth exception: code=${e.code} message=$e');
       state = const AsyncValue.data(
         AuthState.error(
           LocalizedFailure(AppFailureMessageKey.authAppleSignInFailed),

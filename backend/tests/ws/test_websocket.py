@@ -11,6 +11,7 @@ from app.db.models.group import Group, GroupMembership
 from app.db.models.user import User
 from app.main import app
 from app.redis import status_store
+from app.ws import handlers
 
 
 async def _create_user(
@@ -264,6 +265,7 @@ async def test_ready_persists_across_disconnect_until_cleared(
 ):
     owner, member, group = await _create_group_with_members(db_session)
     member_token = create_access_token(member.id)
+    owner_token = create_access_token(owner.id)
 
     with TestClient(app) as tc:
         with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
@@ -276,8 +278,8 @@ async def test_ready_persists_across_disconnect_until_cleared(
                 }
             )
 
-        with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
-            snapshot = member_ws.receive_json()
+        with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+            snapshot = owner_ws.receive_json()
 
     member_entry = next(
         m
@@ -285,7 +287,75 @@ async def test_ready_persists_across_disconnect_until_cleared(
         if m["user_id"] == str(member.id)
     )
     assert member_entry["ready"] is True
+    assert member_entry["connection"] == "offline"
     assert member_entry["ready_expires_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_handle_connect_does_not_republish_ready_state_for_reconnecting_member(
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    token = create_access_token(member.id)
+    ready_payload = await status_store.set_group_ready(str(group.id), str(member.id))
+
+    published_online: list[tuple[str, str, list[str]]] = []
+    published_ready: list[dict[str, object]] = []
+
+    async def fake_connect(websocket, user_id, group_ids):
+        return True
+
+    async def fake_sweep_all_groups(group_ids):
+        return None
+
+    async def fake_send_presence_snapshot(user_id, group_ids, websocket):
+        return None
+
+    async def fake_publish_user_online(user_id, display_name, group_ids):
+        published_online.append((str(user_id), display_name, group_ids))
+
+    async def fake_publish_ready_changed(
+        user_id,
+        group_id,
+        *,
+        ready,
+        ready_since=None,
+        ready_expires_at=None,
+    ):
+        published_ready.append(
+            {
+                "user_id": str(user_id),
+                "group_id": group_id,
+                "ready": ready,
+                "ready_since": ready_since,
+                "ready_expires_at": ready_expires_at,
+            }
+        )
+
+    monkeypatch.setattr(handlers.manager, "connect", fake_connect)
+    monkeypatch.setattr(handlers.manager, "sweep_all_groups", fake_sweep_all_groups)
+    monkeypatch.setattr(
+        handlers.manager,
+        "send_presence_snapshot",
+        fake_send_presence_snapshot,
+    )
+    monkeypatch.setattr(
+        handlers.manager,
+        "publish_user_online",
+        fake_publish_user_online,
+    )
+    monkeypatch.setattr(
+        handlers.manager,
+        "publish_ready_changed",
+        fake_publish_ready_changed,
+    )
+
+    user_id = await handlers.handle_connect(object(), token)
+
+    assert user_id == member.id
+    assert published_online == [(str(member.id), member.display_name, [str(group.id)])]
+    assert published_ready == []
 
 
 @pytest.mark.asyncio
