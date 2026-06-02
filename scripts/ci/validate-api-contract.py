@@ -19,7 +19,13 @@ import re
 import sys
 import urllib.request
 
-SPEC_MODEL_HEADERS = ["**User**", "**Group**", "**GroupMembership**", "**JoinRequest**"]
+SPEC_MODEL_HEADERS = [
+    "**User**",
+    "**RevokedAuthLink**",
+    "**Group**",
+    "**GroupMembership**",
+    "**JoinRequest**",
+]
 
 OPENAPI_TO_SPEC_MODEL = {
     "UserResponse": "User",

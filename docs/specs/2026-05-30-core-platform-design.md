@@ -1,8 +1,8 @@
 ---
 spec: core-platform
-version: "2.36"
+version: "2.37"
 status: complete
-last_updated: "2026-06-02"
+last_updated: "2026-06-03"
 sub_project: 1
 ---
 
@@ -178,6 +178,7 @@ Conflict detection: if another user already has the target `steam_id` or `apple_
 | id | UUID | Primary key |
 | email | VARCHAR | Unique, nullable (Steam-only users) |
 | password_hash | VARCHAR | Nullable (social-only users) |
+| has_password_login | BOOLEAN | Derived response field; true when `password_hash` is present |
 | display_name | VARCHAR | Required |
 | avatar_url | VARCHAR | Nullable |
 | bio | TEXT | Nullable |
@@ -765,3 +766,4 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-02 | Group RBAC / Onboarding / Navigation | Added an explicit owner-admin-member action matrix, made recurring availability optional during onboarding, and documented platform-aware page transitions that preserve native mobile gestures | Classifies the next SP1-owned feature batch before implementation and resolves terminology drift between recurring availability and future game preferences |
 | 2026-06-02 | Group RBAC / Onboarding / Navigation | Implemented owner-only role-management endpoints, owner-leave guard semantics, optional onboarding availability completion, and adaptive mobile-vs-web route pages | Records the concrete SP1 completion contract now that the backend routes, Flutter gating, and router behavior are live |
 | 2026-06-03 | Groups / Spec Hygiene / Testing | Enforced member-only access for private group detail/member reads, aligned the documented Flutter client architecture with handwritten Dio repositories, and updated testing strategy wording to match current coverage | Closes the largest SP1 audit drift and removes stale claims about generated clients, exact test counts, and integration-test coverage |
+| 2026-06-03 | Users API Contract / CI | Added `has_password_login` to the `User` model table entry used by contract validation and kept revoked-provider fields scoped to `RevokedAuthLink` | Unblocks the API/spec validation job on `main` after the auth-method revoke and password-login-state work |
