@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/kounex/ingame-api
-  tag: 0.3.0
+  tag: 0.3.1
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -35,7 +35,7 @@ resources:
 # -- Non-secret configuration injected via ConfigMap
 config:
   debug: "false"
-  corsAllowOrigins: "https://in-game.app"
+  corsAllowOrigins: "https://app.in-game.app"
   logLevel: "info"
   apiPrefix: "/api/v1"
 

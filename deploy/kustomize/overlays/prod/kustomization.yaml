@@ -61,7 +61,7 @@ patches:
         name: ingame-api
       data:
         INGAME_DEBUG: "false"
-        INGAME_CORS_ALLOW_ORIGINS: "https://in-game.app"
+        INGAME_CORS_ALLOW_ORIGINS: "https://app.in-game.app"
         INGAME_LOG_LEVEL: "warning"
 
   - target:
@@ -84,4 +84,4 @@ patches:
       metadata:
         name: ingame-web
       spec:
-        host: in-game.app
+        host: app.in-game.app

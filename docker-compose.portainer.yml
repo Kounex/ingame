@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ingame
+      POSTGRES_USER: ingame
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ingame_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ingame -d ingame"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ingame_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ghcr.io/kounex/ingame-api:${INGAME_VERSION:-0.3.1}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      INGAME_DATABASE_URL: postgresql+asyncpg://ingame:${POSTGRES_PASSWORD}@postgres:5432/ingame
+      INGAME_REDIS_URL: redis://redis:6379
+      INGAME_JWT_SECRET: ${INGAME_JWT_SECRET}
+      INGAME_STEAM_API_KEY: ${INGAME_STEAM_API_KEY:-}
+      INGAME_DEBUG: "false"
+      INGAME_CORS_ALLOW_ORIGINS: https://app.in-game.app
+      INGAME_API_PREFIX: /api/v1
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+  web:
+    image: ghcr.io/kounex/ingame-web:${INGAME_VERSION:-0.3.1}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:8080"
+
+volumes:
+  ingame_pgdata:
+  ingame_redisdata:

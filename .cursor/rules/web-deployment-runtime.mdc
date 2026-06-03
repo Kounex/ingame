@@ -15,8 +15,8 @@ alwaysApply: false
   - the built Flutter web SPA
   - `/.well-known/apple-app-site-association`
   - `/.well-known/assetlinks.json`
-- Public invite links are hosted on `https://in-game.app` and should resolve on that same web host.
-- Do not hang `/.well-known/*` off the API service or a different hostname unless the spec is explicitly updated.
+- Browser-facing web releases are built for `https://app.in-game.app`, while canonical invite links remain rooted at `https://in-game.app`.
+- Do not hang `/.well-known/*` off the API service; keep invite-link hosting explicit in deployment config when the SPA host and invite-link host differ.
 - Keep deployment config image-oriented so backend and frontend images can later be published independently and pulled from GHCR.
 - When changing bundle IDs, package IDs, or invite-link domains, update the hosted `/.well-known` files in the same change.
 - Keep SPA fallback behavior intact: normal app routes should fall back to `index.html`, but `/.well-known/*` must remain direct file responses.

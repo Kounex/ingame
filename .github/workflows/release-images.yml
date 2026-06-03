@@ -66,7 +66,7 @@ jobs:
           push: true
           build-args: |
             INGAME_API_BASE_URL=https://api.in-game.app/api/v1
-            INGAME_APP_BASE_URL=https://in-game.app
+            INGAME_APP_BASE_URL=https://app.in-game.app
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:sha-${{ github.sha }}
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:${{ steps.meta.outputs.version }}

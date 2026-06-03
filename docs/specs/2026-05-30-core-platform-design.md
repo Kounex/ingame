@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "2.37"
+version: "2.38"
 status: complete
 last_updated: "2026-06-03"
 sub_project: 1
@@ -668,14 +668,19 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 ### Local Development
 Docker Compose: PostgreSQL 16 + Redis 7 + FastAPI API server, plus a dedicated static web container for Flutter web. The web container serves the built SPA and `/.well-known/*` verification files so invite links and native app-link validation can be exercised end-to-end in the same deployment shape used later in CI/CD images.
 
+For tunnel- or Portainer-backed deployments that do not bundle ingress in the same stack, `docker-compose.portainer.yml` provides an image-based runtime stack for `ingame-api`, `ingame-web`, PostgreSQL, and Redis while leaving external routing (for example Cloudflare Tunnel) out of band.
+
 ### Production
 OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gitops` project). Separate Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/` with Kustomize overlays at `deploy/kustomize/overlays/{dev,staging,prod}`. OpenShift Routes with TLS edge termination. PostgreSQL and Redis via operators or managed services.
 
-**Invite links:** Production invite links use `https://in-game.app/join/:code`. The dedicated web runtime must serve `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` on that same host so installed mobile apps open invite links natively before falling back to web. The Android asset links file must use the final release signing certificate fingerprint.
+**Invite links:** Production invite links use `https://in-game.app/join/:code`. The deployment must serve `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` on that same invite-link host so installed mobile apps open invite links natively before falling back to web. The Android asset links file must use the final release signing certificate fingerprint.
+
+**Released web runtime host config:** Tagged GHCR web images are built with `INGAME_API_BASE_URL=https://api.in-game.app/api/v1` and `INGAME_APP_BASE_URL=https://app.in-game.app`. Deployments that use those release images must route browser traffic for the SPA through `app.in-game.app` and API traffic through `api.in-game.app`. If the browser SPA host and invite-link host are split, ingress must still keep `https://in-game.app` serving the invite/deep-link and `/.well-known/*` contract.
 
 **Deploy directory structure:**
 - `deploy/helm/ingame-api/` -- Helm chart for the FastAPI runtime (deployment, service, route, configmap, secret)
 - `deploy/helm/ingame-web/` -- Helm chart for the static web runtime (deployment, service, route)
+- `docker-compose.portainer.yml` -- image-based Docker Compose stack for Portainer / external-tunnel deployments
 - `deploy/kustomize/base/` -- base Kustomization referencing Helm output
 - `deploy/kustomize/overlays/dev/` -- 1 replica, debug, open CORS
 - `deploy/kustomize/overlays/staging/` -- 2 replicas, staging host
@@ -767,3 +772,4 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-02 | Group RBAC / Onboarding / Navigation | Implemented owner-only role-management endpoints, owner-leave guard semantics, optional onboarding availability completion, and adaptive mobile-vs-web route pages | Records the concrete SP1 completion contract now that the backend routes, Flutter gating, and router behavior are live |
 | 2026-06-03 | Groups / Spec Hygiene / Testing | Enforced member-only access for private group detail/member reads, aligned the documented Flutter client architecture with handwritten Dio repositories, and updated testing strategy wording to match current coverage | Closes the largest SP1 audit drift and removes stale claims about generated clients, exact test counts, and integration-test coverage |
 | 2026-06-03 | Users API Contract / CI | Added `has_password_login` to the `User` model table entry used by contract validation and kept revoked-provider fields scoped to `RevokedAuthLink` | Unblocks the API/spec validation job on `main` after the auth-method revoke and password-login-state work |
+| 2026-06-03 | Deployment / CI/CD Pipeline | Added the Portainer compose stack and aligned release web-image build args with `app.in-game.app` / `api.in-game.app` | Makes the tagged GHCR web runtime usable behind external tunnel ingress without rebuilding it per deployment |

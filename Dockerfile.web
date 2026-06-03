@@ -7,8 +7,8 @@ RUN flutter pub get
 
 COPY . .
 
-ARG INGAME_API_BASE_URL=http://localhost:8000/api/v1
-ARG INGAME_APP_BASE_URL=http://localhost:8080
+ARG INGAME_API_BASE_URL=https://api.in-game.app/api/v1
+ARG INGAME_APP_BASE_URL=https://app.in-game.app
 
 RUN flutter build web --release \
     --dart-define=INGAME_API_BASE_URL=${INGAME_API_BASE_URL} \
