@@ -14,9 +14,22 @@ class InviteLinkShare extends StatelessWidget {
 
   final String inviteCode;
 
-  String get _inviteLink {
-    final baseUrl = kIsWeb ? Uri.base.origin : ApiEndpoints.appBaseUrl;
+  static String inviteLinkForPlatform({
+    required bool isWeb,
+    required String inviteCode,
+    required String inviteBaseUrl,
+    String? currentOrigin,
+  }) {
+    final baseUrl = isWeb ? (currentOrigin ?? Uri.base.origin) : inviteBaseUrl;
     return '$baseUrl/join/$inviteCode';
+  }
+
+  String get _inviteLink {
+    return inviteLinkForPlatform(
+      isWeb: kIsWeb,
+      inviteCode: inviteCode,
+      inviteBaseUrl: ApiEndpoints.inviteBaseUrl,
+    );
   }
 
   @override
@@ -103,7 +116,9 @@ class InviteLinkShare extends StatelessWidget {
 
   void _share(BuildContext context) {
     Clipboard.setData(
-      ClipboardData(text: context.l10n.inviteShareText(_inviteLink, inviteCode)),
+      ClipboardData(
+        text: context.l10n.inviteShareText(_inviteLink, inviteCode),
+      ),
     );
     AppToast.success(context, context.l10n.inviteDetailsCopied);
   }

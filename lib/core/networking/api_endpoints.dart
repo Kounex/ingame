@@ -5,8 +5,12 @@ class ApiEndpoints {
     'INGAME_API_BASE_URL',
     defaultValue: 'http://localhost:8000/api/v1',
   );
-  static const String appBaseUrl = String.fromEnvironment(
-    'INGAME_APP_BASE_URL',
+  static const String webAppBaseUrl = String.fromEnvironment(
+    'INGAME_WEB_APP_BASE_URL',
+    defaultValue: 'https://app.in-game.app',
+  );
+  static const String inviteBaseUrl = String.fromEnvironment(
+    'INGAME_INVITE_BASE_URL',
     defaultValue: 'https://in-game.app',
   );
 

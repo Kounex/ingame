@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "2.38"
+version: "2.39"
 status: complete
 last_updated: "2026-06-03"
 sub_project: 1
@@ -163,6 +163,7 @@ Conflict detection: if another user already has the target `steam_id` or `apple_
 | **macOS** | `ingame://auth/steam/callback` via `CFBundleURLTypes` | Native AuthenticationServices via entitlements | `macos/Runner/Info.plist`, `macos/Runner/*.entitlements` |
 
 - `flutter_web_auth_2` always receives the valid custom scheme `ingame`; on web that value is ignored and the flow resolves via `postMessage` from the callback HTML page
+- Native Steam auth callback/realm generation uses `INGAME_WEB_APP_BASE_URL`, while invite sharing/native deep links use `INGAME_INVITE_BASE_URL`; web keeps deriving both surfaces from the current browser origin where appropriate
 - Apple Service ID for web is configured via `--dart-define=APPLE_SERVICE_ID=com.ingame.web` at build time
 - iOS now uses Flutter's generated Swift Package Manager plugin integration for app/runtime plugins; stale CocoaPods project wiring and Pod support-file includes were removed so native auth/build flows rely on the SPM-managed setup only
 
@@ -675,7 +676,7 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 
 **Invite links:** Production invite links use `https://in-game.app/join/:code`. The deployment must serve `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` on that same invite-link host so installed mobile apps open invite links natively before falling back to web. The Android asset links file must use the final release signing certificate fingerprint.
 
-**Released web runtime host config:** Tagged GHCR web images are built with `INGAME_API_BASE_URL=https://api.in-game.app/api/v1` and `INGAME_APP_BASE_URL=https://app.in-game.app`. Deployments that use those release images must route browser traffic for the SPA through `app.in-game.app` and API traffic through `api.in-game.app`. If the browser SPA host and invite-link host are split, ingress must still keep `https://in-game.app` serving the invite/deep-link and `/.well-known/*` contract.
+**Released web runtime host config:** Tagged GHCR web images are built with `INGAME_API_BASE_URL=https://api.in-game.app/api/v1`, `INGAME_WEB_APP_BASE_URL=https://app.in-game.app`, and `INGAME_INVITE_BASE_URL=https://in-game.app`. Deployments that use those release images must route browser traffic for the SPA through `app.in-game.app` and API traffic through `api.in-game.app`. If the browser SPA host and invite-link host are split, ingress must still keep `https://in-game.app` serving the invite/deep-link and `/.well-known/*` contract; that base-domain surface may be the marketing site instead of the SPA runtime.
 
 **Deploy directory structure:**
 - `deploy/helm/ingame-api/` -- Helm chart for the FastAPI runtime (deployment, service, route, configmap, secret)
@@ -773,3 +774,4 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-03 | Groups / Spec Hygiene / Testing | Enforced member-only access for private group detail/member reads, aligned the documented Flutter client architecture with handwritten Dio repositories, and updated testing strategy wording to match current coverage | Closes the largest SP1 audit drift and removes stale claims about generated clients, exact test counts, and integration-test coverage |
 | 2026-06-03 | Users API Contract / CI | Added `has_password_login` to the `User` model table entry used by contract validation and kept revoked-provider fields scoped to `RevokedAuthLink` | Unblocks the API/spec validation job on `main` after the auth-method revoke and password-login-state work |
 | 2026-06-03 | Deployment / CI/CD Pipeline | Added the Portainer compose stack and aligned release web-image build args with `app.in-game.app` / `api.in-game.app` | Makes the tagged GHCR web runtime usable behind external tunnel ingress without rebuilding it per deployment |
+| 2026-06-04 | Authentication / Deployment | Split browser-app host config from invite/deep-link host config via `INGAME_WEB_APP_BASE_URL` and `INGAME_INVITE_BASE_URL` | Keeps native auth callbacks on the SPA host while preserving `in-game.app` as the canonical mobile deep-link and invite domain |

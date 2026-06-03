@@ -17,6 +17,7 @@ alwaysApply: false
   - `/.well-known/assetlinks.json`
 - Browser-facing web releases are built for `https://app.in-game.app`, while canonical invite links remain rooted at `https://in-game.app`.
 - Do not hang `/.well-known/*` off the API service; keep invite-link hosting explicit in deployment config when the SPA host and invite-link host differ.
+- It is acceptable for a separate base-domain marketing site to serve `https://in-game.app/.well-known/*` and `https://in-game.app/join/*` as long as the browser SPA remains on `app.in-game.app`.
 - Keep deployment config image-oriented so backend and frontend images can later be published independently and pulled from GHCR.
 - When changing bundle IDs, package IDs, or invite-link domains, update the hosted `/.well-known` files in the same change.
 - Keep SPA fallback behavior intact: normal app routes should fall back to `index.html`, but `/.well-known/*` must remain direct file responses.

@@ -65,12 +65,13 @@ flutter pub get
 flutter run
 ```
 
-If you want the native app to target a different backend or app URL:
+If you want the native app to target a different backend, browser-app host, or invite host:
 
 ```bash
 flutter run \
   --dart-define=INGAME_API_BASE_URL=http://localhost:8000/api/v1 \
-  --dart-define=INGAME_APP_BASE_URL=http://localhost:8080
+  --dart-define=INGAME_WEB_APP_BASE_URL=http://localhost:8080 \
+  --dart-define=INGAME_INVITE_BASE_URL=http://localhost:8080
 ```
 
 ### Backend setup without Compose
@@ -182,11 +183,18 @@ The public invite-link domain is:
 
 - `https://in-game.app`
 
-The web runtime is responsible for serving:
+The canonical invite-link domain is separate from the browser app host:
+
+- browser SPA: `https://app.in-game.app`
+- invite/deep-link host: `https://in-game.app`
+
+For local/full-stack validation, the web runtime can serve:
 
 - the Flutter SPA
 - `/.well-known/apple-app-site-association`
 - `/.well-known/assetlinks.json`
+
+In production, those invite-link assets may instead be served by a separate base-domain marketing site as long as `https://in-game.app/join/*` and `https://in-game.app/.well-known/*` keep working.
 
 Native invite-link validation is only complete once the Android release certificate fingerprint has been inserted into `web/.well-known/assetlinks.json`.
 
@@ -203,4 +211,4 @@ Useful project-local agent assets:
 ## Current release
 
 - Repository: [github.com/Kounex/ingame](https://github.com/Kounex/ingame)
-- Latest release: `v0.3.0`
+- Latest release: `v0.3.2`

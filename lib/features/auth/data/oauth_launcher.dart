@@ -7,10 +7,7 @@ import '../../../core/networking/app_failure.dart';
 import '../../../core/networking/api_endpoints.dart';
 
 class AppleSignInResult {
-  const AppleSignInResult({
-    required this.identityToken,
-    this.displayName,
-  });
+  const AppleSignInResult({required this.identityToken, this.displayName});
 
   final String identityToken;
   final String? displayName;
@@ -25,40 +22,43 @@ class OAuthLauncher {
   static String get _steamReturnTo {
     return steamReturnToForPlatform(
       isWeb: kIsWeb,
-      appBaseUrl: ApiEndpoints.appBaseUrl,
+      webAppBaseUrl: ApiEndpoints.webAppBaseUrl,
     );
   }
 
   static String get _steamRealm {
-    return steamRealmForPlatform(isWeb: kIsWeb, appBaseUrl: ApiEndpoints.appBaseUrl);
+    return steamRealmForPlatform(
+      isWeb: kIsWeb,
+      webAppBaseUrl: ApiEndpoints.webAppBaseUrl,
+    );
   }
 
   @visibleForTesting
   static String steamReturnToForPlatform({
     required bool isWeb,
-    required String appBaseUrl,
+    required String webAppBaseUrl,
   }) {
     if (isWeb) {
       return '${Uri.base.origin}$_steamCallbackPath';
     }
 
-    return _steamCallbackUri(appBaseUrl).toString();
+    return _steamCallbackUri(webAppBaseUrl).toString();
   }
 
   @visibleForTesting
   static String steamRealmForPlatform({
     required bool isWeb,
-    required String appBaseUrl,
+    required String webAppBaseUrl,
   }) {
     if (isWeb) {
       return Uri.base.origin;
     }
 
-    return _steamCallbackUri(appBaseUrl).origin;
+    return _steamCallbackUri(webAppBaseUrl).origin;
   }
 
-  static Uri _steamCallbackUri(String appBaseUrl) {
-    final appUri = Uri.parse(appBaseUrl);
+  static Uri _steamCallbackUri(String webAppBaseUrl) {
+    final appUri = Uri.parse(webAppBaseUrl);
     return Uri(
       scheme: appUri.scheme,
       host: appUri.host,
@@ -73,20 +73,14 @@ class OAuthLauncher {
     final returnTo = _steamReturnTo;
     final realm = _steamRealm;
 
-    final authUrl = Uri.https(
-      'steamcommunity.com',
-      '/openid/login',
-      {
-        'openid.ns': 'http://specs.openid.net/auth/2.0',
-        'openid.mode': 'checkid_setup',
-        'openid.return_to': returnTo,
-        'openid.realm': realm,
-        'openid.identity':
-            'http://specs.openid.net/auth/2.0/identifier_select',
-        'openid.claimed_id':
-            'http://specs.openid.net/auth/2.0/identifier_select',
-      },
-    );
+    final authUrl = Uri.https('steamcommunity.com', '/openid/login', {
+      'openid.ns': 'http://specs.openid.net/auth/2.0',
+      'openid.mode': 'checkid_setup',
+      'openid.return_to': returnTo,
+      'openid.realm': realm,
+      'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
+      'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
+    });
 
     // On web, callbackUrlScheme is ignored — flutter_web_auth_2 detects
     // the callback via postMessage from the callback HTML page.
@@ -104,10 +98,10 @@ class OAuthLauncher {
     required String? givenName,
     required String? familyName,
   }) {
-    final parts = [givenName?.trim(), familyName?.trim()]
-        .whereType<String>()
-        .where((part) => part.isNotEmpty)
-        .toList();
+    final parts = [
+      givenName?.trim(),
+      familyName?.trim(),
+    ].whereType<String>().where((part) => part.isNotEmpty).toList();
     if (parts.isEmpty) return null;
     return parts.join(' ');
   }

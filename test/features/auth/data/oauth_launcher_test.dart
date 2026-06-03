@@ -7,9 +7,9 @@ void main() {
     expect(
       OAuthLauncher.steamReturnToForPlatform(
         isWeb: false,
-        appBaseUrl: 'https://in-game.app/groups/abc?foo=bar#frag',
+        webAppBaseUrl: 'https://app.in-game.app/groups/abc?foo=bar#frag',
       ),
-      'https://in-game.app/auth/steam-callback.html',
+      'https://app.in-game.app/auth/steam-callback.html',
     );
   });
 
@@ -17,9 +17,9 @@ void main() {
     expect(
       OAuthLauncher.steamRealmForPlatform(
         isWeb: false,
-        appBaseUrl: 'https://in-game.app/groups/abc?foo=bar#frag',
+        webAppBaseUrl: 'https://app.in-game.app/groups/abc?foo=bar#frag',
       ),
-      'https://in-game.app',
+      'https://app.in-game.app',
     );
   });
 
@@ -27,7 +27,7 @@ void main() {
     expect(
       OAuthLauncher.steamReturnToForPlatform(
         isWeb: false,
-        appBaseUrl: 'http://localhost:8080',
+        webAppBaseUrl: 'http://localhost:8080',
       ),
       'http://localhost:8080/auth/steam-callback.html',
     );
@@ -37,7 +37,7 @@ void main() {
     expect(
       OAuthLauncher.steamRealmForPlatform(
         isWeb: false,
-        appBaseUrl: 'http://localhost:8080',
+        webAppBaseUrl: 'http://localhost:8080',
       ),
       'http://localhost:8080',
     );

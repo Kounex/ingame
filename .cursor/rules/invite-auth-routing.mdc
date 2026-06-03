@@ -14,6 +14,7 @@ alwaysApply: false
 - Canonical invite/deep-link route is `/join/:code`.
 - Canonical public invite-link domain is `https://in-game.app`; native iOS/Android link verification should target that host.
 - Browser app deployments may use a separate host such as `https://app.in-game.app`; do not assume the SPA host and invite-link host are the same.
+- Keep the browser-app host used for native auth callback pages separate from the invite/deep-link host used for mobile app links and shared invite URLs.
 - Keep `/groups/join/:code` only as a legacy redirect target; new links and navigation should point to `/join/:code`.
 - If auth blocks a deep link, preserve the original destination in `from` and return there after successful login/register/Steam auth.
 - Invite links should be shareable app/web URLs plus the raw invite code, not just a custom scheme string.
