@@ -68,3 +68,16 @@ class ForbiddenError(AppHTTPException):
         code: ErrorCode = ErrorCode.GROUP_ADMIN_OR_OWNER_REQUIRED,
     ):
         super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail, code=code)
+
+
+class ServiceUnavailableError(AppHTTPException):
+    def __init__(
+        self,
+        detail: str = "Service unavailable",
+        code: ErrorCode = ErrorCode.AUTH_STEAM_PROFILE_UNAVAILABLE,
+    ):
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+            code=code,
+        )

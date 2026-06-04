@@ -237,6 +237,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingBioHint => 'Tell others about yourself (optional)';
 
   @override
+  String get avatarEditorActionTitle => 'Choose avatar photo';
+
+  @override
+  String get avatarEditorPhotoLibrary => 'Photo library';
+
+  @override
+  String get avatarEditorUploadPhoto => 'Upload photo';
+
+  @override
+  String get avatarEditorTakePhoto => 'Take photo';
+
+  @override
+  String get avatarEditorUseUrl => 'Use image URL';
+
+  @override
+  String get avatarEditorRemovePhoto => 'Remove photo';
+
+  @override
+  String get avatarEditorUseUrlTitle => 'Use image URL';
+
+  @override
+  String get avatarEditorUrlLabel => 'Image URL';
+
+  @override
+  String get avatarEditorUrlHint => 'https://example.com/avatar.jpg';
+
+  @override
+  String get avatarEditorChangePhoto => 'Change photo';
+
+  @override
+  String get avatarEditorHint => 'Choose a photo, upload one, or paste an image URL.';
+
+  @override
+  String get avatarEditorEditHint => 'Tap the avatar to edit it, or choose a different photo below.';
+
+  @override
+  String avatarEditorUploading(int percent) {
+    return 'Uploading avatar... $percent%';
+  }
+
+  @override
+  String get avatarEditorUploadFailed => 'Avatar upload failed. Please try again.';
+
+  @override
+  String get avatarEditorInvalidFileType => 'Use a JPEG, PNG, or WebP image.';
+
+  @override
+  String get avatarEditorInvalidUrl => 'Enter a valid image URL.';
+
+  @override
+  String get avatarEditorCropTitle => 'Crop avatar';
+
+  @override
   String get onboardingAvatarUrlLabel => 'Avatar URL';
 
   @override
@@ -277,6 +330,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeSlotNightSubtitle => '12 AM - 6 AM';
+
+  @override
+  String get timeSlotAllDayLabel => 'All day';
+
+  @override
+  String get timeSlotAllDaySubtitle => 'Morning, afternoon, evening, and night';
 
   @override
   String get groupsListTitle => 'My Groups';

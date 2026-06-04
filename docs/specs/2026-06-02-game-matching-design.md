@@ -12,7 +12,7 @@ sub_project: 3
 
 ## Overview
 
-This spec covers **Sub-Project 3: Game Matching**. It builds on the Core Platform foundation from [2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) and the coordination surfaces from [2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md).
+This spec covers **Sub-Project 3: Game Matching**. It builds on the Core Platform foundation from [2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) and the realtime coordination overview from [2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md).
 
 SP3 gives InGame a durable, provider-agnostic game domain so members can compare what they own, discover common titles, and eventually connect shared libraries to coordination features. Steam is the first provider, but the data model must remain generic rather than baking Steam assumptions into every table and API.
 

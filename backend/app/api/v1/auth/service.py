@@ -1,3 +1,4 @@
+import httpx
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +8,12 @@ from app.auth.jwt import create_access_token, create_refresh_token, decode_token
 from app.auth.password import hash_password, verify_password
 from app.auth.steam import get_steam_profile, validate_steam_login
 from app.core.error_codes import ErrorCode
-from app.core.exceptions import ConflictError, UnauthorizedError, ValidationError
+from app.core.exceptions import (
+    ConflictError,
+    ServiceUnavailableError,
+    UnauthorizedError,
+    ValidationError,
+)
 from app.db.repositories.revoked_auth_link_repo import RevokedAuthLinkRepository
 from app.db.repositories.user_repo import UserRepository
 from app.redis.client import redis_pool
@@ -130,7 +136,13 @@ async def steam_auth(db: AsyncSession, openid_params: dict):
         )
 
     if user is None:
-        profile = await get_steam_profile(steam_id)
+        try:
+            profile = await get_steam_profile(steam_id)
+        except (httpx.HTTPError, ValueError) as exc:
+            raise ServiceUnavailableError(
+                "Steam profile lookup is temporarily unavailable",
+                code=ErrorCode.AUTH_STEAM_PROFILE_UNAVAILABLE,
+            ) from exc
         user = await repo.create(
             steam_id=steam_id,
             display_name=profile["display_name"],

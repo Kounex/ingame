@@ -78,6 +78,23 @@ void main() {
     );
   });
 
+  test('maps temporary Steam profile lookup failures without leaking backend English', () {
+    final failure = ApiError.toFailure(
+      dioException(
+        statusCode: 503,
+        data: {
+          'detail': 'Steam profile lookup is temporarily unavailable',
+          'code': 'auth.steam_profile_unavailable',
+        },
+      ),
+    );
+
+    expect(
+      failure.userMessage(),
+      'Authentifizierung fehlgeschlagen. Bitte versuche es erneut.',
+    );
+  });
+
   test('maps last auth method guard to explicit disconnect guidance', () {
     final failure = ApiError.toFailure(
       dioException(
@@ -92,6 +109,23 @@ void main() {
     expect(
       failure.userMessage(),
       'Fuege zuerst eine weitere Anmeldemethode hinzu, bevor du diese trennst.',
+    );
+  });
+
+  test('maps avatar upload unavailability to a localized server message', () {
+    final failure = ApiError.toFailure(
+      dioException(
+        statusCode: 503,
+        data: {
+          'detail': 'Avatar uploads are temporarily unavailable',
+          'code': 'user.avatar_upload_unavailable',
+        },
+      ),
+    );
+
+    expect(
+      failure.userMessage(),
+      'Serverfehler. Bitte versuche es später erneut.',
     );
   });
 }

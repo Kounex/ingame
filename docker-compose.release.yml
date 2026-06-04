@@ -42,6 +42,13 @@ services:
       INGAME_DEBUG: "false"
       INGAME_CORS_ALLOW_ORIGINS: https://app.in-game.app
       INGAME_API_PREFIX: /api/v1
+      INGAME_AVATAR_STORAGE_BUCKET: ${INGAME_AVATAR_STORAGE_BUCKET:-}
+      INGAME_AVATAR_STORAGE_REGION: ${INGAME_AVATAR_STORAGE_REGION:-auto}
+      INGAME_AVATAR_STORAGE_ENDPOINT_URL: ${INGAME_AVATAR_STORAGE_ENDPOINT_URL:-}
+      INGAME_AVATAR_STORAGE_UPLOAD_BASE_URL: ${INGAME_AVATAR_STORAGE_UPLOAD_BASE_URL:-}
+      INGAME_AVATAR_STORAGE_ACCESS_KEY_ID: ${INGAME_AVATAR_STORAGE_ACCESS_KEY_ID:-}
+      INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY: ${INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY:-}
+      INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL: ${INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL:-}
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
@@ -67,6 +74,37 @@ services:
     ports:
       - "8081:8080"
 
+  minio:
+    profiles: ["minio"]
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${INGAME_AVATAR_STORAGE_ACCESS_KEY_ID:-}
+      MINIO_ROOT_PASSWORD: ${INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY:-}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_API_CORS_ALLOW_ORIGIN:-*}
+    volumes:
+      - ingame_miniodata:/data
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  minio-bootstrap:
+    profiles: ["minio"]
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    restart: "no"
+    environment:
+      MINIO_ENDPOINT_URL: http://minio:9000
+      MINIO_ROOT_USER: ${INGAME_AVATAR_STORAGE_ACCESS_KEY_ID:-}
+      MINIO_ROOT_PASSWORD: ${INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY:-}
+      MINIO_BUCKET: ${INGAME_AVATAR_STORAGE_BUCKET:-ingame-avatars}
+    volumes:
+      - ./deploy/minio:/bootstrap:ro
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap-minio.sh"]
+
 volumes:
   ingame_pgdata:
   ingame_redisdata:
+  ingame_miniodata:

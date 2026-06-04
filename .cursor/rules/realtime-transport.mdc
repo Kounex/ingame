@@ -14,9 +14,9 @@ alwaysApply: false
 - Canonical WebSocket path is `/api/v1/ws`. Keep `/ws` only as a legacy compatibility alias unless explicitly removed everywhere.
 - WebSocket auth currently uses `?token=<access_token>`. If reconnect logic changes, it must re-read the latest token instead of caching a stale one.
 - Group-scoped realtime events must include `group_id`.
-- Client commands use imperative names like `status_change`; server events use past-tense names like `status_changed`.
+- Client commands use imperative names like `presence_lifecycle` and `ready_toggle`; server events use past-tense names like `connection_changed` and `ready_changed`.
 - New connections must receive a `presence_snapshot` bootstrap before relying on incremental events.
 - Cross-replica fan-out must publish through Redis; do not rely on in-process broadcast alone for staging/prod behavior.
 - App lifespan must start the Redis pub/sub subscriber path when realtime delivery depends on it.
 - Flutter presence state should hydrate from REST/bootstrap data and then apply WebSocket events incrementally.
-- Any contract change here also requires updating `docs/specs/2026-05-30-real-time-coordination-design.md`.
+- Any contract change here also requires updating `docs/specs/2026-05-30-real-time-coordination-design.md` and the relevant SP2 child spec, usually `docs/specs/2026-05-30-real-time-coordination-transport-presence.md`.

@@ -539,6 +539,108 @@ abstract class AppLocalizations {
   /// **'Tell others about yourself (optional)'**
   String get onboardingBioHint;
 
+  /// No description provided for @avatarEditorActionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose avatar photo'**
+  String get avatarEditorActionTitle;
+
+  /// No description provided for @avatarEditorPhotoLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo library'**
+  String get avatarEditorPhotoLibrary;
+
+  /// No description provided for @avatarEditorUploadPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photo'**
+  String get avatarEditorUploadPhoto;
+
+  /// No description provided for @avatarEditorTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get avatarEditorTakePhoto;
+
+  /// No description provided for @avatarEditorUseUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Use image URL'**
+  String get avatarEditorUseUrl;
+
+  /// No description provided for @avatarEditorRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get avatarEditorRemovePhoto;
+
+  /// No description provided for @avatarEditorUseUrlTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use image URL'**
+  String get avatarEditorUseUrlTitle;
+
+  /// No description provided for @avatarEditorUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Image URL'**
+  String get avatarEditorUrlLabel;
+
+  /// No description provided for @avatarEditorUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://example.com/avatar.jpg'**
+  String get avatarEditorUrlHint;
+
+  /// No description provided for @avatarEditorChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get avatarEditorChangePhoto;
+
+  /// No description provided for @avatarEditorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a photo, upload one, or paste an image URL.'**
+  String get avatarEditorHint;
+
+  /// No description provided for @avatarEditorEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the avatar to edit it, or choose a different photo below.'**
+  String get avatarEditorEditHint;
+
+  /// No description provided for @avatarEditorUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading avatar... {percent}%'**
+  String avatarEditorUploading(int percent);
+
+  /// No description provided for @avatarEditorUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar upload failed. Please try again.'**
+  String get avatarEditorUploadFailed;
+
+  /// No description provided for @avatarEditorInvalidFileType.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a JPEG, PNG, or WebP image.'**
+  String get avatarEditorInvalidFileType;
+
+  /// No description provided for @avatarEditorInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid image URL.'**
+  String get avatarEditorInvalidUrl;
+
+  /// No description provided for @avatarEditorCropTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop avatar'**
+  String get avatarEditorCropTitle;
+
   /// No description provided for @onboardingAvatarUrlLabel.
   ///
   /// In en, this message translates to:
@@ -622,6 +724,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'12 AM - 6 AM'**
   String get timeSlotNightSubtitle;
+
+  /// No description provided for @timeSlotAllDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get timeSlotAllDayLabel;
+
+  /// No description provided for @timeSlotAllDaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning, afternoon, evening, and night'**
+  String get timeSlotAllDaySubtitle;
 
   /// No description provided for @groupsListTitle.
   ///

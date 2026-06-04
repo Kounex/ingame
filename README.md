@@ -43,7 +43,7 @@ InGame is a social gaming coordination app for finding time to play with friends
 
 - Flutter SDK 3.44+
 - Python 3.12+ or 3.13
-- Docker with Compose
+- Docker or Podman with Compose
 - Helm
 
 ### Start backend dependencies and the web runtime
@@ -58,6 +58,12 @@ This starts:
 - Web runtime on `http://localhost:8080`
 - PostgreSQL on `localhost:5432`
 - Redis on `localhost:6379`
+- MinIO S3 API on `http://localhost:9000`
+- MinIO Console on `http://localhost:9001`
+
+The compose stack applies the latest API migrations on startup, bootstraps a
+public `ingame-avatars` bucket, and starts MinIO with browser-upload CORS
+enabled so avatar uploads work locally without extra manual setup.
 
 ### Run the Flutter app natively
 
@@ -103,6 +109,22 @@ python3 -m pytest backend/tests -q
 helm template ingame-api deploy/helm/ingame-api -f deploy/helm/ingame-api/values.yaml
 helm template ingame-web deploy/helm/ingame-web -f deploy/helm/ingame-web/values.yaml
 ```
+
+Local compose wires MinIO automatically. Release-style deployments still require
+either an external S3-compatible store or the optional bundled MinIO profile.
+
+Avatar uploads require runtime values for:
+
+- `INGAME_AVATAR_STORAGE_BUCKET`
+- `INGAME_AVATAR_STORAGE_REGION` (set a real region for AWS S3 or any region-sensitive backend; local MinIO uses `auto`)
+- `INGAME_AVATAR_STORAGE_ENDPOINT_URL`
+- `INGAME_AVATAR_STORAGE_UPLOAD_BASE_URL` (optional when the browser uploads through a different public host than the API uses internally)
+- `INGAME_AVATAR_STORAGE_ACCESS_KEY_ID`
+- `INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY`
+- `INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL`
+
+If those are intentionally left unset, `POST /api/v1/users/me/avatar-upload/init`
+will return the structured fallback `503 user.avatar_upload_unavailable`.
 
 ## Release workflow
 
@@ -151,8 +173,39 @@ The semver tag is pushed after the SHA tag so GHCR surfaces the release version 
 `docker-compose.yml` is the local/full-stack container entry point. It is intended for:
 
 - local API + DB + Redis development
+- local S3-compatible avatar storage via MinIO
 - local web runtime verification
 - validating `/.well-known/*` hosting behavior
+
+`docker-compose.release.yml` is the release-image equivalent for Docker-hosted or
+Podman-hosted installs without bundled ingress. It supports:
+
+- the default API + web + marketing + PostgreSQL + Redis stack
+- externally managed S3-compatible avatar storage via environment variables
+- an optional self-contained MinIO path via `--profile minio` for small self-hosted installs
+
+When using the optional MinIO profile, point the API at the bundled service and
+provide a browser-reachable public base URL. A typical self-hosted `.env` pairing is:
+
+```bash
+INGAME_AVATAR_STORAGE_BUCKET=ingame-avatars
+INGAME_AVATAR_STORAGE_REGION=auto
+INGAME_AVATAR_STORAGE_ENDPOINT_URL=http://minio:9000
+INGAME_AVATAR_STORAGE_UPLOAD_BASE_URL=https://assets.example.com
+INGAME_AVATAR_STORAGE_ACCESS_KEY_ID=ingame
+INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY=replace-me
+INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL=https://assets.example.com/ingame-avatars
+```
+
+If you use the optional bundled MinIO profile on a non-`app.in-game.app` host,
+set `MINIO_API_CORS_ALLOW_ORIGIN` to the browser origin you actually serve the
+app from, or leave the compose default `*` in place for a broad self-hosted setup.
+
+Then start the release stack with:
+
+```bash
+podman compose -f docker-compose.release.yml --profile minio up -d
+```
 
 ### Helm charts
 

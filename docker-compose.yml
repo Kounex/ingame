@@ -9,13 +9,22 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio-bootstrap:
+        condition: service_completed_successfully
     environment:
       INGAME_DATABASE_URL: postgresql+asyncpg://ingame:ingame@postgres:5432/ingame
       INGAME_REDIS_URL: redis://redis:6379
       INGAME_DEBUG: "true"
+      INGAME_AVATAR_STORAGE_BUCKET: ingame-avatars
+      INGAME_AVATAR_STORAGE_ENDPOINT_URL: http://minio:9000
+      INGAME_AVATAR_STORAGE_UPLOAD_BASE_URL: http://localhost:9000
+      INGAME_AVATAR_STORAGE_ACCESS_KEY_ID: ingame
+      INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY: ingame-dev-secret
+      INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL: http://localhost:9000/ingame-avatars
     volumes:
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   web:
     image: ghcr.io/kounex/ingame-web:local
@@ -49,6 +58,33 @@ services:
     depends_on:
       - web
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ingame
+      MINIO_ROOT_PASSWORD: ingame-dev-secret
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:3000,http://localhost:8080
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+
+  minio-bootstrap:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    environment:
+      MINIO_ENDPOINT_URL: http://minio:9000
+      MINIO_ROOT_USER: ingame
+      MINIO_ROOT_PASSWORD: ingame-dev-secret
+      MINIO_BUCKET: ingame-avatars
+    volumes:
+      - ./deploy/minio:/bootstrap:ro
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap-minio.sh"]
+    restart: "no"
+
   postgres:
     image: postgres:16-alpine
     ports:
@@ -77,3 +113,4 @@ services:
 
 volumes:
   pgdata:
+  minio-data:

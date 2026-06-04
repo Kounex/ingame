@@ -237,6 +237,59 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingBioHint => 'Erzähle anderen etwas über dich (optional)';
 
   @override
+  String get avatarEditorActionTitle => 'Avatarfoto auswählen';
+
+  @override
+  String get avatarEditorPhotoLibrary => 'Fotomediathek';
+
+  @override
+  String get avatarEditorUploadPhoto => 'Foto hochladen';
+
+  @override
+  String get avatarEditorTakePhoto => 'Foto aufnehmen';
+
+  @override
+  String get avatarEditorUseUrl => 'Bild-URL verwenden';
+
+  @override
+  String get avatarEditorRemovePhoto => 'Foto entfernen';
+
+  @override
+  String get avatarEditorUseUrlTitle => 'Bild-URL verwenden';
+
+  @override
+  String get avatarEditorUrlLabel => 'Bild-URL';
+
+  @override
+  String get avatarEditorUrlHint => 'https://example.com/avatar.jpg';
+
+  @override
+  String get avatarEditorChangePhoto => 'Foto ändern';
+
+  @override
+  String get avatarEditorHint => 'Wähle ein Foto aus, lade eins hoch oder füge eine Bild-URL ein.';
+
+  @override
+  String get avatarEditorEditHint => 'Tippe auf den Avatar, um ihn zu bearbeiten, oder wähle unten ein anderes Foto aus.';
+
+  @override
+  String avatarEditorUploading(int percent) {
+    return 'Avatar wird hochgeladen... $percent %';
+  }
+
+  @override
+  String get avatarEditorUploadFailed => 'Der Avatar konnte nicht hochgeladen werden. Bitte versuche es erneut.';
+
+  @override
+  String get avatarEditorInvalidFileType => 'Verwende ein JPEG-, PNG- oder WebP-Bild.';
+
+  @override
+  String get avatarEditorInvalidUrl => 'Gib eine gültige Bild-URL ein.';
+
+  @override
+  String get avatarEditorCropTitle => 'Avatar zuschneiden';
+
+  @override
   String get onboardingAvatarUrlLabel => 'Avatar-URL';
 
   @override
@@ -277,6 +330,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get timeSlotNightSubtitle => '0 Uhr - 6 Uhr';
+
+  @override
+  String get timeSlotAllDayLabel => 'Ganztägig';
+
+  @override
+  String get timeSlotAllDaySubtitle => 'Morgen, Nachmittag, Abend und Nacht';
 
   @override
   String get groupsListTitle => 'Meine Gruppen';

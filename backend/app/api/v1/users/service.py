@@ -10,6 +10,10 @@ from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.db.models.user import User
 from app.db.repositories.revoked_auth_link_repo import RevokedAuthLinkRepository
 from app.db.repositories.user_repo import UserRepository
+from app.storage.avatar_uploads import (
+    ALLOWED_AVATAR_CONTENT_TYPES,
+    generate_avatar_upload as create_presigned_avatar_upload,
+)
 
 
 def _count_auth_methods(user: User) -> int:
@@ -29,7 +33,11 @@ async def get_current_user_profile(user: User) -> User:
 
 async def update_profile(db: AsyncSession, user: User, **kwargs) -> User:
     repo = UserRepository(db)
-    update_data = {k: v for k, v in kwargs.items() if v is not None}
+    update_data = {
+        key: value
+        for key, value in kwargs.items()
+        if value is not None or key == "avatar_url"
+    }
     if not update_data:
         return user
 
@@ -46,6 +54,36 @@ async def update_profile(db: AsyncSession, user: User, **kwargs) -> User:
     if updated is None:
         raise NotFoundError("User not found", code=ErrorCode.USER_NOT_FOUND)
     return updated
+
+
+def generate_avatar_upload(
+    filename: str, content_type: str, user: User
+) -> dict[str, object]:
+    if content_type not in ALLOWED_AVATAR_CONTENT_TYPES:
+        raise ValidationError(
+            "Avatar images must be JPEG, PNG, or WebP",
+            code=ErrorCode.USER_AVATAR_CONTENT_TYPE_INVALID,
+        )
+
+    return create_presigned_avatar_upload(user_id=user.id, content_type=content_type)
+
+
+async def init_avatar_upload(
+    user: User,
+    *,
+    filename: str,
+    content_type: str,
+    byte_size: int,
+) -> dict[str, object]:
+    from app.config import settings
+
+    if byte_size > settings.avatar_upload_max_file_size_bytes:
+        raise ValidationError(
+            "Avatar image exceeds the maximum allowed file size",
+            code=ErrorCode.USER_AVATAR_FILE_TOO_LARGE,
+        )
+
+    return generate_avatar_upload(filename, content_type, user)
 
 
 async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User:

@@ -10,9 +10,9 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../providers/profile_provider.dart';
-import '../widgets/avatar_picker.dart';
 import '../widgets/gaming_hours_editor.dart';
 import '../widgets/timezone_selector.dart';
 
@@ -29,6 +29,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   late TextEditingController _displayNameController;
   late TextEditingController _bioController;
   late String _timezone;
+  String? _avatarUrl;
+  String? _initialAvatarUrl;
+  bool _avatarChanged = false;
   Map<String, dynamic>? _gamingHours;
   bool _isSaving = false;
   bool _hasAttemptedSave = false;
@@ -37,10 +40,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   void initState() {
     super.initState();
     final user = ref.read(profileNotifierProvider).value;
-    _displayNameController =
-        TextEditingController(text: user?.displayName ?? '');
+    _displayNameController = TextEditingController(
+      text: user?.displayName ?? '',
+    );
     _bioController = TextEditingController(text: user?.bio ?? '');
     _timezone = user?.timezone ?? 'America/New_York';
+    _avatarUrl = user?.avatarUrl;
+    _initialAvatarUrl = user?.avatarUrl;
     _gamingHours = user?.preferredGamingHours != null
         ? Map<String, dynamic>.from(user!.preferredGamingHours!)
         : null;
@@ -63,6 +69,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       'display_name': _displayNameController.text.trim(),
       'bio': _bioController.text.trim(),
       'timezone': _timezone,
+      if (_avatarChanged) 'avatar_url': _avatarUrl,
       if (_gamingHours != null) 'preferred_gaming_hours': _gamingHours,
     };
 
@@ -72,7 +79,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       setState(() => _isSaving = false);
       final state = ref.read(profileNotifierProvider);
       if (state.hasError) {
-        AppToast.error(context, ApiError.userMessage(state.error!, context.l10n));
+        AppToast.error(
+          context,
+          ApiError.userMessage(state.error!, context.l10n),
+        );
       } else {
         context.pop();
       }
@@ -82,6 +92,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(profileNotifierProvider).value;
+    final avatarDisplayName = user?.displayName.isNotEmpty == true
+        ? user!.displayName
+        : (_displayNameController.text.trim().isNotEmpty
+              ? _displayNameController.text.trim()
+              : context.l10n.profileUnknown);
 
     revalidateFormOnLocaleChange(
       formKey: _formKey,
@@ -114,9 +129,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 children: [
                   const SizedBox(height: AppSpacing.lg),
                   Center(
-                    child: AvatarPicker(
-                      imageUrl: user?.avatarUrl,
-                      displayName: user?.displayName ?? '',
+                    child: EditableAvatarField(
+                      initialAvatarUrl: _avatarUrl,
+                      displayName: avatarDisplayName,
+                      onChanged: (value) {
+                        setState(() {
+                          _avatarUrl = value;
+                          _avatarChanged = value != _initialAvatarUrl;
+                        });
+                      },
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -149,6 +170,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                   SizedBox(
                     width: double.infinity,
                     child: GlassButton(
+                      key: const Key('edit-profile-save-button'),
                       onPressed: _isSaving ? null : _save,
                       isLoading: _isSaving,
                       child: Text(context.l10n.editProfileSave),

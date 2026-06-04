@@ -13,6 +13,7 @@ class ErrorCode(str, Enum):
     AUTH_REFRESH_TOKEN_REVOKED = "auth.refresh_token_revoked"
     AUTH_REFRESH_TOKEN_USER_NOT_FOUND = "auth.refresh_token_user_not_found"
     AUTH_STEAM_OPENID_INVALID = "auth.steam_openid_invalid"
+    AUTH_STEAM_PROFILE_UNAVAILABLE = "auth.steam_profile_unavailable"
     AUTH_APPLE_TOKEN_INVALID = "auth.apple_token_invalid"
     AUTH_STEAM_RELINK_REQUIRED = "auth.steam_relink_required"
     AUTH_APPLE_RELINK_REQUIRED = "auth.apple_relink_required"
@@ -23,6 +24,9 @@ class ErrorCode(str, Enum):
     USER_EMAIL_PASSWORD_ALREADY_SET = "user.email_password_already_set"
     USER_EMAIL_TAKEN = "user.email_taken"
     USER_LAST_AUTH_METHOD_REQUIRED = "user.last_auth_method_required"
+    USER_AVATAR_CONTENT_TYPE_INVALID = "user.avatar_content_type_invalid"
+    USER_AVATAR_FILE_TOO_LARGE = "user.avatar_file_too_large"
+    USER_AVATAR_UPLOAD_UNAVAILABLE = "user.avatar_upload_unavailable"
 
     GROUP_NOT_FOUND = "group.not_found"
     GROUP_INVITE_CODE_GENERATION_FAILED = "group.invite_code_generation_failed"

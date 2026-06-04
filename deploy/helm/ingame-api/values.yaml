@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/kounex/ingame-api
-  tag: 0.3.5
+  tag: 0.3.6
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -38,14 +38,31 @@ config:
   corsAllowOrigins: "https://app.in-game.app"
   logLevel: "info"
   apiPrefix: "/api/v1"
+  avatarStorageRegion: "auto"
+  avatarStorageEndpointUrl: ""
+  # Optional browser-facing upload origin. Set this when the API can reach the
+  # S3-compatible endpoint on an internal host but Flutter/web must upload to a
+  # different public host.
+  avatarStorageUploadBaseUrl: ""
+  # Required for release deployments that should support avatar uploads.
+  # Leave empty only if the environment intentionally accepts upload-init returning
+  # `user.avatar_upload_unavailable` until storage is provisioned.
+  avatarStoragePublicBaseUrl: ""
+  avatarUploadMaxFileSizeBytes: "2097152"
+  avatarUploadPresignExpiresSeconds: "300"
 
 # -- Secret references; actual values come from SealedSecrets / ExternalSecrets.
+# Avatar upload support requires the storage bucket/access credentials below plus
+# a non-empty `config.avatarStoragePublicBaseUrl`.
 # The placeholder values below are base64-encoded "CHANGEME".
 secrets:
   databaseUrl: "Q0hBTkdFTUU="       # postgresql+asyncpg://...
   redisUrl: "Q0hBTkdFTUU="           # redis://...
   jwtSecret: "Q0hBTkdFTUU="
   steamApiKey: "Q0hBTkdFTUU="
+  avatarStorageBucket: "Q0hBTkdFTUU="
+  avatarStorageAccessKeyId: "Q0hBTkdFTUU="
+  avatarStorageSecretAccessKey: "Q0hBTkdFTUU="
 
 # External PostgreSQL / Redis (when not using subcharts)
 postgresql:

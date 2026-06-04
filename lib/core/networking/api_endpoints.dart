@@ -34,6 +34,7 @@ class ApiEndpoints {
 
   // Users
   static const String usersMe = '/users/me';
+  static const String avatarUploadInit = '/users/me/avatar-upload/init';
   static const String linkSteam = '/users/me/link-steam';
   static const String linkApple = '/users/me/link-apple';
   static const String setEmailPassword = '/users/me/set-email-password';

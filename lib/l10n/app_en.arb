@@ -98,6 +98,30 @@
   "onboardingDisplayNameShort": "Must be at least 2 characters",
   "onboardingBioLabel": "Bio",
   "onboardingBioHint": "Tell others about yourself (optional)",
+  "avatarEditorActionTitle": "Choose avatar photo",
+  "avatarEditorPhotoLibrary": "Photo library",
+  "avatarEditorUploadPhoto": "Upload photo",
+  "avatarEditorTakePhoto": "Take photo",
+  "avatarEditorUseUrl": "Use image URL",
+  "avatarEditorRemovePhoto": "Remove photo",
+  "avatarEditorUseUrlTitle": "Use image URL",
+  "avatarEditorUrlLabel": "Image URL",
+  "avatarEditorUrlHint": "https://example.com/avatar.jpg",
+  "avatarEditorChangePhoto": "Change photo",
+  "avatarEditorHint": "Choose a photo, upload one, or paste an image URL.",
+  "avatarEditorEditHint": "Tap the avatar to edit it, or choose a different photo below.",
+  "avatarEditorUploading": "Uploading avatar... {percent}%",
+  "@avatarEditorUploading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "avatarEditorUploadFailed": "Avatar upload failed. Please try again.",
+  "avatarEditorInvalidFileType": "Use a JPEG, PNG, or WebP image.",
+  "avatarEditorInvalidUrl": "Enter a valid image URL.",
+  "avatarEditorCropTitle": "Crop avatar",
   "onboardingAvatarUrlLabel": "Avatar URL",
   "onboardingAvatarUrlHint": "Link to your avatar image (optional)",
   "onboardingGamingTitle": "Gaming Preferences",
@@ -112,6 +136,8 @@
   "timeSlotEveningSubtitle": "6 PM - 12 AM",
   "timeSlotNightLabel": "Night",
   "timeSlotNightSubtitle": "12 AM - 6 AM",
+  "timeSlotAllDayLabel": "All day",
+  "timeSlotAllDaySubtitle": "Morning, afternoon, evening, and night",
   "groupsListTitle": "My Groups",
   "groupsEmptyTitle": "No groups yet",
   "groupsEmptySubtitle": "Create or join your first group",

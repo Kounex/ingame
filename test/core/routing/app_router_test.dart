@@ -89,6 +89,49 @@ User _completedUser() => const User(
 
 void main() {
   testWidgets(
+    'protected profile route stays behind login while auth is still resolving',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => _FakeAuthNotifier(const AuthState.loading()),
+          ),
+          profileNotifierProvider.overrideWith(
+            () => _FakeProfileNotifier(_completedUser()),
+          ),
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(routerProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: router,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+          ),
+        ),
+      );
+
+      router.go('/profile');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        '/login?from=%2Fprofile',
+      );
+    },
+  );
+
+  testWidgets(
     'unauthenticated redirect strips stray query params from preserved target',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
@@ -207,6 +250,60 @@ void main() {
       router.go('/onboarding?from=%2Fjoin%2FABC123');
       await tester.pumpAndSettle();
       expect(find.byType(OnboardingScreen), findsOneWidget);
+
+      authNotifier.setAuthState(AuthState.authenticated(_completedUser()));
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        '/join/ABC123',
+      );
+    },
+  );
+
+  testWidgets(
+    'onboarding route stays put while auth is refreshing before completion redirect',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      late _FakeAuthNotifier authNotifier;
+      final container = ProviderContainer(
+        overrides: [
+          authNotifierProvider.overrideWith(
+            () => authNotifier = _FakeAuthNotifier(
+              AuthState.authenticated(_userMissingOnboardingData()),
+            ),
+          ),
+          groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(routerProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: router,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+          ),
+        ),
+      );
+
+      router.go('/onboarding?from=%2Fjoin%2FABC123');
+      await tester.pumpAndSettle();
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+
+      authNotifier.setAuthState(const AuthState.loading());
+      await tester.pump();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        '/onboarding?from=%2Fjoin%2FABC123',
+      );
 
       authNotifier.setAuthState(AuthState.authenticated(_completedUser()));
       await tester.pumpAndSettle();

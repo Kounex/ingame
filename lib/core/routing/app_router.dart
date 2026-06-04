@@ -38,6 +38,24 @@ final _authRefreshListenableProvider = Provider<ValueNotifier<AuthState?>>((
   return notifier;
 });
 
+enum _ResolvedAuthStatus { resolving, authenticated, unauthenticated }
+
+_ResolvedAuthStatus _resolvedAuthStatus(AsyncValue<AuthState> authState) {
+  if (authState.isLoading) {
+    return _ResolvedAuthStatus.resolving;
+  }
+
+  return authState.maybeWhen(
+    data: (state) => state.maybeWhen(
+      initial: () => _ResolvedAuthStatus.resolving,
+      loading: () => _ResolvedAuthStatus.resolving,
+      authenticated: (_) => _ResolvedAuthStatus.authenticated,
+      orElse: () => _ResolvedAuthStatus.unauthenticated,
+    ),
+    orElse: () => _ResolvedAuthStatus.unauthenticated,
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -47,11 +65,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final currentLocation = state.uri.toString();
       final normalizedCurrentLocation = normalizeRouteLocation(currentLocation);
       final authState = ref.read(authNotifierProvider);
-      final isAuthenticated = authState.maybeWhen(
-        data: (s) =>
-            s.maybeWhen(authenticated: (_) => true, orElse: () => false),
-        orElse: () => false,
-      );
+      final authStatus = _resolvedAuthStatus(authState);
+      final isAuthenticated = authStatus == _ResolvedAuthStatus.authenticated;
 
       final isAuthRoute =
           state.matchedLocation == RoutePaths.login ||
@@ -61,6 +76,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       final redirectTarget = sanitizeRedirectTarget(
         state.uri.queryParameters['from'],
       );
+
+      if (authStatus == _ResolvedAuthStatus.resolving) {
+        if (normalizedCurrentLocation != null &&
+            normalizedCurrentLocation != currentLocation) {
+          return normalizedCurrentLocation;
+        }
+        if (isAuthRoute || isOnboarding) {
+          return null;
+        }
+
+        final from = sanitizeRedirectTarget(currentLocation);
+        return Uri(
+          path: RoutePaths.login,
+          queryParameters: from == null ? null : {'from': from},
+        ).toString();
+      }
 
       if (!isAuthenticated && !isAuthRoute) {
         final isLogoutRedirectPending = ref.read(logoutRedirectPendingProvider);

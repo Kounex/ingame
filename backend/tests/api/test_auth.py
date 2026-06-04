@@ -1,3 +1,4 @@
+import httpx
 import pytest
 from httpx import AsyncClient
 from unittest.mock import AsyncMock, patch
@@ -251,6 +252,45 @@ async def test_steam_auth_success(client: AsyncClient):
     data = response.json()
     assert data["user"]["steam_id"] == "76561198000000001"
     assert data["user"]["display_name"] == "Steam User"
+
+
+@pytest.mark.asyncio
+async def test_steam_auth_profile_fetch_failure_returns_structured_error(
+    client: AsyncClient,
+):
+    request = httpx.Request(
+        "GET",
+        "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/",
+    )
+    response = httpx.Response(403, request=request)
+
+    with (
+        patch(
+            "app.api.v1.auth.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000001",
+        ),
+        patch(
+            "app.api.v1.auth.service.get_steam_profile",
+            new_callable=AsyncMock,
+            side_effect=httpx.HTTPStatusError(
+                "Steam profile request failed",
+                request=request,
+                response=response,
+            ),
+        ),
+    ):
+        result = await client.post(
+            "/api/v1/auth/steam",
+            json={
+                "openid_params": {
+                    "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000001"
+                }
+            },
+        )
+
+    assert result.status_code == 503
+    assert result.json()["code"] == "auth.steam_profile_unavailable"
 
 
 @pytest.mark.asyncio

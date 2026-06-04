@@ -1,11 +1,15 @@
 from unittest.mock import AsyncMock, patch
+from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import text
 
-
-async def _register_and_get_token(client: AsyncClient, email: str = "user@test.com") -> str:
+from app.storage.avatar_uploads import generate_avatar_upload
+async def _register_and_get_token(
+    client: AsyncClient, email: str = "user@test.com"
+) -> str:
     response = await client.post(
         "/api/v1/auth/register",
         json={
@@ -33,7 +37,9 @@ async def test_get_me(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_me_for_apple_only_user_marks_password_login_disconnected(client: AsyncClient):
+async def test_get_me_for_apple_only_user_marks_password_login_disconnected(
+    client: AsyncClient,
+):
     with patch(
         "app.api.v1.auth.service.validate_apple_token",
         new_callable=AsyncMock,
@@ -91,18 +97,187 @@ async def test_update_me_partial(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_me_can_set_recovery_email(client: AsyncClient):
+async def test_update_me_can_clear_avatar_url(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    seeded = await client.patch(
+        "/api/v1/users/me",
+        headers=_auth(token),
+        json={"avatar_url": "https://cdn.example.com/original-avatar.webp"},
+    )
+    assert seeded.status_code == 200
+    assert seeded.json()["avatar_url"] == "https://cdn.example.com/original-avatar.webp"
+
+    response = await client.patch(
+        "/api/v1/users/me",
+        headers=_auth(token),
+        json={"avatar_url": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] is None
+
+
+@pytest.mark.asyncio
+async def test_avatar_upload_init_returns_presigned_upload_contract(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+
     with patch(
-        "app.api.v1.auth.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000123",
-    ), patch(
-        "app.api.v1.auth.service.get_steam_profile",
-        new_callable=AsyncMock,
+        "app.api.v1.users.service.generate_avatar_upload",
         return_value={
-            "display_name": "Steam Only",
-            "avatar_url": "https://steamcdn.test/avatar.jpg",
+            "upload_url": "https://uploads.test/bucket",
+            "upload_fields": {"key": "users/test/avatars/avatar.webp"},
+            "object_key": "users/test/avatars/avatar.webp",
+            "avatar_url": "https://cdn.test/users/test/avatars/avatar.webp",
+            "expires_in_seconds": 300,
+            "max_file_size_bytes": 2097152,
+            "allowed_content_types": ["image/jpeg", "image/png", "image/webp"],
         },
+    ) as generate_upload:
+        response = await client.post(
+            "/api/v1/users/me/avatar-upload/init",
+            headers=_auth(token),
+            json={
+                "filename": "avatar.webp",
+                "content_type": "image/webp",
+                "byte_size": 182000,
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "upload_url": "https://uploads.test/bucket",
+        "upload_fields": {"key": "users/test/avatars/avatar.webp"},
+        "object_key": "users/test/avatars/avatar.webp",
+        "avatar_url": "https://cdn.test/users/test/avatars/avatar.webp",
+        "expires_in_seconds": 300,
+        "max_file_size_bytes": 2097152,
+        "allowed_content_types": ["image/jpeg", "image/png", "image/webp"],
+    }
+    generate_upload.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_avatar_upload_init_rejects_unsupported_content_type(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    response = await client.post(
+        "/api/v1/users/me/avatar-upload/init",
+        headers=_auth(token),
+        json={
+            "filename": "avatar.gif",
+            "content_type": "image/gif",
+            "byte_size": 182000,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "user.avatar_content_type_invalid"
+
+
+@pytest.mark.asyncio
+async def test_avatar_upload_init_rejects_oversize_file(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    response = await client.post(
+        "/api/v1/users/me/avatar-upload/init",
+        headers=_auth(token),
+        json={
+            "filename": "avatar.webp",
+            "content_type": "image/webp",
+            "byte_size": 8 * 1024 * 1024,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "user.avatar_file_too_large"
+
+
+@pytest.mark.asyncio
+async def test_avatar_upload_init_presign_failure_returns_structured_error(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+
+    class _FailingPresignClient:
+        def generate_presigned_post(self, *args, **kwargs):
+            raise RuntimeError("presign failed")
+
+    with (
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "avatars"),
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test",
+        ),
+        patch(
+            "app.storage.avatar_uploads._avatar_upload_client",
+            return_value=_FailingPresignClient(),
+        ),
+    ):
+        response = await client.post(
+            "/api/v1/users/me/avatar-upload/init",
+            headers=_auth(token),
+            json={
+                "filename": "avatar.webp",
+                "content_type": "image/webp",
+                "byte_size": 182000,
+            },
+        )
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "user.avatar_upload_unavailable"
+
+
+def test_generate_avatar_upload_rewrites_upload_url_for_browser_access():
+    class _PresignClient:
+        def generate_presigned_post(self, *args, **kwargs):
+            return {
+                "url": "http://minio:9000/ingame-avatars",
+                "fields": {"key": "users/test/avatars/avatar.png"},
+            }
+
+    settings_stub = SimpleNamespace(
+        avatar_storage_bucket="ingame-avatars",
+        avatar_storage_public_base_url="http://localhost:9000/ingame-avatars",
+        avatar_storage_upload_base_url="http://localhost:9000",
+        avatar_upload_max_file_size_bytes=2097152,
+        avatar_upload_presign_expires_seconds=300,
+    )
+
+    with (
+        patch("app.storage.avatar_uploads.settings", settings_stub),
+        patch(
+            "app.storage.avatar_uploads._avatar_upload_client",
+            return_value=_PresignClient(),
+        ),
+    ):
+        result = generate_avatar_upload(
+            user_id=uuid4(),
+            content_type="image/png",
+        )
+
+    assert result["upload_url"] == "http://localhost:9000/ingame-avatars"
+    assert result["avatar_url"].startswith("http://localhost:9000/ingame-avatars/")
+
+
+@pytest.mark.asyncio
+async def test_update_me_can_set_recovery_email(client: AsyncClient):
+    with (
+        patch(
+            "app.api.v1.auth.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000123",
+        ),
+        patch(
+            "app.api.v1.auth.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Only",
+                "avatar_url": "https://steamcdn.test/avatar.jpg",
+            },
+        ),
     ):
         auth_response = await client.post(
             "/api/v1/auth/steam",
@@ -136,17 +311,20 @@ async def test_update_me_rejects_duplicate_recovery_email(client: AsyncClient):
         },
     )
 
-    with patch(
-        "app.api.v1.auth.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000124",
-    ), patch(
-        "app.api.v1.auth.service.get_steam_profile",
-        new_callable=AsyncMock,
-        return_value={
-            "display_name": "Steam Only",
-            "avatar_url": "https://steamcdn.test/avatar.jpg",
-        },
+    with (
+        patch(
+            "app.api.v1.auth.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000124",
+        ),
+        patch(
+            "app.api.v1.auth.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Only",
+                "avatar_url": "https://steamcdn.test/avatar.jpg",
+            },
+        ),
     ):
         auth_response = await client.post(
             "/api/v1/auth/steam",
@@ -172,7 +350,9 @@ async def test_update_me_rejects_duplicate_recovery_email(client: AsyncClient):
 async def test_link_steam_success(client: AsyncClient):
     token = await _register_and_get_token(client)
 
-    fake_params = {"openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000001"}
+    fake_params = {
+        "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000001"
+    }
 
     with patch(
         "app.api.v1.users.service.validate_steam_login",
@@ -193,7 +373,9 @@ async def test_link_steam_conflict(client: AsyncClient):
     token1 = await _register_and_get_token(client, "steam1@test.com")
     token2 = await _register_and_get_token(client, "steam2@test.com")
 
-    fake_params = {"openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000099"}
+    fake_params = {
+        "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000099"
+    }
 
     with patch(
         "app.api.v1.users.service.validate_steam_login",
@@ -313,7 +495,9 @@ async def test_link_apple_invalid_token_returns_validation_code(client: AsyncCli
 async def test_unlink_steam(client: AsyncClient):
     token = await _register_and_get_token(client)
 
-    fake_params = {"openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000002"}
+    fake_params = {
+        "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000002"
+    }
 
     with patch(
         "app.api.v1.users.service.validate_steam_login",

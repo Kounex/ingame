@@ -98,6 +98,30 @@
   "onboardingDisplayNameShort": "Muss mindestens 2 Zeichen lang sein",
   "onboardingBioLabel": "Bio",
   "onboardingBioHint": "Erzähle anderen etwas über dich (optional)",
+  "avatarEditorActionTitle": "Avatarfoto auswählen",
+  "avatarEditorPhotoLibrary": "Fotomediathek",
+  "avatarEditorUploadPhoto": "Foto hochladen",
+  "avatarEditorTakePhoto": "Foto aufnehmen",
+  "avatarEditorUseUrl": "Bild-URL verwenden",
+  "avatarEditorRemovePhoto": "Foto entfernen",
+  "avatarEditorUseUrlTitle": "Bild-URL verwenden",
+  "avatarEditorUrlLabel": "Bild-URL",
+  "avatarEditorUrlHint": "https://example.com/avatar.jpg",
+  "avatarEditorChangePhoto": "Foto ändern",
+  "avatarEditorHint": "Wähle ein Foto aus, lade eins hoch oder füge eine Bild-URL ein.",
+  "avatarEditorEditHint": "Tippe auf den Avatar, um ihn zu bearbeiten, oder wähle unten ein anderes Foto aus.",
+  "avatarEditorUploading": "Avatar wird hochgeladen... {percent} %",
+  "@avatarEditorUploading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "avatarEditorUploadFailed": "Der Avatar konnte nicht hochgeladen werden. Bitte versuche es erneut.",
+  "avatarEditorInvalidFileType": "Verwende ein JPEG-, PNG- oder WebP-Bild.",
+  "avatarEditorInvalidUrl": "Gib eine gültige Bild-URL ein.",
+  "avatarEditorCropTitle": "Avatar zuschneiden",
   "onboardingAvatarUrlLabel": "Avatar-URL",
   "onboardingAvatarUrlHint": "Link zu deinem Avatarbild (optional)",
   "onboardingGamingTitle": "Gaming-Präferenzen",
@@ -112,6 +136,8 @@
   "timeSlotEveningSubtitle": "18 Uhr - 0 Uhr",
   "timeSlotNightLabel": "Nacht",
   "timeSlotNightSubtitle": "0 Uhr - 6 Uhr",
+  "timeSlotAllDayLabel": "Ganztägig",
+  "timeSlotAllDaySubtitle": "Morgen, Nachmittag, Abend und Nacht",
   "groupsListTitle": "Meine Gruppen",
   "groupsEmptyTitle": "Noch keine Gruppen",
   "groupsEmptySubtitle": "Erstelle deine erste Gruppe oder tritt einer bei",

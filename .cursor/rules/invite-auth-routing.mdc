@@ -21,4 +21,4 @@ alwaysApply: false
 - When platform link verification is needed, keep the hosted `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` aligned with the current bundle/package identifiers.
 - Join screens should preview the target group before joining when backend metadata is available.
 - After joining from an invite or discover flow, refresh the groups list/provider before navigating to group detail.
-- Routing or user-flow changes here require matching updates in `docs/specs/2026-05-30-core-platform-design.md`.
+- Routing or user-flow changes here require matching updates in `docs/specs/2026-05-30-core-platform-design.md` and the relevant SP1 child spec, usually `docs/specs/2026-05-30-core-platform-implementation.md` or `docs/specs/2026-05-30-core-platform-groups.md`.

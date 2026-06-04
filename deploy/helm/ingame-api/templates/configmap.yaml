@@ -9,3 +9,9 @@ data:
   INGAME_CORS_ALLOW_ORIGINS: {{ .Values.config.corsAllowOrigins | quote }}
   INGAME_LOG_LEVEL: {{ .Values.config.logLevel | quote }}
   INGAME_API_PREFIX: {{ .Values.config.apiPrefix | quote }}
+  INGAME_AVATAR_STORAGE_REGION: {{ .Values.config.avatarStorageRegion | quote }}
+  INGAME_AVATAR_STORAGE_ENDPOINT_URL: {{ .Values.config.avatarStorageEndpointUrl | quote }}
+  INGAME_AVATAR_STORAGE_UPLOAD_BASE_URL: {{ .Values.config.avatarStorageUploadBaseUrl | quote }}
+  INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL: {{ .Values.config.avatarStoragePublicBaseUrl | quote }}
+  INGAME_AVATAR_UPLOAD_MAX_FILE_SIZE_BYTES: {{ .Values.config.avatarUploadMaxFileSizeBytes | quote }}
+  INGAME_AVATAR_UPLOAD_PRESIGN_EXPIRES_SECONDS: {{ .Values.config.avatarUploadPresignExpiresSeconds | quote }}

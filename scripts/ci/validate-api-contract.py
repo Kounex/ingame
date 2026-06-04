@@ -18,6 +18,7 @@ import json
 import re
 import sys
 import urllib.request
+from pathlib import Path
 
 SPEC_MODEL_HEADERS = [
     "**User**",
@@ -55,6 +56,29 @@ KNOWN_ROUTE_PREFIXES = {
     "/api/v1/join-requests/",
 }
 
+MODEL_SECTION_HEADERS = {
+    "User": (
+        "**User**",
+        "### User",
+        "### User Table",
+        "## Auth-Related User Fields",
+    ),
+    "RevokedAuthLink": ("**RevokedAuthLink**",),
+    "Group": ("**Group**", "### Group"),
+    "GroupMembership": ("**GroupMembership**", "### GroupMembership"),
+    "JoinRequest": ("**JoinRequest**", "### JoinRequest"),
+}
+
+MODULE_KEYWORDS = {
+    "auth": ("/api/v1/auth/", "auth flow", "auth failure contract"),
+    "users": ("/api/v1/users/", "user profile", "profile editing"),
+    "groups": ("/api/v1/groups/", "group detail", "discoverable groups"),
+    "join-requests": ("/api/v1/join-requests/", "join request", "join requests"),
+}
+
+MARKDOWN_LINK_PATTERN = re.compile(r"\(([^)#]+\.md)\)")
+TABLE_ROW_PATTERN = re.compile(r"^\|\s*`?([a-zA-Z_][\w]*)`?\s*\|")
+
 
 def load_openapi(api_url: str) -> dict:
     url = f"{api_url}/openapi.json"
@@ -66,45 +90,82 @@ def load_openapi(api_url: str) -> dict:
         sys.exit(2)
 
 
+def load_spec_bundle(spec_path: str) -> str:
+    root = Path(spec_path)
+    root_text = root.read_text()
+    texts = [root_text]
+    seen_paths = {root.resolve()}
+
+    for match in MARKDOWN_LINK_PATTERN.finditer(root_text):
+        linked_path = root.parent / match.group(1)
+        if not linked_path.exists():
+            continue
+        resolved = linked_path.resolve()
+        if resolved in seen_paths:
+            continue
+        seen_paths.add(resolved)
+        texts.append(linked_path.read_text())
+
+    return "\n\n".join(texts)
+
+
 def load_spec(spec_path: str) -> str:
-    with open(spec_path) as f:
-        return f.read()
+    return load_spec_bundle(spec_path)
 
 
-def extract_spec_model_columns(spec_text: str, model_name: str) -> set[str]:
-    """Extract column names from a single model's table in the spec."""
-    header = f"**{model_name}**"
+def _extract_first_table_columns_after_header(
+    spec_text: str, header: str
+) -> set[str]:
     start = spec_text.find(header)
     if start == -1:
         return set()
 
-    after_header = spec_text[start + len(header):]
-
-    end = len(after_header)
-    for other_header in SPEC_MODEL_HEADERS:
-        if other_header == header:
-            continue
-        pos = after_header.find(other_header)
-        if pos != -1 and pos < end:
-            end = pos
-
-    section_break = after_header.find("\n### ")
-    if section_break != -1 and section_break < end:
-        end = section_break
-
-    hr_break = after_header.find("\n---")
-    if hr_break != -1 and hr_break < end:
-        end = hr_break
-
-    table_text = after_header[:end]
-
+    after_header = spec_text[start + len(header) :]
+    lines = after_header.splitlines()
     columns = set()
-    row_pattern = re.compile(r"^\|\s*(\w+)\s*\|", re.MULTILINE)
-    for match in row_pattern.finditer(table_text):
-        col = match.group(1)
-        if col.lower() not in ("column", "unique"):
-            columns.add(col)
+    in_table = False
 
+    for line in lines:
+        stripped = line.strip()
+        if not in_table:
+            if not stripped.startswith("|"):
+                continue
+            in_table = True
+
+        if not stripped.startswith("|"):
+            break
+
+        match = TABLE_ROW_PATTERN.match(stripped)
+        if not match:
+            continue
+
+        column = match.group(1)
+        if column.lower() in {"column", "field", "unique"}:
+            continue
+        columns.add(column)
+
+    return columns
+
+
+def infer_documented_modules(spec_text: str) -> set[str]:
+    lower_text = spec_text.lower()
+    backend_start = lower_text.find("## backend architecture")
+    searchable_text = lower_text[backend_start:] if backend_start != -1 else lower_text
+
+    documented_modules = set()
+    for module, keywords in MODULE_KEYWORDS.items():
+        if any(keyword in searchable_text for keyword in keywords):
+            documented_modules.add(module)
+
+    return documented_modules
+
+
+def extract_spec_model_columns(spec_text: str, model_name: str) -> set[str]:
+    """Extract column names from one or more model tables in the spec set."""
+    headers = MODEL_SECTION_HEADERS.get(model_name, (f"**{model_name}**",))
+    columns = set()
+    for header in headers:
+        columns.update(_extract_first_table_columns_after_header(spec_text, header))
     return columns
 
 
@@ -112,12 +173,7 @@ def check_routes(openapi: dict, spec_text: str) -> list[str]:
     """Check that all OpenAPI routes belong to documented feature modules."""
     errors = []
     openapi_paths = set(openapi.get("paths", {}).keys())
-
-    backend_section = spec_text[spec_text.find("## Backend Architecture"):]
-    documented_modules = set()
-    for module in ["auth", "users", "groups", "join_requests", "join-requests"]:
-        if module in backend_section.lower():
-            documented_modules.add(module.replace("_", "-"))
+    documented_modules = infer_documented_modules(spec_text)
 
     for path in openapi_paths:
         if path in {"/health", "/api/v1/health"}:

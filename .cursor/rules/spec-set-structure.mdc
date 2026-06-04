@@ -1,0 +1,18 @@
+---
+description: Naming and structure conventions for split sub-project spec sets
+alwaysApply: true
+---
+
+# Spec Set Structure
+
+- Keep a stable `docs/specs/YYYY-MM-DD-<sub-project>-design.md` overview file as the entry point for each sub-project spec set.
+- When one sub-project grows too large for one file, split it into focused child specs instead of growing the overview indefinitely.
+- The overview should summarize scope, current phase, and architecture, then link out to the child specs instead of duplicating their full contracts.
+- Prefer concise child-spec labels that describe one concern clearly, such as `Auth`, `Profiles`, `Groups`, `Transport & Presence`, `Coordination Models`, and `Implementation`.
+- Use `Implementation` for the delivery-oriented child spec that covers app/backend architecture, shared boundaries, testing expectations, and deployment notes.
+- Keep roadmap table entries pointing at the overview file, then list the child-spec set under the sub-project details.
+- When splitting or renaming a spec set, also update:
+  - the overview spec version and change log
+  - roadmap spec-set references and change log
+  - any rules or downstream specs that still reference replaced filenames or old child-spec labels
+- Every child spec should cross-link back to both `roadmap.md` and its overview spec.

@@ -17,6 +17,7 @@ import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/language_switcher.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/weekly_availability_editor.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../auth/data/oauth_launcher.dart';
@@ -47,8 +48,7 @@ class ProfileScreen extends ConsumerWidget {
           loading: () => const Center(child: LoadingIndicator()),
           error: (error, _) => ErrorDisplay(
             message: ApiError.userMessage(error, context.l10n),
-            onRetry: () =>
-                ref.read(profileNotifierProvider.notifier).load(),
+            onRetry: () => ref.read(profileNotifierProvider.notifier).load(),
           ),
           data: (user) {
             if (user == null) {
@@ -79,9 +79,7 @@ class ProfileScreen extends ConsumerWidget {
                   Center(
                     child: Text(
                       user.displayName,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
+                      style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -103,9 +101,7 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   const _PreferencesCard(),
                   const SizedBox(height: AppSpacing.md),
-                  _GamingHoursCard(
-                    gamingHours: user.preferredGamingHours,
-                  ),
+                  _GamingHoursCard(gamingHours: user.preferredGamingHours),
                   const SizedBox(height: AppSpacing.md),
                   _ConnectedAccountsCard(
                     email: user.email,
@@ -115,17 +111,14 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   GlassButton(
-                    onPressed: () =>
-                        context.goNamed(RouteNames.editProfile),
+                    onPressed: () => context.goNamed(RouteNames.editProfile),
                     child: Text(context.l10n.profileEdit),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   GlassButton(
                     variant: GlassButtonVariant.ghost,
                     onPressed: () async {
-                      await ref
-                          .read(authNotifierProvider.notifier)
-                          .logout();
+                      await ref.read(authNotifierProvider.notifier).logout();
                     },
                     child: Text(
                       context.l10n.profileLogout,
@@ -285,13 +278,25 @@ class _GamingHoursCard extends StatelessWidget {
 
     return signatureToGroup.entries.map((e) {
       final slotKeys = e.key.split('|');
-      final slotLabels = slotKeys.map((key) {
-        final name = _slotName(context, key);
-        if (name != null) return name;
-        final parts = key.split('-');
-        return '${_readableTime(parts[0])} – ${_readableTime(parts[1])}';
-      }).toList();
-      return _ScheduleGroup(days: e.value, slots: slotLabels, slotKeys: slotKeys);
+      final presetKeys = slotKeys
+          .map(weeklyAvailabilityPresetFromSerializedRange)
+          .whereType<String>()
+          .toSet();
+      final slotLabels =
+          weeklyAvailabilityHasAllDay(presetKeys) &&
+              presetKeys.length == weeklyAvailabilityPresetOrder.length
+          ? <String>[context.l10n.timeSlotAllDayLabel]
+          : slotKeys.map((key) {
+              final name = _slotName(context, key);
+              if (name != null) return name;
+              final parts = key.split('-');
+              return '${_readableTime(parts[0])} – ${_readableTime(parts[1])}';
+            }).toList();
+      return _ScheduleGroup(
+        days: e.value,
+        slots: slotLabels,
+        slotKeys: slotKeys,
+      );
     }).toList();
   }
 
@@ -324,25 +329,15 @@ class _GamingHoursCard extends StatelessWidget {
   }
 
   String? _slotName(BuildContext context, String key) {
-    final l10n = context.l10n;
-    return switch (key) {
-      '06:00-12:00' => l10n.timeSlotMorningLabel,
-      '12:00-18:00' => l10n.timeSlotAfternoonLabel,
-      '18:00-00:00' => l10n.timeSlotEveningLabel,
-      '00:00-06:00' => l10n.timeSlotNightLabel,
-      _ => null,
-    };
+    final preset = weeklyAvailabilityPresetFromSerializedRange(key);
+    if (preset == null) return null;
+    return weeklyAvailabilityPresetLabel(context, preset);
   }
 
-  IconData? _slotIcon(String label, BuildContext context) {
-    final l10n = context.l10n;
-    return switch (label) {
-      _ when label == l10n.timeSlotMorningLabel => Icons.wb_sunny_outlined,
-      _ when label == l10n.timeSlotAfternoonLabel => Icons.wb_cloudy_outlined,
-      _ when label == l10n.timeSlotEveningLabel => Icons.nights_stay_outlined,
-      _ when label == l10n.timeSlotNightLabel => Icons.dark_mode_outlined,
-      _ => null,
-    };
+  IconData? _slotIcon(String slotKey, BuildContext context) {
+    final preset = weeklyAvailabilityPresetFromSerializedRange(slotKey);
+    if (preset == null) return null;
+    return weeklyAvailabilityPresetIcon(preset);
   }
 
   @override
@@ -387,10 +382,7 @@ class _GamingHoursCard extends StatelessWidget {
               if (group != groups.first)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Divider(
-                    color: AppColors.glassBorder,
-                    height: 1,
-                  ),
+                  child: Divider(color: AppColors.glassBorder, height: 1),
                 ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -411,10 +403,14 @@ class _GamingHoursCard extends StatelessWidget {
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.xs,
                       children: [
-                        for (final slot in group.slots)
+                        for (var i = 0; i < group.slots.length; i++)
                           _SlotChip(
-                            label: slot,
-                            icon: _slotIcon(slot, context),
+                            label: group.slots[i],
+                            icon:
+                                group.slots[i] ==
+                                    context.l10n.timeSlotAllDayLabel
+                                ? weeklyAvailabilityPresetIcon('all-day')
+                                : _slotIcon(group.slotKeys[i], context),
                           ),
                       ],
                     ),
@@ -456,9 +452,7 @@ class _SlotChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.25),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -615,10 +609,9 @@ class _ConnectedAccountsCard extends ConsumerWidget {
     if (result == null || !context.mounted) return;
 
     try {
-      await ref.read(profileRepositoryProvider).setEmailPassword(
-            email: result.email,
-            password: result.password,
-          );
+      await ref
+          .read(profileRepositoryProvider)
+          .setEmailPassword(email: result.email, password: result.password);
       _refreshProviders(ref);
       if (context.mounted) {
         AppToast.success(
@@ -676,9 +669,9 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       try {
         final appleSignIn = await OAuthLauncher.launchAppleSignIn();
         if (!context.mounted) return;
-        await ref.read(profileRepositoryProvider).linkApple(
-              appleSignIn.identityToken,
-            );
+        await ref
+            .read(profileRepositoryProvider)
+            .linkApple(appleSignIn.identityToken);
         _refreshProviders(ref);
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileAppleLinkedSuccess);
@@ -717,7 +710,9 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             icon: Icons.email_outlined,
             label: context.l10n.profileConnectedAccountsEmailPassword,
             connected: hasPasswordLogin,
-            onTap: hasPasswordLogin ? null : () => _handleEmailTap(context, ref),
+            onTap: hasPasswordLogin
+                ? null
+                : () => _handleEmailTap(context, ref),
           ),
           Divider(
             color: AppColors.glassBorder.withValues(alpha: 0.4),
@@ -727,8 +722,9 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             icon: Icons.gamepad_outlined,
             label: context.l10n.profileConnectedAccountsSteam,
             connected: steamConnected,
-            statusText:
-                steamConnected ? context.l10n.profileConnectedTapToDisconnect : null,
+            statusText: steamConnected
+                ? context.l10n.profileConnectedTapToDisconnect
+                : null,
             onTap: () => _handleSteamTap(context, ref),
           ),
           Divider(
@@ -739,8 +735,9 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             icon: Icons.apple,
             label: context.l10n.profileConnectedAccountsApple,
             connected: appleConnected,
-            statusText:
-                appleConnected ? context.l10n.profileConnectedTapToDisconnect : null,
+            statusText: appleConnected
+                ? context.l10n.profileConnectedTapToDisconnect
+                : null,
             onTap: () => _handleAppleTap(context, ref),
           ),
         ],
@@ -807,8 +804,9 @@ class _AccountRow extends StatelessWidget {
                             ? context.l10n.profileConnected
                             : context.l10n.profileNotConnected),
                     style: TextStyle(
-                      color:
-                          connected ? AppColors.success : AppColors.textTertiary,
+                      color: connected
+                          ? AppColors.success
+                          : AppColors.textTertiary,
                       fontSize: 12,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -823,11 +821,7 @@ class _AccountRow extends StatelessWidget {
                 size: 20,
               )
             else if (connected)
-              const Icon(
-                Icons.check_circle,
-                color: AppColors.success,
-                size: 20,
-              )
+              const Icon(Icons.check_circle, color: AppColors.success, size: 20)
             else
               const SizedBox(width: 20),
           ],
@@ -865,9 +859,10 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog>
   void _submit() {
     _hasAttemptedSubmit = true;
     if (!_formKey.currentState!.validate()) return;
-    Navigator.of(context).pop(
-      (email: _emailController.text.trim(), password: _passwordController.text),
-    );
+    Navigator.of(context).pop((
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    ));
   }
 
   @override
@@ -889,7 +884,10 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog>
           children: [
             Text(
               l10n.profileSetEmailPasswordDescription,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
@@ -917,8 +915,9 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog>
                 labelText: l10n.loginPasswordLabel,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon:
-                      Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                  icon: Icon(
+                    _obscure ? Icons.visibility_off : Icons.visibility,
+                  ),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
@@ -952,10 +951,7 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog>
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.commonCancel),
         ),
-        TextButton(
-          onPressed: _submit,
-          child: Text(l10n.commonAdd),
-        ),
+        TextButton(onPressed: _submit, child: Text(l10n.commonAdd)),
       ],
     );
   }

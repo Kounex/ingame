@@ -20,6 +20,15 @@ class Settings(BaseSettings):
     apple_team_id: str = ""
     apple_key_id: str = ""
     apple_client_id: str = "ingame.kounex.com"
+    avatar_storage_bucket: str = ""
+    avatar_storage_region: str = "auto"
+    avatar_storage_endpoint_url: str = ""
+    avatar_storage_upload_base_url: str = ""
+    avatar_storage_access_key_id: str = ""
+    avatar_storage_secret_access_key: str = ""
+    avatar_storage_public_base_url: str = ""
+    avatar_upload_max_file_size_bytes: int = 2 * 1024 * 1024
+    avatar_upload_presign_expires_seconds: int = 300
 
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default=["http://localhost:3000", "http://localhost:8080"],

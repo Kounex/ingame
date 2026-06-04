@@ -8,8 +8,8 @@ alwaysApply: true
 ## Active Specs
 
 - `docs/specs/roadmap.md` — **Product Roadmap** (high-level sub-project breakdown, dependencies, status)
-- `docs/specs/2026-05-30-core-platform-design.md` — SP1: Core Platform (auth, profiles, groups) -- COMPLETE
-- `docs/specs/2026-05-30-real-time-coordination-design.md` — SP2: Real-Time Coordination (WebSocket transport, presence, Redis fan-out, session/event contracts) -- PLANNED
+- `docs/specs/2026-05-30-core-platform-design.md` — SP1 overview; read the linked child specs for auth, profiles, groups, and implementation details
+- `docs/specs/2026-05-30-real-time-coordination-design.md` — SP2 overview; read the linked child specs for transport/presence, coordination models, and implementation details
 
 ## BLOCKER: Spec Update Gate
 
@@ -20,7 +20,7 @@ alwaysApply: true
 1. Read the relevant spec section(s) to understand the current contract
 2. If no spec exists for the feature area, tell the user and create one before coding
 3. When starting a new sub-project, read `docs/specs/roadmap.md` for scope and dependencies
-4. When working on realtime transport, presence, session scheduling, Redis pub/sub, or WS event contracts, read the SP2 realtime spec before coding
+4. When working on realtime transport, presence, session scheduling, Redis pub/sub, or WS event contracts, read the SP2 overview plus the relevant child spec before coding
 
 ### Post-flight (BEFORE saying "done", restarting app, or ending your response)
 
@@ -68,8 +68,9 @@ If you are about to write code that touches ANY of these, STOP and plan the spec
 
 ## Spec File Conventions
 
-- One spec per sub-project, named `docs/specs/YYYY-MM-DD-<name>.md`
+- Keep one stable overview spec per sub-project, named `docs/specs/YYYY-MM-DD-<name>-design.md`
+- Child specs are allowed when a sub-project grows too large; keep them focused by concern
 - Front-matter: `spec`, `version`, `status`, `last_updated`, `sub_project`
 - Bump version on every update (semver patch for small changes, minor for structural)
 - Change Log at the bottom, newest entries last
-- Cross-reference the roadmap from each spec and vice versa
+- Cross-reference the roadmap from each overview and child spec, and keep child specs linked from the overview

@@ -92,6 +92,17 @@ Future<void> pumpOnboardingScreen(
   );
 }
 
+Future<void> _tapVisibleButton(WidgetTester tester, String label) async {
+  await tester.scrollUntilVisible(
+    find.text(label),
+    200,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('onboarding welcome page shows localized copy', (tester) async {
     await pumpOnboardingScreen(tester, locale: const Locale('de'));
@@ -116,8 +127,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
 
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
+    await _tapVisibleButton(tester, 'Next');
 
     expect(find.text('Gaming Preferences'), findsOneWidget);
 
@@ -136,6 +146,128 @@ void main() {
       profileNotifier.lastUpdates?.containsKey('preferred_gaming_hours'),
       isFalse,
     );
+  });
+
+  testWidgets('finish does not throw after navigating away from profile step', (
+    tester,
+  ) async {
+    final profileNotifier = _RecordingProfileNotifier();
+
+    await pumpOnboardingScreen(tester, profileNotifier: profileNotifier);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Get Started'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Ready Player');
+    await tester.enterText(find.byType(TextFormField).at(1), 'ready@test.com');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+
+    await _tapVisibleButton(tester, 'Next');
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Finish'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Finish'));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(profileNotifier.updateCalls, 1);
+  });
+
+  testWidgets(
+    'onboarding saves selected preset slots for only the chosen day',
+    (tester) async {
+      final profileNotifier = _RecordingProfileNotifier();
+
+      await pumpOnboardingScreen(tester, profileNotifier: profileNotifier);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Get Started'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Ready Player');
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'ready@test.com',
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      await _tapVisibleButton(tester, 'Next');
+
+      await tester.tap(
+        find.byKey(const Key('weekly-availability-chip-monday-morning')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('weekly-availability-chip-monday-evening')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Finish'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Finish'));
+      await tester.pump();
+
+      expect(profileNotifier.lastUpdates?['preferred_gaming_hours'], {
+        'monday': [
+          {'start': '06:00', 'end': '12:00'},
+          {'start': '18:00', 'end': '00:00'},
+        ],
+      });
+    },
+  );
+
+  testWidgets('onboarding all day preset expands to the full day schedule', (
+    tester,
+  ) async {
+    final profileNotifier = _RecordingProfileNotifier();
+
+    await pumpOnboardingScreen(tester, profileNotifier: profileNotifier);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Get Started'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Ready Player');
+    await tester.enterText(find.byType(TextFormField).at(1), 'ready@test.com');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+
+    await _tapVisibleButton(tester, 'Next');
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('weekly-availability-chip-saturday-all-day')),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(
+      find.byKey(const Key('weekly-availability-chip-saturday-all-day')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Finish'));
+    await tester.pump();
+
+    expect(profileNotifier.lastUpdates?['preferred_gaming_hours'], {
+      'saturday': [
+        {'start': '06:00', 'end': '12:00'},
+        {'start': '12:00', 'end': '18:00'},
+        {'start': '18:00', 'end': '00:00'},
+        {'start': '00:00', 'end': '06:00'},
+      ],
+    });
   });
 
   testWidgets(
@@ -179,10 +311,36 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, 'Ready Player');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
+    await _tapVisibleButton(tester, 'Next');
 
     expect(find.text('Email is required'), findsOneWidget);
     expect(find.text('Gaming Preferences'), findsNothing);
   });
+
+  testWidgets(
+    'gaming preferences step hides the Steam CTA when Steam is already linked',
+    (tester) async {
+      await pumpOnboardingScreen(
+        tester,
+        authState: const AuthState.authenticated(
+          User(
+            id: 'user-1',
+            displayName: 'Steam Player',
+            email: 'steam@test.com',
+            timezone: 'UTC',
+            steamId: 'steam-123',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Get Started'));
+      await tester.pumpAndSettle();
+
+      await _tapVisibleButton(tester, 'Next');
+
+      expect(find.text('Gaming Preferences'), findsOneWidget);
+      expect(find.text('Connect Steam'), findsNothing);
+    },
+  );
 }

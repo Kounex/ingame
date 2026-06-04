@@ -85,11 +85,7 @@ void main() {
           authNotifierProvider.overrideWith(
             () => _FakeAuthNotifier(
               const AuthState.authenticated(
-                User(
-                  id: 'auth-user',
-                  displayName: 'Tester',
-                  timezone: 'UTC',
-                ),
+                User(id: 'auth-user', displayName: 'Tester', timezone: 'UTC'),
               ),
             ),
           ),
@@ -180,6 +176,37 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('gaming hours card collapses the full preset set into all day', (
+    tester,
+  ) async {
+    final repository = _FakeProfileRepository(
+      const User(
+        id: 'user-1',
+        displayName: 'Schedule User',
+        timezone: 'UTC',
+        preferredGamingHours: {
+          'monday': [
+            {'start': '06:00', 'end': '12:00'},
+            {'start': '12:00', 'end': '18:00'},
+            {'start': '18:00', 'end': '00:00'},
+            {'start': '00:00', 'end': '06:00'},
+          ],
+        },
+      ),
+    );
+
+    await pumpProfile(tester, repository: repository);
+    await tester.scrollUntilVisible(
+      find.text('GAMING HOURS'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('All day'), findsOneWidget);
+    expect(find.text('Mon'), findsOneWidget);
+  });
+
   testWidgets(
     'last remaining login method shows explicit guidance instead of disconnect flow',
     (tester) async {
@@ -199,9 +226,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(
-          'Add another sign-in method before disconnecting this one.',
-        ),
+        find.text('Add another sign-in method before disconnecting this one.'),
         findsOneWidget,
       );
       expect(find.text('Disconnect Steam?'), findsNothing);

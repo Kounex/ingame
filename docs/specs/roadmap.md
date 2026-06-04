@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.25"
+version: "1.32"
 status: active
 last_updated: "2026-06-04"
 ---
@@ -27,7 +27,7 @@ PostgreSQL    Redis       External Services
                pub/sub)     integrations)
 ```
 
-Full architectural details are documented in the [Core Platform spec](2026-05-30-core-platform-design.md).
+Full SP1 architectural details are documented in the [Core Platform overview](2026-05-30-core-platform-design.md) and its linked child specs.
 
 **Tech stack:** Flutter 3.44 / Dart 3.12, FastAPI (Python), PostgreSQL 16, Redis 7, OpenShift + ArgoCD.
 
@@ -66,9 +66,9 @@ graph LR
 - Recovery email required by onboarding for every account, with auth-provided email prefill when available
 - Account linking (connect/disconnect Steam and Apple from profile)
 - Add email/password for social-only users; unlink lockout guard
-- User profiles with gaming hours (intelligent schedule display), bio, avatar
+- User profiles with gaming hours via a shared day-by-day preset editor (`Morning`, `Afternoon`, `Evening`, `Night`, `All day`), intelligent schedule display, bio, and a shared avatar editor that supports provider avatars, uploaded photos, camera capture, and URL entry while persisting only `avatar_url`
 - Groups with invite codes, discoverable directory, join requests with admin approval, and full owner/admin/member RBAC management
-- First-time user onboarding wizard (3-step) with optional recurring-availability capture
+- First-time user onboarding wizard (3-step) with optional recurring-availability capture using the same shared day-by-day preset editor as profile editing
 - English and German localization across the app shell, shared widgets, validators/error surfaces, and auth/onboarding/group/profile flows, with German catalog wording normalized for native spelling
 - System-locale default with manual language switching on login and in profile preferences
 - Structured backend error codes plus locale-reactive Flutter error/validation handling so persisted failures switch language without requiring a refetch or re-entry
@@ -81,7 +81,12 @@ graph LR
 - Helm chart + Kustomize overlays for OpenShift deployment
 - Backend coverage across auth, users, groups, and realtime/WebSocket behavior
 
-**Spec:** [docs/specs/2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) (v2.36)
+**Spec set:**
+- [Overview](2026-05-30-core-platform-design.md) (v3.1)
+- [Auth](2026-05-30-core-platform-auth.md) (v1.0)
+- [Profiles](2026-05-30-core-platform-profiles.md) (v1.5)
+- [Groups](2026-05-30-core-platform-groups.md) (v1.0)
+- [Implementation](2026-05-30-core-platform-implementation.md) (v1.1)
 
 ---
 
@@ -116,7 +121,11 @@ SP2 intentionally distinguishes two coordination models:
 
 **Estimated effort:** Medium-large (core feature of the app, involves real-time infrastructure)
 
-**Spec:** [docs/specs/2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md) (v1.6)
+**Spec set:**
+- [Overview](2026-05-30-real-time-coordination-design.md) (v2.0)
+- [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.0)
+- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.0)
+- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.0)
 
 ---
 
@@ -202,7 +211,7 @@ SP2 intentionally distinguishes two coordination models:
 
 These patterns and practices apply across all sub-projects:
 
-**Spec-driven development:** Every sub-project starts with a design spec (like [the Core Platform spec](2026-05-30-core-platform-design.md)). Implementation follows the spec. The spec is updated in the same response as any code change that affects API, data models, UI flows, or architecture. Enforced by `.cursor/rules/spec-driven-development.mdc`.
+**Spec-driven development:** Every sub-project starts with a design spec set (for SP1, beginning with the [Core Platform overview](2026-05-30-core-platform-design.md) and its child specs). Implementation follows the relevant spec. The spec is updated in the same response as any code change that affects API, data models, UI flows, or architecture. Enforced by `.cursor/rules/spec-driven-development.mdc`.
 
 **Design system:** All UI follows the glassmorphism design system defined in SP1 -- dark gradients, translucent glass surfaces, electric blue primary accent. Components: `GlassCard`, `GlassButton`, `GlassInput`, `GlassAppBar`, `AdaptiveShell`, `StatusIndicator`. New sub-projects extend but don't replace this system.
 
@@ -210,7 +219,7 @@ These patterns and practices apply across all sub-projects:
 
 **Testing strategy:** Each sub-project adds tests covering its scope. Backend uses pytest + httpx AsyncClient + SQLite test DB. Flutter uses Riverpod test utilities for providers and widget tests. CI runs all tests on PR.
 
-**Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo. For image-based Docker hosts, `docker-compose.release.yml` provides a matching API + web + PostgreSQL + Redis stack without bundling ingress. The browser SPA and invite/deep-link host are tracked separately: `app.in-game.app` for the web app, `in-game.app` for mobile app links plus `/.well-known/*`. The base domain now also includes a standalone Astro marketing surface under `marketing/`, built statically and served behind nginx so `/join/*` can still proxy through to the browser app. Release image publishing now covers a third runtime, `ingame-marketing`, so release deployments can pull the base-domain site independently from the SPA runtime.
+**Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo. For image-based Docker hosts, `docker-compose.release.yml` provides a matching API + web + PostgreSQL + Redis stack without bundling ingress. Local compose now also includes MinIO plus avatar-bucket bootstrap and MinIO-level CORS so the S3-compatible avatar upload flow works end to end in development, while release compose may either point at external S3-compatible storage or opt into a bundled MinIO profile for small self-hosted installs. Storage runtime config may also split the API's internal object-storage endpoint from the browser-facing upload host when those surfaces need different network addresses. The browser SPA and invite/deep-link host are tracked separately: `app.in-game.app` for the web app, `in-game.app` for mobile app links plus `/.well-known/*`. The base domain now also includes a standalone Astro marketing surface under `marketing/`, built statically and served behind nginx so `/join/*` can still proxy through to the browser app. Release image publishing now covers a third runtime, `ingame-marketing`, so release deployments can pull the base-domain site independently from the SPA runtime.
 
 **API contract:** Backend Pydantic schemas are the source of truth. Flutter Freezed models must match the API response shapes. Business-rule error responses may also include stable machine-readable `code` values alongside `detail` so Flutter can localize failures without parsing English text. CI validates this alignment.
 
@@ -237,6 +246,7 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-01 | SP1 release sign-off (`v0.2.5`) | Declared SP1 complete for shipping at `v0.2.5` after structured error handling, locale-aware form revalidation, and CI stabilization landed on `dev` |
 | 2026-06-01 | Release versioning | Retargeted unpublished release metadata from `v0.3.0` to `v0.2.5` | Keeps roadmap release references aligned with the chosen patch-line cut before publish |
 | 2026-06-01 | SP2 phase-1 kickoff | Marked SP2 in progress and documented the presence-first slice: derived connection presence, group-scoped ready with 8-hour expiry, lifecycle-driven away, and app-wide member rendering | Approved SP2 presence-first kickoff plan |
+| 2026-06-04 | SP1 avatar upload flow | Added shared avatar editing with upload/camera/library/URL actions and documented the new presigned object-storage backend contract | Keeps profile avatar UX consistent across onboarding/profile editing without storing base64 blobs in the database |
 | 2026-06-02 | SP1 recovery email contract | Documented that onboarding must collect an email for every account, prefilling provider-supplied values and requiring manual entry for Steam-style providers | Reduces permanent lockout risk for providers that do not expose an email address |
 | 2026-06-02 | SP ownership clarification | Clarified that group RBAC, recurring availability UX, and platform-native transition polish stay in SP1; scheduled ready windows and calendar views belong to SP2; and SP3 now owns a generic game catalog plus provider-specific library ingestion | Classifies the next planned feature batch before implementation and avoids mixing coordination and matching scope |
 | 2026-06-02 | SP1 completion follow-through | Marked group RBAC hardening, optional onboarding availability, and platform-native mobile transitions as delivered in SP1 | Keeps the roadmap aligned with the now-implemented SP1 completion slice |
@@ -245,3 +255,11 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-04 | Host responsibility split | Split the browser-app host from the invite/deep-link host and documented that the base-domain marketing surface may own `/.well-known/*` and `/join/*` | Preserves mobile deep-link verification on `in-game.app` while keeping the SPA on `app.in-game.app` |
 | 2026-06-04 | Marketing site foundation | Added the standalone `marketing/` Astro project deliverable for `in-game.app`, including static export, app-aligned glassmorphism branding, `/.well-known/*` hosting, and nginx `/join/*` proxying | Establishes a dedicated base-domain marketing surface without breaking deep-link hosting |
 | 2026-06-04 | Marketing runtime publishing | Added `Dockerfile.marketing`, GHCR publishing for `ingame-marketing`, and Compose entries for local and release deployment under `docker-compose.release.yml` | Makes the base-domain marketing site deployable as a separate runtime alongside the API and browser app without hardcoding a deployment-platform name |
+| 2026-06-04 | SP1 recurring-availability UX | Aligned onboarding and profile editing on a shared per-day preset gaming-hours editor with multi-select days and an `All day` shortcut | Removes the remaining SP1 mismatch between onboarding's one-size-fits-all schedule capture and profile editing's richer recurring availability UX |
+| 2026-06-04 | SP1 spec split | Split the oversized SP1 core-platform spec into overview, auth, profiles, groups, and implementation-oriented child specs | Keeps future SP1 updates smaller, more reviewable, and less conflict-prone |
+| 2026-06-04 | SP1 avatar editor spike | Added the shared `Upload photo` square editor path while keeping native mobile library/camera crop flows in place | Validates a narrower migration path toward cross-platform avatar editing without forcing a full cropper replacement at once |
+| 2026-06-04 | SP1 unified avatar editor | Moved all supported avatar image sources through the shared square editor, made existing avatars directly editable on tap, and changed URL avatars to fetch/crop/upload instead of persisting external links | Finishes the transition from the earlier hybrid spike to one maintained editor-centered avatar contract across onboarding and profile editing |
+| 2026-06-04 | SP1 naming normalization | Reframed the SP1 implementation-facing child spec from `UI Architecture` to `Implementation` and aligned the overview references | Makes the SP1 and SP2 spec sets read more consistently without broad content churn |
+| 2026-06-04 | SP2 spec split | Split the realtime coordination spec into overview, transport/presence, coordination-models, and implementation child specs | Keeps active phase-1 transport work separate from future coordination planning and reduces spec churn conflicts |
+| 2026-06-04 | SP1 auth/avatar contract sync | Corrected the auth refresh-token revoke code in the maintained auth spec and added the avatar-upload failure-code contract for storage unavailability and validation errors | Keeps the maintained SP1 docs aligned with the current backend/client release behavior after the audit follow-through |
+| 2026-06-04 | Self-hosted avatar storage path | Added MinIO-backed local compose support, documented the optional release-compose MinIO profile, and clarified the split between internal storage endpoints and browser-facing upload hosts when needed | Makes the maintained deployment story match the new self-hosted avatar upload path without coupling every production topology to bundled storage |

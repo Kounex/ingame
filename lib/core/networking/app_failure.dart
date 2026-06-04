@@ -34,6 +34,7 @@ sealed class AppFailure {
     return switch (failure.code) {
       'auth.invalid_credentials' => l10n.errorInvalidCredentials,
       'auth.email_taken' || 'user.email_taken' => l10n.registerEmailTaken,
+      'auth.steam_profile_unavailable' => l10n.authErrorGeneric,
       'auth.steam_relink_required' => l10n.authSteamRelinkRequired,
       'auth.apple_relink_required' => l10n.authAppleRelinkRequired,
       'user.steam_account_already_linked' ||
@@ -55,6 +56,7 @@ sealed class AppFailure {
       'group.transfer_invalid_target' ||
       'user.email_password_already_set' => l10n.errorCheckInput,
       'user.last_auth_method_required' => l10n.profileLastAuthMethodRequired,
+      'user.avatar_upload_unavailable' => l10n.errorServer,
       'auth.missing_credentials' ||
       'auth.access_token_invalid' ||
       'auth.access_token_type_invalid' ||

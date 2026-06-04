@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.users import service
 from app.api.v1.users.schemas import (
+    AvatarUploadInitRequest,
+    AvatarUploadInitResponse,
     LinkAppleRequest,
     LinkSteamRequest,
     SetEmailPasswordRequest,
@@ -30,16 +32,22 @@ async def update_me(
     db: AsyncSession = Depends(get_db),
 ):
     updated = await service.update_profile(
-        db,
-        current_user,
-        email=data.email,
-        display_name=data.display_name,
-        avatar_url=data.avatar_url,
-        bio=data.bio,
-        timezone=data.timezone,
-        preferred_gaming_hours=data.preferred_gaming_hours,
+        db, current_user, **data.model_dump(exclude_unset=True)
     )
     return updated
+
+
+@router.post("/me/avatar-upload/init", response_model=AvatarUploadInitResponse)
+async def init_avatar_upload(
+    data: AvatarUploadInitRequest,
+    current_user: User = Depends(get_current_user),
+):
+    return await service.init_avatar_upload(
+        current_user,
+        filename=data.filename,
+        content_type=data.content_type,
+        byte_size=data.byte_size,
+    )
 
 
 @router.post("/me/link-steam", response_model=UserResponse)
@@ -82,9 +90,7 @@ async def set_email_password(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.set_email_password(
-        db, current_user, data.email, data.password
-    )
+    return await service.set_email_password(db, current_user, data.email, data.password)
 
 
 @router.get("/{user_id}", response_model=UserResponse)

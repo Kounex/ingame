@@ -61,6 +61,21 @@ spec:
                 secretKeyRef:
                   name: {{ include "ingame-api.fullname" . }}
                   key: steam-api-key
+            - name: INGAME_AVATAR_STORAGE_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ingame-api.fullname" . }}
+                  key: avatar-storage-bucket
+            - name: INGAME_AVATAR_STORAGE_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ingame-api.fullname" . }}
+                  key: avatar-storage-access-key-id
+            - name: INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ingame-api.fullname" . }}
+                  key: avatar-storage-secret-access-key
           envFrom:
             - configMapRef:
                 name: {{ include "ingame-api.fullname" . }}
