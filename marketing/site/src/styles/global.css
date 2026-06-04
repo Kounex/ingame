@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-ig-background: #0a0e1a;
+  --color-ig-surface: #151b2e;
+  --color-ig-primary: #4fc3f7;
+  --color-ig-secondary: #b388ff;
+  --shadow-glow: 0 12px 40px rgba(79, 195, 247, 0.22);
+}
 
 :root {
   --ig-background: #0a0e1a;

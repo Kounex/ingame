@@ -27,7 +27,7 @@ services:
       retries: 10
 
   api:
-    image: ghcr.io/kounex/ingame-api:${INGAME_VERSION:-0.3.3}
+    image: ghcr.io/kounex/ingame-api:${INGAME_VERSION:-0.3.4}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -48,7 +48,7 @@ services:
       - "8000:8000"
 
   web:
-    image: ghcr.io/kounex/ingame-web:${INGAME_VERSION:-0.3.3}
+    image: ghcr.io/kounex/ingame-web:${INGAME_VERSION:-0.3.4}
     restart: unless-stopped
     depends_on:
       - api
@@ -60,7 +60,7 @@ services:
           - app
 
   marketing:
-    image: ghcr.io/kounex/ingame-marketing:${INGAME_VERSION:-0.3.3}
+    image: ghcr.io/kounex/ingame-marketing:${INGAME_VERSION:-0.3.4}
     restart: unless-stopped
     depends_on:
       - web

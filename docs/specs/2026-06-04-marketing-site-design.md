@@ -1,6 +1,6 @@
 ---
 spec: marketing-site
-version: "1.5"
+version: "1.6"
 status: active
 last_updated: "2026-06-04"
 sub_project: Marketing Site
@@ -51,6 +51,12 @@ The site must reuse the app's visual language:
 - `#B388FF` secondary accent
 - the same cyan-to-violet gradient treatment for the `InGame` wordmark
 
+The Tailwind setup must use the current Tailwind v4 Astro integration path so production builds emit the utility classes the site depends on:
+
+- wire Tailwind through the Astro Vite plugin path instead of the legacy PostCSS-only setup
+- keep theme extensions in the v4 CSS-first theme layer when custom brand tokens are needed
+- verify the built output still includes the homepage utility CSS used by the rendered markup
+
 ## Deployment Contract
 
 The production host split remains:
@@ -84,3 +90,4 @@ The deployment pipeline must also include a dedicated marketing runtime image an
 | 2026-06-04 | nginx config | Clarified that the marketing nginx file should be self-contained enough for local syntax validation outside the final container network | Keeps deployment config easier to verify during local development |
 | 2026-06-04 | image and compose runtime | Added the dedicated marketing image and Compose runtime contract for local and release deployment, with the generic file name `docker-compose.release.yml` | Makes `in-game.app` deployable as a first-class runtime alongside `api` and `app` without baking a platform-specific deployment name into the repo |
 | 2026-06-04 | deployment wording | Removed provider-specific tunnel wording from the deployment contract | Keeps the public repo deployment guidance provider-neutral |
+| 2026-06-04 | tailwind build contract | Documented the Tailwind v4 Astro integration path and build-output verification requirement | Prevents regressions where production builds render markup without the utility CSS the marketing site relies on |
