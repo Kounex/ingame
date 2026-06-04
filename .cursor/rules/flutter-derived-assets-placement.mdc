@@ -1,0 +1,14 @@
+---
+description: Keep Flutter and platform-consumed assets as derived copies from the root assets source
+alwaysApply: true
+---
+
+# Flutter Derived Assets
+
+- For Flutter app work, treat project-consumed assets as derived outputs from the root `assets/` source originals.
+- Put runtime assets where Flutter expects to load them from, then register them in `pubspec.yaml` when needed.
+- Prefer app/runtime asset folders that are clearly intended for shipped files, such as feature-specific asset directories or platform asset locations.
+- Keep the project-root `assets/` folder as the source library, not the default place to point Flutter runtime asset registration.
+- For app icons, splash assets, favicons, and other platform-specific files, generate or copy task-ready derivatives into the platform/tooling paths that actually consume them.
+- If a generator or tool is used, configure it from an app-ready derived file and keep the higher-quality original in the root `assets/` folder.
+- When replacing an existing shipped asset, regenerate the consumed file from the root source instead of editing the shipped derivative in place unless the task explicitly requires it.

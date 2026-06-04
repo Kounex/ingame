@@ -66,13 +66,33 @@ python3 -m scripts.release.stack_version prepare-release --owner kounex --write
 
 7. Commit the release-prep changes on `dev`.
 
-8. Push `dev` before touching `main`:
+8. Before pushing anything, run the local `main` CI equivalent against the release candidate commit on `dev`. Mirror `.github/workflows/ci.yml` as closely as possible:
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+python -m pip install -r backend/requirements.txt
+python -m pytest backend/tests
+bash scripts/ci/check-spec-freshness.sh
+python -m scripts.release.stack_version check-aligned
+bash scripts/ci/validate-flutter-models.sh
+INGAME_DATABASE_URL=sqlite+aiosqlite:///./ci.db \
+INGAME_REDIS_URL=redis://localhost:6379/0 \
+python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+# In another shell, once the backend is up:
+python scripts/ci/validate-api-contract.py --api-url http://127.0.0.1:8000/api/v1
+```
+
+If Redis or another local dependency required by the contract checks is not running, start it first or stop and report the blocker. Do not continue to `git push`, `main`, tagging, or GitHub release creation until this local `main` CI pass is green.
+
+9. Push `dev` before touching `main`:
 
 ```bash
 git push origin dev
 ```
 
-9. Merge `dev` into `main` and push `main`:
+10. Merge `dev` into `main` and push `main`:
 
 ```bash
 git switch main
@@ -80,23 +100,23 @@ git merge --ff-only dev
 git push origin main
 ```
 
-10. Create the new semver tag from `main`, not from `dev`:
+11. Create the new semver tag from `main`, not from `dev`:
 
 ```bash
 git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-11. Confirm that `main` and the new tag point to the same commit.
+12. Confirm that `main` and the new tag point to the same commit.
 
-12. Identify the previous GitHub release tag and build the compare link for the new tag:
+13. Identify the previous GitHub release tag and build the compare link for the new tag:
 
 ```bash
 PREV_TAG="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName')"
 COMPARE_URL="https://github.com/Kounex/ingame/compare/${PREV_TAG}...vX.Y.Z"
 ```
 
-13. Finish by creating a GitHub release from that tag with a changelog since the previous release. The release body must include:
+14. Finish by creating a GitHub release from that tag with a changelog since the previous release. The release body must include:
    - a short agent-written summary explaining what changed since the last release
    - a markdown link to the compare view for `${PREV_TAG}...vX.Y.Z`
    - the generated GitHub release notes
@@ -125,6 +145,8 @@ Use the generated release notes as the baseline changelog since the previous Git
 - Do not push the release tag before `main` has been updated to the same commit.
 - Do not create the GitHub release before the tag exists on `origin`.
 - Do not publish the GitHub release without both the agent-written summary and the compare link.
+- Do not skip the local `main` CI verification step, even if `dev` tests already passed earlier in the session.
+- Do not proceed with `git push`, merging to `main`, tagging, or release creation if the local `main` CI equivalent is red or blocked.
 - If `main` cannot fast-forward to `dev`, stop and ask before creating the tag.
 - If the release version and tag do not match, stop and fix that before pushing.
 

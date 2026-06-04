@@ -1,0 +1,14 @@
+---
+description: Use the project root assets folder as the canonical source for app assets
+alwaysApply: true
+---
+
+# Asset Source Of Truth
+
+- Treat the project-root `assets/` folder as the canonical source for original asset files.
+- When the app needs an asset, start from the most suitable source file in `assets/`.
+- Perform task-specific adjustments on copies only, such as resize, crop, compress, recolor, or format conversion.
+- Place derived outputs in the location required by the app, platform, or feature, and keep the untouched original in `assets/`.
+- Do not move, overwrite, or degrade the source original when preparing app-ready assets.
+- When adding a brand-new asset, store the highest-quality source version in `assets/` first, then generate any derived files from it.
+- When updating an existing shipped asset, prefer regenerating the derived copy from the root source asset instead of editing the derived file directly.
