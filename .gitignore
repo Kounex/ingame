@@ -58,3 +58,8 @@ backend/.pytest_cache/
 
 # Agent-generated planning artifacts
 /docs/superpowers/
+/.superpowers/
+/.worktrees/
+/marketing/site/.astro/
+/marketing/site/node_modules/
+/marketing/site/dist/

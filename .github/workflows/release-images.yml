@@ -71,3 +71,17 @@ jobs:
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:sha-${{ github.sha }}
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:${{ steps.meta.outputs.version }}
+
+      - name: Build and push marketing image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.marketing
+          push: true
+          build-args: |
+            INGAME_MARKETING_SITE_URL=https://in-game.app
+            INGAME_WEB_APP_BASE_URL=https://app.in-game.app
+            INGAME_API_BASE_URL=https://api.in-game.app/api/v1
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-marketing:sha-${{ github.sha }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/ingame-marketing:${{ steps.meta.outputs.version }}

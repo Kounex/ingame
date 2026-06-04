@@ -1,0 +1,12 @@
+---
+interface Props {
+  size?: 'md' | 'lg';
+}
+
+const { size = 'md' } = Astro.props as Props;
+const sizeClass = size === 'lg' ? 'text-4xl md:text-6xl' : 'text-xl md:text-2xl';
+---
+
+<span class:list={['brand-gradient font-black tracking-[0.02em]', sizeClass]}>
+  InGame
+</span>

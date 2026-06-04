@@ -18,6 +18,7 @@ InGame is a social gaming coordination app for finding time to play with friends
 - `lib/` - Flutter application code
 - `test/` - Flutter widget/provider/unit tests
 - `backend/` - FastAPI application, models, services, and pytest suite
+- `marketing/` - Astro marketing site and nginx config for `in-game.app`
 - `deploy/helm/ingame-api/` - Helm chart for the API runtime
 - `deploy/helm/ingame-web/` - Helm chart for the web runtime
 - `deploy/kustomize/` - environment overlays for dev, staging, and prod
@@ -211,4 +212,4 @@ Useful project-local agent assets:
 ## Current release
 
 - Repository: [github.com/Kounex/ingame](https://github.com/Kounex/ingame)
-- Latest release: `v0.3.2`
+- Latest release: `v0.3.3`

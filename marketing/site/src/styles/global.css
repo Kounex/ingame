@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ig-background: #0a0e1a;
+  --ig-surface: #151b2e;
+  --ig-primary: #4fc3f7;
+  --ig-secondary: #b388ff;
+  --ig-glass: rgba(255, 255, 255, 0.08);
+  --ig-glass-border: rgba(255, 255, 255, 0.1);
+}
+
+html {
+  background:
+    radial-gradient(circle at top, rgba(79, 195, 247, 0.12), transparent 35%),
+    radial-gradient(circle at 85% 0%, rgba(179, 136, 255, 0.12), transparent 30%),
+    var(--ig-background);
+  color: white;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+}
+
+.glass-panel {
+  background: var(--ig-glass);
+  border: 1px solid var(--ig-glass-border);
+  backdrop-filter: blur(18px);
+}
+
+.brand-gradient {
+  background: linear-gradient(135deg, var(--ig-primary), var(--ig-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

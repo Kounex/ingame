@@ -1,0 +1,25 @@
+---
+import CtaSection from '../components/CtaSection.astro';
+import FaqList from '../components/FaqList.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import HeroSection from '../components/HeroSection.astro';
+import HowItWorks from '../components/HowItWorks.astro';
+import PlatformSection from '../components/PlatformSection.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import { homepageContent } from '../data/homepage';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout path="/">
+  <SiteHeader />
+  <main>
+    <HeroSection hero={homepageContent.hero} />
+    <FeatureGrid why={homepageContent.why} items={homepageContent.features} />
+    <HowItWorks steps={homepageContent.steps} />
+    <PlatformSection platforms={homepageContent.platforms} />
+    <CtaSection hero={homepageContent.hero} />
+    <FaqList items={homepageContent.faq} />
+  </main>
+  <SiteFooter footer={homepageContent.footer} />
+</BaseLayout>

@@ -1,0 +1,35 @@
+---
+import GlassPanel from './GlassPanel.astro';
+
+interface HeroCta {
+  label: string;
+  href: string;
+}
+
+interface HeroData {
+  primaryCta: HeroCta;
+}
+
+const { hero } = Astro.props as { hero: HeroData };
+---
+
+<section class="mx-auto max-w-6xl px-6 py-16">
+  <GlassPanel class="p-8 text-center">
+    <p class="text-sm uppercase tracking-[0.24em] text-white/60">Ready to start</p>
+    <h2 class="mt-4 text-3xl font-black md:text-5xl">Open InGame and get your group moving.</h2>
+    <p class="mx-auto mt-4 max-w-2xl text-white/70">
+      Start on the web now, then move to iOS or Android when you want the best native mobile experience.
+    </p>
+    <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+      <a
+        class="rounded-xl bg-ig-primary px-5 py-3 font-semibold text-ig-background no-underline shadow-glow"
+        href={hero.primaryCta.href}
+      >
+        {hero.primaryCta.label}
+      </a>
+      <a class="rounded-xl border border-white/10 bg-white/10 px-5 py-3 font-semibold text-white no-underline" href="#platforms">
+        Explore platforms
+      </a>
+    </div>
+  </GlassPanel>
+</section>

@@ -30,6 +30,24 @@ services:
       - "8080:8080"
     depends_on:
       - api
+    networks:
+      default:
+        aliases:
+          - app
+
+  marketing:
+    image: ghcr.io/kounex/ingame-marketing:local
+    build:
+      context: .
+      dockerfile: Dockerfile.marketing
+      args:
+        INGAME_MARKETING_SITE_URL: http://localhost:8081
+        INGAME_WEB_APP_BASE_URL: http://localhost:8080
+        INGAME_API_BASE_URL: http://localhost:8000/api/v1
+    ports:
+      - "8081:8080"
+    depends_on:
+      - web
 
   postgres:
     image: postgres:16-alpine

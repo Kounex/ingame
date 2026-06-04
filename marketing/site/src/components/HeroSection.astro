@@ -1,0 +1,70 @@
+---
+import AppWordmark from './AppWordmark.astro';
+import GlassPanel from './GlassPanel.astro';
+
+interface HeroCta {
+  label: string;
+  href: string;
+}
+
+interface HeroData {
+  eyebrow: string;
+  title: string;
+  description: string;
+  primaryCta: HeroCta;
+  secondaryCta: HeroCta;
+}
+
+const { hero } = Astro.props as { hero: HeroData };
+---
+
+<section class="mx-auto max-w-6xl px-6 pb-16 pt-10 md:pb-24 md:pt-16">
+  <div class="grid gap-8 md:grid-cols-[1.1fr_0.9fr] md:items-center">
+    <div>
+      <p class="text-sm uppercase tracking-[0.24em] text-white/60">{hero.eyebrow}</p>
+      <div class="mt-4">
+        <AppWordmark size="lg" />
+      </div>
+      <h1 class="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-6xl">{hero.title}</h1>
+      <p class="mt-6 max-w-2xl text-lg text-white/70">{hero.description}</p>
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <a
+          class="rounded-xl bg-ig-primary px-5 py-3 text-center font-semibold text-ig-background no-underline shadow-glow"
+          href={hero.primaryCta.href}
+        >
+          {hero.primaryCta.label}
+        </a>
+        <a
+          class="rounded-xl border border-white/10 bg-white/10 px-5 py-3 text-center font-semibold text-white no-underline"
+          href={hero.secondaryCta.href}
+        >
+          {hero.secondaryCta.label}
+        </a>
+      </div>
+    </div>
+
+    <GlassPanel class="p-6">
+      <p class="text-sm uppercase tracking-[0.24em] text-white/60">What ships today</p>
+      <div class="mt-5 grid gap-4">
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <h2 class="text-lg font-semibold">Private group coordination</h2>
+          <p class="mt-2 text-sm text-white/70">
+            Profiles, groups, invite links, and join requests in one focused flow.
+          </p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <h2 class="text-lg font-semibold">Live readiness foundations</h2>
+          <p class="mt-2 text-sm text-white/70">
+            Real-time coordination foundations help friend groups decide faster.
+          </p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <h2 class="text-lg font-semibold">Web and native access</h2>
+          <p class="mt-2 text-sm text-white/70">
+            Open instantly on web, or move to mobile for a more native experience.
+          </p>
+        </div>
+      </div>
+    </GlassPanel>
+  </div>
+</section>

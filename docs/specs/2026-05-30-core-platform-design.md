@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "2.39"
+version: "2.41"
 status: complete
 last_updated: "2026-06-03"
 sub_project: 1
@@ -669,7 +669,7 @@ The group detail app bar has a three-dot overflow menu (`more_vert`) with:
 ### Local Development
 Docker Compose: PostgreSQL 16 + Redis 7 + FastAPI API server, plus a dedicated static web container for Flutter web. The web container serves the built SPA and `/.well-known/*` verification files so invite links and native app-link validation can be exercised end-to-end in the same deployment shape used later in CI/CD images.
 
-For tunnel- or Portainer-backed deployments that do not bundle ingress in the same stack, `docker-compose.portainer.yml` provides an image-based runtime stack for `ingame-api`, `ingame-web`, PostgreSQL, and Redis while leaving external routing (for example Cloudflare Tunnel) out of band.
+For tunnel-backed release deployments that do not bundle ingress in the same stack, `docker-compose.release.yml` provides an image-based runtime stack for `ingame-api`, `ingame-web`, `ingame-marketing`, PostgreSQL, and Redis while leaving external routing out of band.
 
 ### Production
 OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gitops` project). Separate Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/` with Kustomize overlays at `deploy/kustomize/overlays/{dev,staging,prod}`. OpenShift Routes with TLS edge termination. PostgreSQL and Redis via operators or managed services.
@@ -681,7 +681,7 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 **Deploy directory structure:**
 - `deploy/helm/ingame-api/` -- Helm chart for the FastAPI runtime (deployment, service, route, configmap, secret)
 - `deploy/helm/ingame-web/` -- Helm chart for the static web runtime (deployment, service, route)
-- `docker-compose.portainer.yml` -- image-based Docker Compose stack for Portainer / external-tunnel deployments
+- `docker-compose.release.yml` -- image-based Docker Compose stack for release / external-tunnel deployments
 - `deploy/kustomize/base/` -- base Kustomization referencing Helm output
 - `deploy/kustomize/overlays/dev/` -- 1 replica, debug, open CORS
 - `deploy/kustomize/overlays/staging/` -- 2 replicas, staging host
@@ -692,7 +692,7 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 ### CI/CD Pipeline
 1. On PR and main pushes: lint + test (Flutter + backend), validate OpenAPI contract, spec freshness check, and validate stack version alignment (`pubspec.yaml` vs backend/Helm metadata)
 2. Release preparation happens on `dev`: bump `pubspec.yaml`, sync backend/Helm metadata and tracked deploy image refs to the same version, then merge that release-prepared commit into `main`
-3. On release tag push from `main` (`vX.Y.Z`): validate the tag against the semver portion of `pubspec.yaml`, build and push `ghcr.io/<owner>/ingame-api` and `ghcr.io/<owner>/ingame-web`, and publish both semver and immutable SHA tags
+3. On release tag push from `main` (`vX.Y.Z`): validate the tag against the semver portion of `pubspec.yaml`, build and push `ghcr.io/<owner>/ingame-api`, `ghcr.io/<owner>/ingame-web`, and `ghcr.io/<owner>/ingame-marketing`, and publish both semver and immutable SHA tags
 4. A later GitOps phase may consume the already-committed tracked image refs for ArgoCD-driven rollout automation
 
 ---
@@ -773,5 +773,7 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-02 | Group RBAC / Onboarding / Navigation | Implemented owner-only role-management endpoints, owner-leave guard semantics, optional onboarding availability completion, and adaptive mobile-vs-web route pages | Records the concrete SP1 completion contract now that the backend routes, Flutter gating, and router behavior are live |
 | 2026-06-03 | Groups / Spec Hygiene / Testing | Enforced member-only access for private group detail/member reads, aligned the documented Flutter client architecture with handwritten Dio repositories, and updated testing strategy wording to match current coverage | Closes the largest SP1 audit drift and removes stale claims about generated clients, exact test counts, and integration-test coverage |
 | 2026-06-03 | Users API Contract / CI | Added `has_password_login` to the `User` model table entry used by contract validation and kept revoked-provider fields scoped to `RevokedAuthLink` | Unblocks the API/spec validation job on `main` after the auth-method revoke and password-login-state work |
-| 2026-06-03 | Deployment / CI/CD Pipeline | Added the Portainer compose stack and aligned release web-image build args with `app.in-game.app` / `api.in-game.app` | Makes the tagged GHCR web runtime usable behind external tunnel ingress without rebuilding it per deployment |
+| 2026-06-03 | Deployment / CI/CD Pipeline | Added the release compose stack and aligned release web-image build args with `app.in-game.app` / `api.in-game.app` | Makes the tagged GHCR web runtime usable behind external tunnel ingress without rebuilding it per deployment |
 | 2026-06-04 | Authentication / Deployment | Split browser-app host config from invite/deep-link host config via `INGAME_WEB_APP_BASE_URL` and `INGAME_INVITE_BASE_URL` | Keeps native auth callbacks on the SPA host while preserving `in-game.app` as the canonical mobile deep-link and invite domain |
+| 2026-06-04 | Deployment / CI/CD Pipeline | Renamed the image-based external-tunnel stack to `docker-compose.release.yml` and added `ingame-marketing` to the release image set | Keeps deployment naming generic while treating the base-domain marketing surface as a first-class runtime in release publishing |
+| 2026-06-04 | Deployment / Documentation | Removed provider-specific tunnel references from the release deployment wording | Keeps the public deployment docs provider-neutral |

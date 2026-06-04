@@ -1,0 +1,22 @@
+---
+import GlassPanel from './GlassPanel.astro';
+import SectionHeading from './SectionHeading.astro';
+
+const { steps } = Astro.props as { steps: readonly string[] };
+---
+
+<section id="how-it-works" class="mx-auto max-w-6xl px-6 py-16">
+  <SectionHeading
+    eyebrow="How it works"
+    title="From invite to game night in a few clean steps."
+    body="InGame keeps the coordination flow focused so groups can move from setup to actual play without extra noise."
+  />
+  <div class="mt-10 grid gap-5 md:grid-cols-3">
+    {steps.map((step, index) => (
+      <GlassPanel class="p-6">
+        <p class="text-sm uppercase tracking-[0.24em] text-white/50">Step {index + 1}</p>
+        <p class="mt-4 text-lg font-semibold">{step}</p>
+      </GlassPanel>
+    ))}
+  </div>
+</section>
