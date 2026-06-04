@@ -13,6 +13,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/language_switcher.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -43,90 +44,105 @@ class ProfileScreen extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: GlassAppBar(title: context.l10n.profileTitle),
+        appBar: GlassAppBar(
+          title: context.l10n.profileTitle,
+          contentWidth: DesktopContentWidth.reading,
+        ),
         body: profileAsync.when(
-          loading: () => const Center(child: LoadingIndicator()),
-          error: (error, _) => ErrorDisplay(
-            message: ApiError.userMessage(error, context.l10n),
-            onRetry: () => ref.read(profileNotifierProvider.notifier).load(),
+          loading: () => const DesktopContentRegion(
+            width: DesktopContentWidth.reading,
+            child: Center(child: LoadingIndicator()),
+          ),
+          error: (error, _) => DesktopContentRegion(
+            width: DesktopContentWidth.reading,
+            child: ErrorDisplay(
+              message: ApiError.userMessage(error, context.l10n),
+              onRetry: () => ref.read(profileNotifierProvider.notifier).load(),
+            ),
           ),
           data: (user) {
             if (user == null) {
-              return ErrorDisplay(
-                message: context.l10n.profileLoadError,
-                onRetry: () =>
-                    ref.read(profileNotifierProvider.notifier).load(),
+              return DesktopContentRegion(
+                width: DesktopContentWidth.reading,
+                child: ErrorDisplay(
+                  message: context.l10n.profileLoadError,
+                  onRetry: () =>
+                      ref.read(profileNotifierProvider.notifier).load(),
+                ),
               );
             }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: AppSpacing.md),
-                  Center(
-                    child: UserAvatar(
-                      imageUrl: user.avatarUrl,
-                      displayName: user.displayName,
-                      size: 96,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Center(
-                    child: Text(
-                      user.displayName,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  if (user.bio != null && user.bio!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.xs),
+            return DesktopContentRegion(
+              width: DesktopContentWidth.reading,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: AppSpacing.md),
                     Center(
-                      child: Text(
-                        user.bio!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
+                      child: UserAvatar(
+                        imageUrl: user.avatarUrl,
+                        displayName: user.displayName,
+                        size: 96,
                       ),
                     ),
-                  ],
-                  const SizedBox(height: AppSpacing.xl),
-                  _AccountInfoCard(user: user),
-                  const SizedBox(height: AppSpacing.md),
-                  const _PreferencesCard(),
-                  const SizedBox(height: AppSpacing.md),
-                  _GamingHoursCard(gamingHours: user.preferredGamingHours),
-                  const SizedBox(height: AppSpacing.md),
-                  _ConnectedAccountsCard(
-                    email: user.email,
-                    hasPasswordLogin: user.hasPasswordLogin,
-                    steamId: user.steamId,
-                    appleId: user.appleId,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  GlassButton(
-                    onPressed: () => context.goNamed(RouteNames.editProfile),
-                    child: Text(context.l10n.profileEdit),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  GlassButton(
-                    variant: GlassButtonVariant.ghost,
-                    onPressed: () async {
-                      await ref.read(authNotifierProvider.notifier).logout();
-                    },
-                    child: Text(
-                      context.l10n.profileLogout,
-                      style: const TextStyle(color: AppColors.error),
+                    const SizedBox(height: AppSpacing.md),
+                    Center(
+                      child: Text(
+                        user.displayName,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
+                    if (user.bio != null && user.bio!.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Center(
+                        child: Text(
+                          user.bio!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.xl),
+                    _AccountInfoCard(user: user),
+                    const SizedBox(height: AppSpacing.md),
+                    const _PreferencesCard(),
+                    const SizedBox(height: AppSpacing.md),
+                    _GamingHoursCard(gamingHours: user.preferredGamingHours),
+                    const SizedBox(height: AppSpacing.md),
+                    _ConnectedAccountsCard(
+                      email: user.email,
+                      hasPasswordLogin: user.hasPasswordLogin,
+                      steamId: user.steamId,
+                      appleId: user.appleId,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    GlassButton(
+                      onPressed: () => context.goNamed(RouteNames.editProfile),
+                      child: Text(context.l10n.profileEdit),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    GlassButton(
+                      variant: GlassButtonVariant.ghost,
+                      onPressed: () async {
+                        await ref.read(authNotifierProvider.notifier).logout();
+                      },
+                      child: Text(
+                        context.l10n.profileLogout,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+                ),
               ),
             );
           },

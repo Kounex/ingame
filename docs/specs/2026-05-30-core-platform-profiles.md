@@ -1,6 +1,6 @@
 ---
 spec: core-platform-profiles
-version: "1.5"
+version: "1.7"
 status: complete
 last_updated: "2026-06-04"
 sub_project: 1
@@ -85,8 +85,8 @@ All image sources except `Remove photo` follow this flow:
   avatar bucket automatically, and enables MinIO browser-upload CORS so
   upload-init works out of the box.
 - Release-style deployments may either point at any external S3-compatible
-  storage service or opt into a bundled MinIO service when using the release
-  compose stack for small self-hosted environments.
+  storage service or use the bundled MinIO service that now ships by default in
+  the release compose stack for self-hosted environments.
 - Environments may provide a browser-facing upload base URL distinct from the
   API's internal object-storage endpoint so presigned uploads still work when
   storage is private on the app network but public on a separate host.
@@ -181,6 +181,7 @@ Profile setup requirements:
 - display name is required
 - recovery email is required before onboarding completion
 - bio remains editable and can default to the shared onboarding fallback
+- timezone uses the same shared selector contract as profile editing and must be persisted on onboarding completion
 - avatar is optional
 
 The onboarding profile step uses the same avatar editor contract as profile editing.
@@ -221,4 +222,5 @@ The profile screen:
 | 2026-06-04 | Web avatar upload flow | Clarified that mobile sources are cropped before upload while the web picker currently uploads validated original bytes directly and depends on storage CORS | Keeps the spec aligned with the implemented cross-platform avatar editor behavior and deployment requirements |
 | 2026-06-04 | Avatar editor spike | Documented the hybrid follow-through where `Upload photo` uses a shared square editor on iOS/Android/Web while mobile library/camera sources keep the existing native crop flow | Captures the evaluated migration step without claiming a full replacement of every avatar acquisition path |
 | 2026-06-04 | Unified avatar editor flow | Updated the maintained contract so every supported image source routes through the shared square editor, tapping an existing avatar reopens it for editing, and URL input now fetches/crops/uploads instead of storing external URLs directly | Aligns the profile/avatar spec with the implemented cross-platform editor-centered behavior |
-| 2026-06-04 | Storage topology | Added the maintained MinIO-backed local dev path, clarified that release compose may optionally bundle MinIO, and documented the split between internal storage endpoints and browser-facing upload hosts when needed | Documents the now-supported self-hosted storage path without changing the user-profile API surface |
+| 2026-06-04 | Storage topology | Added the maintained MinIO-backed local dev path, clarified that release compose now bundles MinIO by default for self-hosted installs, and documented the split between internal storage endpoints and browser-facing upload hosts when needed | Documents the now-supported self-hosted storage path without changing the user-profile API surface |
+| 2026-06-04 | Onboarding timezone parity | Added the onboarding contract note that profile setup now reuses the shared timezone selector from profile editing and persists the chosen value before completion | Keeps onboarding and profile editing aligned on the same timezone capture UX and saved profile data |

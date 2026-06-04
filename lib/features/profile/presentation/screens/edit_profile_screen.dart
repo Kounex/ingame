@@ -10,6 +10,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../providers/profile_provider.dart';
@@ -107,6 +108,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
         title: context.l10n.editProfileTitle,
+        contentWidth: DesktopContentWidth.form,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => context.pop(),
@@ -121,63 +123,66 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const SizedBox(height: AppSpacing.lg),
-                  Center(
-                    child: EditableAvatarField(
-                      initialAvatarUrl: _avatarUrl,
-                      displayName: avatarDisplayName,
-                      onChanged: (value) {
-                        setState(() {
-                          _avatarUrl = value;
-                          _avatarChanged = value != _initialAvatarUrl;
-                        });
-                      },
+          child: DesktopContentRegion(
+            width: DesktopContentWidth.form,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    const SizedBox(height: AppSpacing.lg),
+                    Center(
+                      child: EditableAvatarField(
+                        initialAvatarUrl: _avatarUrl,
+                        displayName: avatarDisplayName,
+                        onChanged: (value) {
+                          setState(() {
+                            _avatarUrl = value;
+                            _avatarChanged = value != _initialAvatarUrl;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  GlassInput(
-                    controller: _displayNameController,
-                    label: context.l10n.registerDisplayNameLabel,
-                    hint: context.l10n.editProfileDisplayNameHint,
-                    prefixIcon: Icons.person_outline,
-                    validator: FormValidators.displayName,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  GlassInput(
-                    controller: _bioController,
-                    label: context.l10n.editProfileBioLabel,
-                    hint: context.l10n.editProfileBioHint,
-                    prefixIcon: Icons.info_outline,
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  TimezoneSelector(
-                    selectedTimezone: _timezone,
-                    onChanged: (value) => setState(() => _timezone = value),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  GamingHoursEditor(
-                    initialHours: _gamingHours,
-                    onChanged: (hours) => _gamingHours = hours,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  SizedBox(
-                    width: double.infinity,
-                    child: GlassButton(
-                      key: const Key('edit-profile-save-button'),
-                      onPressed: _isSaving ? null : _save,
-                      isLoading: _isSaving,
-                      child: Text(context.l10n.editProfileSave),
+                    const SizedBox(height: AppSpacing.xl),
+                    GlassInput(
+                      controller: _displayNameController,
+                      label: context.l10n.registerDisplayNameLabel,
+                      hint: context.l10n.editProfileDisplayNameHint,
+                      prefixIcon: Icons.person_outline,
+                      validator: FormValidators.displayName,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
+                    const SizedBox(height: AppSpacing.md),
+                    GlassInput(
+                      controller: _bioController,
+                      label: context.l10n.editProfileBioLabel,
+                      hint: context.l10n.editProfileBioHint,
+                      prefixIcon: Icons.info_outline,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    TimezoneSelector(
+                      selectedTimezone: _timezone,
+                      onChanged: (value) => setState(() => _timezone = value),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    GamingHoursEditor(
+                      initialHours: _gamingHours,
+                      onChanged: (hours) => _gamingHours = hours,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    SizedBox(
+                      width: double.infinity,
+                      child: GlassButton(
+                        key: const Key('edit-profile-save-button'),
+                        onPressed: _isSaving ? null : _save,
+                        isLoading: _isSaving,
+                        child: Text(context.l10n.editProfileSave),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+                ),
               ),
             ),
           ),

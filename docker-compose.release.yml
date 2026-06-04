@@ -75,7 +75,6 @@ services:
       - "8081:8080"
 
   minio:
-    profiles: ["minio"]
     image: minio/minio:latest
     restart: unless-stopped
     environment:
@@ -90,7 +89,6 @@ services:
       - "9001:9001"
 
   minio-bootstrap:
-    profiles: ["minio"]
     image: minio/mc:latest
     depends_on:
       - minio
@@ -100,9 +98,11 @@ services:
       MINIO_ROOT_USER: ${INGAME_AVATAR_STORAGE_ACCESS_KEY_ID:-}
       MINIO_ROOT_PASSWORD: ${INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY:-}
       MINIO_BUCKET: ${INGAME_AVATAR_STORAGE_BUCKET:-ingame-avatars}
-    volumes:
-      - ./deploy/minio:/bootstrap:ro
-    entrypoint: ["/bin/sh", "/bootstrap/bootstrap-minio.sh"]
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - 'until mc alias set local "$$MINIO_ENDPOINT_URL" "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do echo "Waiting for MinIO at $$MINIO_ENDPOINT_URL..."; sleep 2; done; mc mb --ignore-existing "local/$$MINIO_BUCKET"; mc anonymous set download "local/$$MINIO_BUCKET"; echo "MinIO bucket bootstrap complete for $$MINIO_BUCKET"'
 
 volumes:
   ingame_pgdata:

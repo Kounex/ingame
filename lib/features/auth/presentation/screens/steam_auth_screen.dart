@@ -8,6 +8,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/networking/app_failure.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/tappable.dart';
 import '../../data/oauth_launcher.dart';
@@ -83,9 +84,12 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
         ),
         child: SafeArea(
           child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: _error != null ? _buildError(_error!) : _buildLoading(),
+            child: DesktopContentRegion(
+              width: DesktopContentWidth.compact,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: _error != null ? _buildError(_error!) : _buildLoading(),
+              ),
             ),
           ),
         ),

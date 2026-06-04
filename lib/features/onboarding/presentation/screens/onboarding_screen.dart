@@ -16,6 +16,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../../../../shared/widgets/weekly_availability_editor.dart';
 import '../../../auth/data/auth_repository.dart';
@@ -23,6 +24,7 @@ import '../../../auth/domain/auth_state.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../onboarding_profile_validation.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../profile/presentation/widgets/timezone_selector.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -46,6 +48,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   String? _initialEmail;
   String? _avatarUrl;
   String? _initialAvatarUrl;
+  late String _timezone;
   bool _avatarChanged = false;
 
   Map<String, dynamic> _selectedGamingHours = {};
@@ -71,6 +74,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     _bioController = TextEditingController();
     _avatarUrl = user?.avatarUrl;
     _initialAvatarUrl = user?.avatarUrl;
+    _timezone = user?.timezone ?? 'America/New_York';
     _emailController.addListener(_onEmailChanged);
   }
 
@@ -105,7 +109,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       return;
     }
 
-    setState(() => _emailChecking = true);
+    setState(() {
+      _emailChecking = true;
+      _emailAvailabilityError = null;
+    });
 
     _emailDebounce = Timer(_debounceDuration, () async {
       try {
@@ -131,19 +138,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }) {
     if (checking) {
       return const SizedBox(
-        width: 18,
-        height: 18,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: AppColors.textTertiary,
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(end: 12),
+          child: Align(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ),
         ),
       );
     }
     if (error != null) {
-      return const Icon(
-        Icons.cancel_outlined,
-        color: AppColors.error,
-        size: 20,
+      return const SizedBox(
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(end: 12),
+          child: Align(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Icon(
+              Icons.cancel_outlined,
+              color: AppColors.error,
+              size: 16,
+            ),
+          ),
+        ),
       );
     }
     return const SizedBox.shrink();
@@ -205,6 +230,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       'bio': _bioController.text.trim().isEmpty
           ? context.l10n.onboardingDefaultBio
           : _bioController.text.trim(),
+      'timezone': _timezone,
       if (_avatarChanged) 'avatar_url': _avatarUrl,
       if (_selectedGamingHours.isNotEmpty)
         'preferred_gaming_hours': _selectedGamingHours,
@@ -299,52 +325,60 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: AppSpacing.lg),
-              _StepIndicator(currentPage: _currentPage, pageCount: 3),
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (page) => setState(() => _currentPage = page),
-                  children: [
-                    _WelcomePage(onGetStarted: () => _goToPage(1)),
-                    _ProfileSetupPage(
-                      formKey: _formKey,
-                      displayNameController: _displayNameController,
-                      emailController: _emailController,
-                      bioController: _bioController,
-                      avatarUrl: _avatarUrl,
-                      avatarDisplayName:
-                          _displayNameController.text.trim().isEmpty
-                          ? (authUser?.displayName ??
-                                context.l10n.profileUnknown)
-                          : _displayNameController.text.trim(),
-                      onAvatarChanged: (value) {
-                        setState(() {
-                          _avatarUrl = value;
-                          _avatarChanged = value != _initialAvatarUrl;
-                        });
-                      },
-                      emailChecking: _emailChecking,
-                      emailAvailabilityError: _emailAvailabilityError,
-                      buildAvailabilityIndicator: _buildAvailabilityIndicator,
-                      onBack: () => _goToPage(0),
-                      onNext: () => _goToPage(2),
-                    ),
-                    _GamingPreferencesPage(
-                      initialHours: _selectedGamingHours,
-                      showConnectSteamCta: showConnectSteamCta,
-                      onHoursChanged: (hours) => _selectedGamingHours = hours,
-                      onBack: () => _goToPage(1),
-                      onFinish: _finish,
-                      isSaving: _isSaving,
-                    ),
-                  ],
+          child: DesktopContentRegion(
+            width: DesktopContentWidth.form,
+            child: Column(
+              children: [
+                const SizedBox(height: AppSpacing.lg),
+                _StepIndicator(currentPage: _currentPage, pageCount: 3),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (page) =>
+                        setState(() => _currentPage = page),
+                    children: [
+                      _WelcomePage(onGetStarted: () => _goToPage(1)),
+                      _ProfileSetupPage(
+                        formKey: _formKey,
+                        displayNameController: _displayNameController,
+                        emailController: _emailController,
+                        bioController: _bioController,
+                        avatarUrl: _avatarUrl,
+                        avatarDisplayName:
+                            _displayNameController.text.trim().isEmpty
+                            ? (authUser?.displayName ??
+                                  context.l10n.profileUnknown)
+                            : _displayNameController.text.trim(),
+                        onAvatarChanged: (value) {
+                          setState(() {
+                            _avatarUrl = value;
+                            _avatarChanged = value != _initialAvatarUrl;
+                          });
+                        },
+                        emailChecking: _emailChecking,
+                        emailAvailabilityError: _emailAvailabilityError,
+                        buildAvailabilityIndicator: _buildAvailabilityIndicator,
+                        timezone: _timezone,
+                        onTimezoneChanged: (value) {
+                          setState(() => _timezone = value);
+                        },
+                        onBack: () => _goToPage(0),
+                        onNext: () => _goToPage(2),
+                      ),
+                      _GamingPreferencesPage(
+                        initialHours: _selectedGamingHours,
+                        showConnectSteamCta: showConnectSteamCta,
+                        onHoursChanged: (hours) => _selectedGamingHours = hours,
+                        onBack: () => _goToPage(1),
+                        onFinish: _finish,
+                        isSaving: _isSaving,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -474,6 +508,8 @@ class _ProfileSetupPage extends StatelessWidget {
     required this.emailChecking,
     required this.emailAvailabilityError,
     required this.buildAvailabilityIndicator,
+    required this.timezone,
+    required this.onTimezoneChanged,
     required this.onBack,
     required this.onNext,
   });
@@ -489,6 +525,8 @@ class _ProfileSetupPage extends StatelessWidget {
   final AppFailure? emailAvailabilityError;
   final Widget Function({required bool checking, required AppFailure? error})
   buildAvailabilityIndicator;
+  final String timezone;
+  final ValueChanged<String> onTimezoneChanged;
   final VoidCallback onBack;
   final VoidCallback onNext;
 
@@ -544,6 +582,9 @@ class _ProfileSetupPage extends StatelessWidget {
                     hint: context.l10n.loginEmailHint,
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icons.email_outlined,
+                    errorText: emailAvailabilityError?.userMessage(
+                      context.l10n,
+                    ),
                     suffixIcon: buildAvailabilityIndicator(
                       checking: emailChecking,
                       error: emailAvailabilityError,
@@ -566,6 +607,11 @@ class _ProfileSetupPage extends StatelessWidget {
                     hint: context.l10n.onboardingBioHint,
                     prefixIcon: Icons.info_outline,
                     maxLines: 3,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  TimezoneSelector(
+                    selectedTimezone: timezone,
+                    onChanged: onTimezoneChanged,
                   ),
                 ],
               ),

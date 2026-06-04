@@ -12,6 +12,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/providers/websocket_provider.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -42,6 +43,7 @@ class GroupDetailScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
           title: detailAsync.value?.group.name ?? l10n.groupTitleFallback,
+          contentWidth: DesktopContentWidth.reading,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
@@ -88,98 +90,107 @@ class GroupDetailScreen extends ConsumerWidget {
               : null,
         ),
         body: detailAsync.when(
-          loading: () => const LoadingIndicator(),
-          error: (error, _) => ErrorDisplay(
-            message: ApiError.userMessage(error, context.l10n),
-            onRetry: () => ref
-                .read(groupDetailNotifierProvider(groupId).notifier)
-                .refresh(),
+          loading: () => const DesktopContentRegion(
+            width: DesktopContentWidth.reading,
+            child: LoadingIndicator(),
           ),
-          data: (detail) => RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.backgroundLight,
-            onRefresh: () => ref
-                .read(groupDetailNotifierProvider(groupId).notifier)
-                .refresh(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (detail.group.description != null &&
-                      detail.group.description!.isNotEmpty)
+          error: (error, _) => DesktopContentRegion(
+            width: DesktopContentWidth.reading,
+            child: ErrorDisplay(
+              message: ApiError.userMessage(error, context.l10n),
+              onRetry: () => ref
+                  .read(groupDetailNotifierProvider(groupId).notifier)
+                  .refresh(),
+            ),
+          ),
+          data: (detail) => DesktopContentRegion(
+            width: DesktopContentWidth.reading,
+            child: RefreshIndicator(
+              color: AppColors.primary,
+              backgroundColor: AppColors.backgroundLight,
+              onRefresh: () => ref
+                  .read(groupDetailNotifierProvider(groupId).notifier)
+                  .refresh(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (detail.group.description != null &&
+                        detail.group.description!.isNotEmpty)
+                      GlassCard(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.groupDetailSectionAbout,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              detail.group.description!,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: AppSpacing.md),
                     GlassCard(
                       padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            l10n.groupDetailSectionAbout,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          _InfoChip(
+                            icon: Icons.people,
+                            label: l10n.joinGroupMembers(detail.members.length),
                           ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            detail.group.description!,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
+                          const SizedBox(width: AppSpacing.md),
+                          _InfoChip(
+                            icon: detail.group.isDiscoverable
+                                ? Icons.public
+                                : Icons.lock,
+                            label: detail.group.isDiscoverable
+                                ? l10n.groupVisibilityPublic
+                                : l10n.groupVisibilityPrivate,
                           ),
+                          if (detail.group.isDiscoverable) ...[
+                            const SizedBox(width: AppSpacing.md),
+                            _InfoChip(
+                              icon: detail.group.joinMode == 'open'
+                                  ? Icons.open_in_new
+                                  : Icons.approval,
+                              label: detail.group.joinMode == 'open'
+                                  ? l10n.groupJoinModeOpenLabel
+                                  : l10n.groupJoinModeApprovalLabel,
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                  const SizedBox(height: AppSpacing.md),
-                  GlassCard(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        _InfoChip(
-                          icon: Icons.people,
-                          label: l10n.joinGroupMembers(detail.members.length),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        _InfoChip(
-                          icon: detail.group.isDiscoverable
-                              ? Icons.public
-                              : Icons.lock,
-                          label: detail.group.isDiscoverable
-                              ? l10n.groupVisibilityPublic
-                              : l10n.groupVisibilityPrivate,
-                        ),
-                        if (detail.group.isDiscoverable) ...[
-                          const SizedBox(width: AppSpacing.md),
-                          _InfoChip(
-                            icon: detail.group.joinMode == 'open'
-                                ? Icons.open_in_new
-                                : Icons.approval,
-                            label: detail.group.joinMode == 'open'
-                                ? l10n.groupJoinModeOpenLabel
-                                : l10n.groupJoinModeApprovalLabel,
-                          ),
-                        ],
-                      ],
+                    const SizedBox(height: AppSpacing.lg),
+                    _ReadyToggleCard(groupId: groupId),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      l10n.groupDetailSectionMembers,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _ReadyToggleCard(groupId: groupId),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    l10n.groupDetailSectionMembers,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  MemberList(groupId: groupId, members: detail.members),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
+                    const SizedBox(height: AppSpacing.sm),
+                    MemberList(groupId: groupId, members: detail.members),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+                ),
               ),
             ),
           ),

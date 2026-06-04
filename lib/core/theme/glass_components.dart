@@ -260,6 +260,7 @@ class GlassInput extends StatelessWidget {
     super.key,
     this.controller,
     this.validator,
+    this.errorText,
     this.label,
     this.hint,
     this.obscureText = false,
@@ -274,6 +275,7 @@ class GlassInput extends StatelessWidget {
 
   final TextEditingController? controller;
   final String? Function(String?)? validator;
+  final String? errorText;
   final String? label;
   final String? hint;
   final bool obscureText;
@@ -290,6 +292,7 @@ class GlassInput extends StatelessWidget {
     return TextFormField(
       controller: controller,
       validator: validator,
+      forceErrorText: errorText,
       obscureText: obscureText,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
@@ -298,12 +301,17 @@ class GlassInput extends StatelessWidget {
       maxLines: maxLines,
       style: const TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
+        isDense: true,
         labelText: label,
         hintText: hint,
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, color: AppColors.textTertiary)
             : null,
         suffixIcon: suffixIcon,
+        suffixIconConstraints: const BoxConstraints(
+          minWidth: 32,
+          minHeight: 32,
+        ),
         filled: true,
         fillColor: AppColors.glassSurface,
         border: OutlineInputBorder(

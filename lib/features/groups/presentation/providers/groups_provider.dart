@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/networking/websocket_client.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/group_model.dart';
 
@@ -32,6 +34,15 @@ class GroupsNotifier extends AsyncNotifier<List<Group>> {
       joinMode: joinMode,
     );
     await load();
+    await _refreshRealtimeMemberships();
+    return group;
+  }
+
+  Future<Group> joinByInviteCode(String code) async {
+    final repo = ref.read(groupsRepositoryProvider);
+    final group = await repo.joinByInviteCode(code);
+    await load();
+    await _refreshRealtimeMemberships();
     return group;
   }
 
@@ -45,6 +56,17 @@ class GroupsNotifier extends AsyncNotifier<List<Group>> {
     final repo = ref.read(groupsRepositoryProvider);
     await repo.leaveGroup(id);
     await load();
+    await _refreshRealtimeMemberships();
+  }
+
+  Future<void> _refreshRealtimeMemberships() async {
+    final authState = await ref.read(authNotifierProvider.future);
+    final isAuthenticated = authState.maybeWhen(
+      authenticated: (_) => true,
+      orElse: () => false,
+    );
+    if (!isAuthenticated) return;
+    await ref.read(websocketClientProvider).connect();
   }
 }
 

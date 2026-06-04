@@ -10,6 +10,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/avatar_with_status.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
@@ -364,6 +365,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
           title: l10n.groupSettingsTitle,
+          contentWidth: DesktopContentWidth.wide,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
@@ -392,171 +394,124 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
           ],
         ),
         body: detailAsync.when(
-          loading: () => const Center(child: LoadingIndicator()),
-          error: (error, _) => Center(
-            child: Text(
-              ApiError.userMessage(error, context.l10n),
-              style: const TextStyle(color: AppColors.textSecondary),
+          loading: () => const DesktopContentRegion(
+            width: DesktopContentWidth.wide,
+            child: Center(child: LoadingIndicator()),
+          ),
+          error: (error, _) => DesktopContentRegion(
+            width: DesktopContentWidth.wide,
+            child: Center(
+              child: Text(
+                ApiError.userMessage(error, context.l10n),
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
             ),
           ),
           data: (detail) {
             _initFromGroup(detail);
             if (!detail.canManageSettings) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Text(
-                    l10n.errorNoPermission,
-                    style: const TextStyle(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
+              return DesktopContentRegion(
+                width: DesktopContentWidth.wide,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Text(
+                      l10n.errorNoPermission,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
               );
             }
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SectionLabel(
-                    l10n.groupSettingsSectionGroupInfo.toUpperCase(),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  GlassCard(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      children: [
-                        GlassInput(
-                          controller: _nameController,
-                          label: l10n.createGroupNameLabel,
-                          prefixIcon: Icons.group_outlined,
-                          onChanged: (_) => _markChanged(),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        GlassInput(
-                          controller: _descriptionController,
-                          label: l10n.createGroupDescriptionLabel,
-                          prefixIcon: Icons.notes_outlined,
-                          maxLines: 3,
-                          onChanged: (_) => _markChanged(),
-                        ),
-                      ],
+            return DesktopContentRegion(
+              width: DesktopContentWidth.wide,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SectionLabel(
+                      l10n.groupSettingsSectionGroupInfo.toUpperCase(),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _SectionLabel(
-                    l10n.groupSettingsSectionVisibility.toUpperCase(),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  GlassCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    child: Column(
-                      children: [
-                        _SettingsSwitch(
-                          icon: Icons.explore_outlined,
-                          title: l10n.createGroupDiscoverableTitle,
-                          subtitle: l10n.createGroupDiscoverableSubtitle,
-                          value: _isDiscoverable,
-                          onChanged: detail.canManageSettings
-                              ? (v) {
-                                  setState(() => _isDiscoverable = v);
-                                  _markChanged();
-                                }
-                              : null,
-                        ),
-                        if (_isDiscoverable) ...[
-                          const Divider(
-                            color: AppColors.glassBorder,
-                            height: 1,
+                    const SizedBox(height: AppSpacing.sm),
+                    GlassCard(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        children: [
+                          GlassInput(
+                            controller: _nameController,
+                            label: l10n.createGroupNameLabel,
+                            prefixIcon: Icons.group_outlined,
+                            onChanged: (_) => _markChanged(),
                           ),
-                          _SettingsRadio(
-                            icon: Icons.door_front_door_outlined,
-                            title: l10n.createGroupJoinModeLabel,
-                            options: {
-                              'open':
-                                  '${l10n.groupJoinModeOpenLabel} - ${l10n.groupJoinModeOpenDescription}',
-                              'approval':
-                                  '${l10n.groupJoinModeApprovalLabel} - ${l10n.groupJoinModeApprovalDescription}',
-                            },
-                            value: _joinMode,
-                            enabled: detail.canManageSettings,
-                            onChanged: (v) {
-                              setState(() => _joinMode = v);
-                              _markChanged();
-                            },
+                          const SizedBox(height: AppSpacing.md),
+                          GlassInput(
+                            controller: _descriptionController,
+                            label: l10n.createGroupDescriptionLabel,
+                            prefixIcon: Icons.notes_outlined,
+                            maxLines: 3,
+                            onChanged: (_) => _markChanged(),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _SectionLabel(
-                    l10n
-                        .groupSettingsSectionMembers(detail.members.length)
-                        .toUpperCase(),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  GlassCard(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.sm,
+                    const SizedBox(height: AppSpacing.lg),
+                    _SectionLabel(
+                      l10n.groupSettingsSectionVisibility.toUpperCase(),
                     ),
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < detail.members.length; i++) ...[
-                          if (i > 0)
+                    const SizedBox(height: AppSpacing.sm),
+                    GlassCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
+                      child: Column(
+                        children: [
+                          _SettingsSwitch(
+                            icon: Icons.explore_outlined,
+                            title: l10n.createGroupDiscoverableTitle,
+                            subtitle: l10n.createGroupDiscoverableSubtitle,
+                            value: _isDiscoverable,
+                            onChanged: detail.canManageSettings
+                                ? (v) {
+                                    setState(() => _isDiscoverable = v);
+                                    _markChanged();
+                                  }
+                                : null,
+                          ),
+                          if (_isDiscoverable) ...[
                             const Divider(
                               color: AppColors.glassBorder,
                               height: 1,
                             ),
-                          _MemberSettingsRow(
-                            groupId: widget.groupId,
-                            member: detail.members[i],
-                            onRemove: detail.canRemoveMember(detail.members[i])
-                                ? () => _removeMember(
-                                    detail.members[i].userId,
-                                    detail.members[i].displayName,
-                                  )
-                                : null,
-                            onPromote: detail.canPromote(detail.members[i])
-                                ? () => _changeMemberRole(
-                                    detail.members[i].userId,
-                                    detail.members[i].displayName,
-                                    nextRole: 'admin',
-                                  )
-                                : null,
-                            onDemote: detail.canDemote(detail.members[i])
-                                ? () => _changeMemberRole(
-                                    detail.members[i].userId,
-                                    detail.members[i].displayName,
-                                    nextRole: 'member',
-                                  )
-                                : null,
-                            onTransferOwnership:
-                                detail.canTransferOwnershipTo(detail.members[i])
-                                ? () => _transferOwnership(
-                                    detail.members[i].userId,
-                                    detail.members[i].displayName,
-                                  )
-                                : null,
-                          ),
+                            _SettingsRadio(
+                              icon: Icons.door_front_door_outlined,
+                              title: l10n.createGroupJoinModeLabel,
+                              options: {
+                                'open':
+                                    '${l10n.groupJoinModeOpenLabel} - ${l10n.groupJoinModeOpenDescription}',
+                                'approval':
+                                    '${l10n.groupJoinModeApprovalLabel} - ${l10n.groupJoinModeApprovalDescription}',
+                              },
+                              value: _joinMode,
+                              enabled: detail.canManageSettings,
+                              onChanged: (v) {
+                                setState(() => _joinMode = v);
+                                _markChanged();
+                              },
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  if (detail.canManageRequests &&
-                      detail.pendingRequests.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.lg),
                     _SectionLabel(
                       l10n
-                          .groupSettingsSectionPendingRequests(
-                            detail.pendingRequests.length,
-                          )
+                          .groupSettingsSectionMembers(detail.members.length)
                           .toUpperCase(),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -566,64 +521,123 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       ),
                       child: Column(
                         children: [
-                          for (
-                            var i = 0;
-                            i < detail.pendingRequests.length;
-                            i++
-                          ) ...[
+                          for (var i = 0; i < detail.members.length; i++) ...[
                             if (i > 0)
                               const Divider(
                                 color: AppColors.glassBorder,
                                 height: 1,
                               ),
-                            _JoinRequestRow(
-                              request: detail.pendingRequests[i],
-                              onApprove: () =>
-                                  _approveRequest(detail.pendingRequests[i].id),
-                              onDeny: () => _denyRequest(
-                                detail.pendingRequests[i].id,
-                                detail.pendingRequests[i].user.displayName,
-                              ),
+                            _MemberSettingsRow(
+                              groupId: widget.groupId,
+                              member: detail.members[i],
+                              onRemove: detail.canRemoveMember(detail.members[i])
+                                  ? () => _removeMember(
+                                      detail.members[i].userId,
+                                      detail.members[i].displayName,
+                                    )
+                                  : null,
+                              onPromote: detail.canPromote(detail.members[i])
+                                  ? () => _changeMemberRole(
+                                      detail.members[i].userId,
+                                      detail.members[i].displayName,
+                                      nextRole: 'admin',
+                                    )
+                                  : null,
+                              onDemote: detail.canDemote(detail.members[i])
+                                  ? () => _changeMemberRole(
+                                      detail.members[i].userId,
+                                      detail.members[i].displayName,
+                                      nextRole: 'member',
+                                    )
+                                  : null,
+                              onTransferOwnership:
+                                  detail.canTransferOwnershipTo(detail.members[i])
+                                  ? () => _transferOwnership(
+                                      detail.members[i].userId,
+                                      detail.members[i].displayName,
+                                    )
+                                  : null,
                             ),
                           ],
                         ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                  ],
-                  if (detail.canDeleteGroup) ...[
-                    const SizedBox(height: AppSpacing.xl),
-                    _SectionLabel(
-                      l10n.groupSettingsSectionDangerZone.toUpperCase(),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    GlassCard(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            l10n.groupSettingsDangerDescription,
-                            style: const TextStyle(
-                              color: AppColors.textTertiary,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          GlassButton(
-                            onPressed: _deleteGroup,
-                            variant: GlassButtonVariant.ghost,
-                            child: Text(
-                              l10n.groupSettingsDeleteTitle,
-                              style: const TextStyle(color: AppColors.error),
-                            ),
-                          ),
-                        ],
+                    if (detail.canManageRequests &&
+                        detail.pendingRequests.isNotEmpty) ...[
+                      _SectionLabel(
+                        l10n
+                            .groupSettingsSectionPendingRequests(
+                              detail.pendingRequests.length,
+                            )
+                            .toUpperCase(),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.sm),
+                      GlassCard(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Column(
+                          children: [
+                            for (
+                              var i = 0;
+                              i < detail.pendingRequests.length;
+                              i++
+                            ) ...[
+                              if (i > 0)
+                                const Divider(
+                                  color: AppColors.glassBorder,
+                                  height: 1,
+                                ),
+                              _JoinRequestRow(
+                                request: detail.pendingRequests[i],
+                                onApprove: () =>
+                                    _approveRequest(detail.pendingRequests[i].id),
+                                onDeny: () => _denyRequest(
+                                  detail.pendingRequests[i].id,
+                                  detail.pendingRequests[i].user.displayName,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                    if (detail.canDeleteGroup) ...[
+                      const SizedBox(height: AppSpacing.xl),
+                      _SectionLabel(
+                        l10n.groupSettingsSectionDangerZone.toUpperCase(),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      GlassCard(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              l10n.groupSettingsDangerDescription,
+                              style: const TextStyle(
+                                color: AppColors.textTertiary,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            GlassButton(
+                              onPressed: _deleteGroup,
+                              variant: GlassButtonVariant.ghost,
+                              child: Text(
+                                l10n.groupSettingsDeleteTitle,
+                                style: const TextStyle(color: AppColors.error),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
                   ],
-                ],
+                ),
               ),
             );
           },

@@ -1,6 +1,6 @@
 ---
 spec: core-platform-implementation
-version: "1.1"
+version: "1.11"
 status: complete
 last_updated: "2026-06-04"
 sub_project: 1
@@ -97,8 +97,17 @@ lib/
 - Runtime config may split the API's internal object-storage endpoint from the
   browser-facing upload base URL when uploads need to traverse a different
   public host than the backend uses internally.
-- `docker-compose.release.yml` keeps storage external by default but may opt
-  into a bundled MinIO profile for small self-hosted environments.
+- Flutter does not carry a separate MinIO or avatar-upload-host `--dart-define`;
+  it talks to the API base URL and consumes backend-provided `upload_url` /
+  `avatar_url` values from the maintained upload contract.
+- `docker-compose.release.yml` now includes bundled MinIO by default for
+  self-hosted environments while still allowing operators to repoint the API at
+  a different S3-compatible backend if they intentionally customize the stack.
+- The release compose bootstrap path is inlined inside the MinIO helper service
+  so stack deployers like Portainer do not depend on repo-file bind mounts for
+  bucket initialization, and it overrides the `minio/mc` entrypoint with
+  `/bin/sh -ec` so Podman/Portainer execute the inline shell bootstrap instead
+  of treating it as an `mc` subcommand.
 - Helm/OpenShift deployments continue treating avatar storage as external
   runtime configuration rather than a chart-managed dependency.
 
@@ -130,9 +139,14 @@ lib/
 ### Interaction Conventions
 
 - desktop/web tappables use a pointer cursor
+- desktop/web pages use shared width archetypes so single-column content stays readable on ultrawide screens while the shell/sidebar remains fixed; the maintained presets are `compact` (~560), `form` (~720), `reading` (~960), `wide` (~1120), and opt-in `full`
+- width constraints apply to the page canvas, not every nested card or button; screens should assign one preset by archetype instead of inventing ad-hoc per-screen max widths
+- focused flows outside the shell center their constrained content in the viewport, while shell-contained pages center their constrained content inside the right-hand content pane without moving the left navigation rail
+- shared app bars may align to the same width preset as the page body on desktop/web so toolbar content and constrained page content stay visually connected
 - shell-route dialogs and bottom sheets use the root navigator so overlays render above persistent navigation
 - new user-facing strings must be localized through ARB files
 - popup menus follow the global glass theme
+- async field-availability feedback uses compact suffix status affordances where both loading and error glyphs share the same aligned wrapper, and surfaces localized inline error text through the input instead of relying on icon-only failure states
 
 ### Motion Rules
 
@@ -182,5 +196,8 @@ Outside the shell:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-04 | Interaction conventions | Added the maintained desktop/web page-width archetype contract (`compact`, `form`, `reading`, `wide`, opt-in `full`) plus alignment rules for focused flows, shell content, and matching app bars | Prevents ultrawide web layouts from stretching single-column flows while keeping width decisions consistent and reusable |
+| 2026-06-04 | Interaction conventions | Refined compact async-validation affordances so both the trailing spinner and trailing error glyph use the same aligned compact wrapper instead of mismatched slot treatment, while still showing localized inline error text | Keeps the shared input contract aligned with the maintained register/onboarding validation UX |
 | 2026-06-04 | Spec topology | Reframed the former UI-architecture child spec as the SP1 implementation spec while preserving its content focus on Flutter structure, shared app contracts, design-system rules, navigation, localization, and testing expectations | Aligns SP1 naming with the SP2 overview plus implementation pattern without a broad content rewrite |
-| 2026-06-04 | Runtime storage integration | Documented the bundled MinIO local-dev path, the optional release-compose MinIO profile, and the split between internal storage endpoints and browser-facing upload hosts when needed | Captures the supported self-hosted avatar-storage topology without changing the Flutter/backend upload contract |
+| 2026-06-04 | Runtime storage integration | Documented the bundled MinIO local-dev path, the default bundled MinIO release-compose path for self-hosted installs, the split between internal storage endpoints and browser-facing upload hosts when needed, and that Flutter consumes backend-provided upload URLs rather than a separate MinIO define | Captures the supported self-hosted avatar-storage topology without changing the Flutter/backend upload contract |
+| 2026-06-04 | Portainer-safe release bootstrap | Clarified that the release MinIO bootstrap is inlined in compose rather than mounted from repo files, and that it overrides the `minio/mc` entrypoint with `/bin/sh -ec` for Podman/Portainer compatibility | Keeps the self-hosted release path compatible with stack deployers that do not project repo-relative helper files into containers |

@@ -112,6 +112,23 @@ void main() {
     expect(find.text('Gaming-Präferenzen'), findsNothing);
   });
 
+  testWidgets('onboarding keeps the welcome CTA constrained on desktop', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1600, 1200);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpOnboardingScreen(tester);
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSize(find.widgetWithText(ElevatedButton, 'Get Started')).width,
+      lessThan(700),
+    );
+  });
+
   testWidgets('finish can succeed without selecting a gaming time slot', (
     tester,
   ) async {
@@ -146,6 +163,47 @@ void main() {
       profileNotifier.lastUpdates?.containsKey('preferred_gaming_hours'),
       isFalse,
     );
+  });
+
+  testWidgets('onboarding saves the selected timezone', (tester) async {
+    final profileNotifier = _RecordingProfileNotifier();
+
+    await pumpOnboardingScreen(tester, profileNotifier: profileNotifier);
+
+    await tester.tap(find.text('Get Started'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).first, 'Ready Player');
+    await tester.enterText(find.byType(TextFormField).at(1), 'ready@test.com');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+
+    await tester.scrollUntilVisible(
+      find.text('Timezone'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Timezone'), findsOneWidget);
+
+    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Europe/Berlin').last);
+    await tester.pumpAndSettle();
+
+    await _tapVisibleButton(tester, 'Next');
+    await tester.scrollUntilVisible(
+      find.text('Finish'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Finish'));
+    await tester.pump();
+
+    expect(profileNotifier.lastUpdates?['timezone'], 'Europe/Berlin');
   });
 
   testWidgets('finish does not throw after navigating away from profile step', (

@@ -10,6 +10,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../providers/groups_provider.dart';
 
@@ -88,146 +89,150 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
           title: l10n.createGroupTitle,
+          contentWidth: DesktopContentWidth.form,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
             onPressed: () => context.pop(),
           ),
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: AppSpacing.md),
-                GlassInput(
-                  controller: _nameController,
-                  label: l10n.createGroupNameLabel,
-                  hint: l10n.createGroupNameHint,
-                  prefixIcon: Icons.groups,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.createGroupNameRequired;
-                    }
-                    if (value.trim().length < 3) {
-                      return l10n.createGroupNameMin;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                GlassInput(
-                  controller: _descriptionController,
-                  label: l10n.createGroupDescriptionLabel,
-                  hint: l10n.createGroupDescriptionHint,
-                  prefixIcon: Icons.description_outlined,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                GlassCard(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.createGroupDiscoverableTitle,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
+        body: DesktopContentRegion(
+          width: DesktopContentWidth.form,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSpacing.md),
+                  GlassInput(
+                    controller: _nameController,
+                    label: l10n.createGroupNameLabel,
+                    hint: l10n.createGroupNameHint,
+                    prefixIcon: Icons.groups,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.createGroupNameRequired;
+                      }
+                      if (value.trim().length < 3) {
+                        return l10n.createGroupNameMin;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  GlassInput(
+                    controller: _descriptionController,
+                    label: l10n.createGroupDescriptionLabel,
+                    hint: l10n.createGroupDescriptionHint,
+                    prefixIcon: Icons.description_outlined,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  GlassCard(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.createGroupDiscoverableTitle,
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.createGroupDiscoverableSubtitle,
-                                  style: const TextStyle(
-                                    color: AppColors.textTertiary,
-                                    fontSize: 13,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    l10n.createGroupDiscoverableSubtitle,
+                                    style: const TextStyle(
+                                      color: AppColors.textTertiary,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          Switch(
-                            value: _isDiscoverable,
-                            onChanged: (v) =>
-                                setState(() => _isDiscoverable = v),
-                            activeTrackColor: AppColors.primary,
-                          ),
-                        ],
-                      ),
-                      if (_isDiscoverable) ...[
-                        const Divider(color: AppColors.glassBorder, height: 24),
-                        Text(
-                          l10n.createGroupJoinModeLabel,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        SegmentedButton<String>(
-                          segments: [
-                            ButtonSegment(
-                              value: 'open',
-                              label: Text(l10n.groupJoinModeOpenLabel),
-                              icon: const Icon(Icons.open_in_new, size: 16),
-                            ),
-                            ButtonSegment(
-                              value: 'approval',
-                              label: Text(l10n.groupJoinModeApprovalLabel),
-                              icon: const Icon(Icons.approval, size: 16),
+                            Switch(
+                              value: _isDiscoverable,
+                              onChanged: (v) =>
+                                  setState(() => _isDiscoverable = v),
+                              activeTrackColor: AppColors.primary,
                             ),
                           ],
-                          selected: {_joinMode},
-                          onSelectionChanged: (v) =>
-                              setState(() => _joinMode = v.first),
-                          style: ButtonStyle(
-                            backgroundColor:
-                                WidgetStateProperty.resolveWith((states) {
-                              if (states.contains(WidgetState.selected)) {
-                                return AppColors.primary.withValues(alpha: 0.2);
-                              }
-                              return AppColors.glassSurface;
-                            }),
-                            foregroundColor:
-                                WidgetStateProperty.resolveWith((states) {
-                              if (states.contains(WidgetState.selected)) {
-                                return AppColors.primary;
-                              }
-                              return AppColors.textSecondary;
-                            }),
-                          ),
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          _joinMode == 'open'
-                              ? l10n.groupJoinModeOpenDescription
-                              : l10n.groupJoinModeApprovalDescription,
-                          style: const TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 12,
+                        if (_isDiscoverable) ...[
+                          const Divider(color: AppColors.glassBorder, height: 24),
+                          Text(
+                            l10n.createGroupJoinModeLabel,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: AppSpacing.sm),
+                          SegmentedButton<String>(
+                            segments: [
+                              ButtonSegment(
+                                value: 'open',
+                                label: Text(l10n.groupJoinModeOpenLabel),
+                                icon: const Icon(Icons.open_in_new, size: 16),
+                              ),
+                              ButtonSegment(
+                                value: 'approval',
+                                label: Text(l10n.groupJoinModeApprovalLabel),
+                                icon: const Icon(Icons.approval, size: 16),
+                              ),
+                            ],
+                            selected: {_joinMode},
+                            onSelectionChanged: (v) =>
+                                setState(() => _joinMode = v.first),
+                            style: ButtonStyle(
+                              backgroundColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return AppColors.primary.withValues(alpha: 0.2);
+                                }
+                                return AppColors.glassSurface;
+                              }),
+                              foregroundColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return AppColors.primary;
+                                }
+                                return AppColors.textSecondary;
+                              }),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            _joinMode == 'open'
+                                ? l10n.groupJoinModeOpenDescription
+                                : l10n.groupJoinModeApprovalDescription,
+                            style: const TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                GlassButton(
-                  onPressed: _submit,
-                  isLoading: _isLoading,
-                  child: Text(l10n.createGroupSubmit),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.xl),
+                  GlassButton(
+                    onPressed: _submit,
+                    isLoading: _isLoading,
+                    child: Text(l10n.createGroupSubmit),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

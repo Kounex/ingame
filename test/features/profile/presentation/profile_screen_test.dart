@@ -143,6 +143,30 @@ void main() {
     },
   );
 
+  testWidgets('profile keeps the primary action within a reading width', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1600, 1200);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repository = _FakeProfileRepository(
+      const User(
+        id: 'user-1',
+        displayName: 'Schedule User',
+        timezone: 'UTC',
+      ),
+    );
+
+    await pumpProfile(tester, repository: repository);
+
+    expect(
+      tester.getSize(find.widgetWithText(ElevatedButton, 'Edit Profile')).width,
+      lessThanOrEqualTo(912),
+    );
+  });
+
   testWidgets('successful Steam unlink shows success feedback', (tester) async {
     final repository = _FakeProfileRepository(
       const User(

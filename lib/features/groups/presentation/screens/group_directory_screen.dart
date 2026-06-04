@@ -12,6 +12,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../data/groups_repository.dart';
@@ -81,9 +82,9 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
   Future<void> _joinGroup(Group group) async {
     try {
       if (group.joinMode == 'open') {
-        final repo = ref.read(groupsRepositoryProvider);
-        await repo.joinByInviteCode(group.inviteCode);
-        await ref.read(groupsNotifierProvider.notifier).load();
+        await ref
+            .read(groupsNotifierProvider.notifier)
+            .joinByInviteCode(group.inviteCode);
         if (mounted) {
           AppToast.success(
             context,
@@ -120,20 +121,26 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: GlassAppBar(title: context.l10n.groupDirectoryTitle),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: GlassInput(
-                controller: _searchController,
-                hint: context.l10n.groupDirectorySearchHint,
-                prefixIcon: Icons.search,
-                onChanged: _onSearchChanged,
+        appBar: GlassAppBar(
+          title: context.l10n.groupDirectoryTitle,
+          contentWidth: DesktopContentWidth.reading,
+        ),
+        body: DesktopContentRegion(
+          width: DesktopContentWidth.reading,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: GlassInput(
+                  controller: _searchController,
+                  hint: context.l10n.groupDirectorySearchHint,
+                  prefixIcon: Icons.search,
+                  onChanged: _onSearchChanged,
+                ),
               ),
-            ),
-            Expanded(child: _buildContent()),
-          ],
+              Expanded(child: _buildContent()),
+            ],
+          ),
         ),
       ),
     );

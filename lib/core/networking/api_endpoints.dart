@@ -7,11 +7,11 @@ class ApiEndpoints {
   );
   static const String webAppBaseUrl = String.fromEnvironment(
     'INGAME_WEB_APP_BASE_URL',
-    defaultValue: 'https://app.in-game.app',
+    defaultValue: 'http://localhost:8080',
   );
   static const String inviteBaseUrl = String.fromEnvironment(
     'INGAME_INVITE_BASE_URL',
-    defaultValue: 'https://in-game.app',
+    defaultValue: 'http://localhost:8080',
   );
 
   static String get websocketUrl {

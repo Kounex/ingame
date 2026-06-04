@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.32"
+version: "1.41"
 status: active
 last_updated: "2026-06-04"
 ---
@@ -68,12 +68,13 @@ graph LR
 - Add email/password for social-only users; unlink lockout guard
 - User profiles with gaming hours via a shared day-by-day preset editor (`Morning`, `Afternoon`, `Evening`, `Night`, `All day`), intelligent schedule display, bio, and a shared avatar editor that supports provider avatars, uploaded photos, camera capture, and URL entry while persisting only `avatar_url`
 - Groups with invite codes, discoverable directory, join requests with admin approval, and full owner/admin/member RBAC management
-- First-time user onboarding wizard (3-step) with optional recurring-availability capture using the same shared day-by-day preset editor as profile editing
+- First-time user onboarding wizard (3-step) with optional recurring-availability capture using the same shared day-by-day preset editor as profile editing plus the same shared timezone selector used in profile editing
 - English and German localization across the app shell, shared widgets, validators/error surfaces, and auth/onboarding/group/profile flows, with German catalog wording normalized for native spelling
 - System-locale default with manual language switching on login and in profile preferences
 - Structured backend error codes plus locale-reactive Flutter error/validation handling so persisted failures switch language without requiring a refetch or re-entry
 - Route-aware redirect normalization for auth/onboarding return targets
 - Hybrid persistent navigation: sidebar/bottom nav stays visible during browsing; focused flows (auth, onboarding) hide nav
+- Desktop/web width-aware content framing: focused flows and shell pages use shared page-width archetypes (`compact`, `form`, `reading`, `wide`, opt-in `full`) so ultrawide layouts keep readable canvases while persistent navigation stays fixed
 - Reusable `InGameLogo` brand widget with gradient styling
 - Platform-authentic social login buttons (Steam brand palette, Apple HIG)
 - Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus, and existing page transitions where retained
@@ -83,10 +84,10 @@ graph LR
 
 **Spec set:**
 - [Overview](2026-05-30-core-platform-design.md) (v3.1)
-- [Auth](2026-05-30-core-platform-auth.md) (v1.0)
-- [Profiles](2026-05-30-core-platform-profiles.md) (v1.5)
+- [Auth](2026-05-30-core-platform-auth.md) (v1.3)
+- [Profiles](2026-05-30-core-platform-profiles.md) (v1.7)
 - [Groups](2026-05-30-core-platform-groups.md) (v1.0)
-- [Implementation](2026-05-30-core-platform-implementation.md) (v1.1)
+- [Implementation](2026-05-30-core-platform-implementation.md) (v1.10)
 
 ---
 
@@ -125,7 +126,7 @@ SP2 intentionally distinguishes two coordination models:
 - [Overview](2026-05-30-real-time-coordination-design.md) (v2.0)
 - [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.0)
 - [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.0)
-- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.0)
+- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.1)
 
 ---
 
@@ -213,13 +214,13 @@ These patterns and practices apply across all sub-projects:
 
 **Spec-driven development:** Every sub-project starts with a design spec set (for SP1, beginning with the [Core Platform overview](2026-05-30-core-platform-design.md) and its child specs). Implementation follows the relevant spec. The spec is updated in the same response as any code change that affects API, data models, UI flows, or architecture. Enforced by `.cursor/rules/spec-driven-development.mdc`.
 
-**Design system:** All UI follows the glassmorphism design system defined in SP1 -- dark gradients, translucent glass surfaces, electric blue primary accent. Components: `GlassCard`, `GlassButton`, `GlassInput`, `GlassAppBar`, `AdaptiveShell`, `StatusIndicator`. New sub-projects extend but don't replace this system.
+**Design system:** All UI follows the glassmorphism design system defined in SP1 -- dark gradients, translucent glass surfaces, electric blue primary accent. Components: `GlassCard`, `GlassButton`, `GlassInput`, `GlassAppBar`, `AdaptiveShell`, `StatusIndicator`. Desktop/web single-column pages also use shared width archetypes (`compact`, `form`, `reading`, `wide`, opt-in `full`) so shells and focused flows stay readable on ultrawide displays. New sub-projects extend but don't replace this system.
 
 **Localization:** User-facing Flutter copy is localized via Flutter's official `flutter_localizations + intl + gen_l10n` stack. English and German ARB catalogs live under `lib/l10n/`; widgets should use `context.l10n`, and non-widget helpers should use the locale-aware fallback accessor rather than inline English strings. This contract also covers shared widget copy plus supporting validator/error/helper text, and the German catalog should prefer natural `ä`, `ö`, `ü`, and `ß` forms when linguistically correct.
 
 **Testing strategy:** Each sub-project adds tests covering its scope. Backend uses pytest + httpx AsyncClient + SQLite test DB. Flutter uses Riverpod test utilities for providers and widget tests. CI runs all tests on PR.
 
-**Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo. For image-based Docker hosts, `docker-compose.release.yml` provides a matching API + web + PostgreSQL + Redis stack without bundling ingress. Local compose now also includes MinIO plus avatar-bucket bootstrap and MinIO-level CORS so the S3-compatible avatar upload flow works end to end in development, while release compose may either point at external S3-compatible storage or opt into a bundled MinIO profile for small self-hosted installs. Storage runtime config may also split the API's internal object-storage endpoint from the browser-facing upload host when those surfaces need different network addresses. The browser SPA and invite/deep-link host are tracked separately: `app.in-game.app` for the web app, `in-game.app` for mobile app links plus `/.well-known/*`. The base domain now also includes a standalone Astro marketing surface under `marketing/`, built statically and served behind nginx so `/join/*` can still proxy through to the browser app. Release image publishing now covers a third runtime, `ingame-marketing`, so release deployments can pull the base-domain site independently from the SPA runtime.
+**Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo. For image-based Docker hosts, `docker-compose.release.yml` provides a matching API + web + PostgreSQL + Redis stack without bundling ingress. Local compose now also includes MinIO plus avatar-bucket bootstrap and MinIO-level CORS so the S3-compatible avatar upload flow works end to end in development, while release compose now bundles MinIO by default for self-hosted installs even though the same API contract can still be repointed at another S3-compatible backend if operators intentionally customize the stack. The release MinIO bootstrap is now inlined in compose and runs through an explicit `/bin/sh -ec` entrypoint so Portainer-style stack deployers do not rely on repo-relative helper file mounts, multiline-shell parsing quirks, or the default `minio/mc` entrypoint. Storage runtime config may also split the API's internal object-storage endpoint from the browser-facing upload host when those surfaces need different network addresses. The browser SPA and invite/deep-link host are tracked separately: `app.in-game.app` for the web app, `in-game.app` for mobile app links plus `/.well-known/*`. The base domain now also includes a standalone Astro marketing surface under `marketing/`, built statically and served behind nginx so `/join/*` can still proxy through to the browser app. Release image publishing now covers a third runtime, `ingame-marketing`, so release deployments can pull the base-domain site independently from the SPA runtime.
 
 **API contract:** Backend Pydantic schemas are the source of truth. Flutter Freezed models must match the API response shapes. Business-rule error responses may also include stable machine-readable `code` values alongside `detail` so Flutter can localize failures without parsing English text. CI validates this alignment.
 
@@ -261,5 +262,10 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-04 | SP1 unified avatar editor | Moved all supported avatar image sources through the shared square editor, made existing avatars directly editable on tap, and changed URL avatars to fetch/crop/upload instead of persisting external links | Finishes the transition from the earlier hybrid spike to one maintained editor-centered avatar contract across onboarding and profile editing |
 | 2026-06-04 | SP1 naming normalization | Reframed the SP1 implementation-facing child spec from `UI Architecture` to `Implementation` and aligned the overview references | Makes the SP1 and SP2 spec sets read more consistently without broad content churn |
 | 2026-06-04 | SP2 spec split | Split the realtime coordination spec into overview, transport/presence, coordination-models, and implementation child specs | Keeps active phase-1 transport work separate from future coordination planning and reduces spec churn conflicts |
+| 2026-06-04 | SP2 membership-scope reconnect | Documented that current-user group membership changes refresh the authenticated realtime session so presence snapshots immediately reflect newly created, joined, or left groups | Keeps live presence aligned with group membership changes without requiring a manual relog |
+| 2026-06-04 | Repo-local Flutter defaults | Switched Flutter runtime host defaults back to localhost, documented the explicit iOS production release wrapper for prod host defines, and clarified that MinIO upload hosts remain backend/runtime config rather than Flutter defines | Keeps the repo environment-independent for contributors while preserving a clear opt-in production build path |
+| 2026-06-04 | iOS prod wrapper rename | Renamed the maintained iOS production helper to `ios_prod.sh` and documented that it defaults to `flutter run` while `--build` triggers `flutter build ipa` | Makes the scripted production-host workflow work for both direct device runs and IPA builds without duplicating scripts |
 | 2026-06-04 | SP1 auth/avatar contract sync | Corrected the auth refresh-token revoke code in the maintained auth spec and added the avatar-upload failure-code contract for storage unavailability and validation errors | Keeps the maintained SP1 docs aligned with the current backend/client release behavior after the audit follow-through |
-| 2026-06-04 | Self-hosted avatar storage path | Added MinIO-backed local compose support, documented the optional release-compose MinIO profile, and clarified the split between internal storage endpoints and browser-facing upload hosts when needed | Makes the maintained deployment story match the new self-hosted avatar upload path without coupling every production topology to bundled storage |
+| 2026-06-04 | Self-hosted avatar storage path | Added MinIO-backed local compose support, documented release-compose MinIO as the default self-hosted path, clarified the split between internal storage endpoints and browser-facing upload hosts when needed, and inlined the release bootstrap behind an explicit `/bin/sh -ec` entrypoint for Portainer-style stack deployers | Makes the maintained deployment story match the new self-hosted avatar upload path without coupling every production topology to bundled storage |
+| 2026-06-04 | SP1 onboarding timezone parity | Documented that onboarding now reuses the shared timezone selector from profile editing alongside the shared availability editor | Keeps the roadmap summary aligned with the implemented onboarding/profile setup flow |
+| 2026-06-04 | SP1 desktop width baseline | Added the maintained desktop/web page-width archetype contract and aligned focused flows plus shell pages on constrained content canvases for ultrawide layouts | Keeps single-column content readable on large monitors without moving the persistent sidebar |

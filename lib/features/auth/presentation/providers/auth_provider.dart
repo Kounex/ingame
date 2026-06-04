@@ -31,10 +31,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     state = const AsyncValue.data(AuthState.loading());
     try {
       final repo = ref.read(authRepositoryProvider);
@@ -42,6 +39,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncValue.data(AuthState.authenticated(user));
     } catch (e) {
       state = AsyncValue.data(AuthState.error(ApiError.toFailure(e)));
+    }
+  }
+
+  void clearError() {
+    final current = state.asData?.value;
+    if (current?.maybeWhen(error: (_) => true, orElse: () => false) ?? false) {
+      state = const AsyncValue.data(AuthState.unauthenticated());
     }
   }
 
@@ -109,5 +113,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 }
 
-final authNotifierProvider =
-    AsyncNotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final authNotifierProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);

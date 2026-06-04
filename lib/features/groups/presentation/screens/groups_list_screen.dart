@@ -9,6 +9,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../providers/groups_provider.dart';
@@ -31,33 +32,46 @@ class GroupsListScreen extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: GlassAppBar(title: context.l10n.groupsListTitle),
+        appBar: GlassAppBar(
+          title: context.l10n.groupsListTitle,
+          contentWidth: DesktopContentWidth.reading,
+        ),
         body: groupsAsync.when(
-          loading: () => const LoadingIndicator(),
-          error: (error, _) => ErrorDisplay(
-            message: ApiError.userMessage(error, context.l10n),
-            onRetry: () => ref.read(groupsNotifierProvider.notifier).load(),
+          loading: () => const DesktopContentRegion(
+            width: DesktopContentWidth.reading,
+            child: LoadingIndicator(),
+          ),
+          error: (error, _) => DesktopContentRegion(
+            width: DesktopContentWidth.reading,
+            child: ErrorDisplay(
+              message: ApiError.userMessage(error, context.l10n),
+              onRetry: () => ref.read(groupsNotifierProvider.notifier).load(),
+            ),
           ),
           data: (groups) {
             if (groups.isEmpty) {
-              return _EmptyState(
-                onCreateGroup: () =>
-                    context.goNamed(RouteNames.createGroup),
-                onBrowseGroups: () =>
-                    context.goNamed(RouteNames.discover),
+              return DesktopContentRegion(
+                width: DesktopContentWidth.reading,
+                child: _EmptyState(
+                  onCreateGroup: () => context.goNamed(RouteNames.createGroup),
+                  onBrowseGroups: () => context.goNamed(RouteNames.discover),
+                ),
               );
             }
 
-            return RefreshIndicator(
-              color: AppColors.primary,
-              backgroundColor: AppColors.backgroundLight,
-              onRefresh: () =>
-                  ref.read(groupsNotifierProvider.notifier).load(),
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                itemCount: groups.length,
-                itemBuilder: (context, index) =>
-                    GroupCard(group: groups[index]),
+            return DesktopContentRegion(
+              width: DesktopContentWidth.reading,
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                backgroundColor: AppColors.backgroundLight,
+                onRefresh: () =>
+                    ref.read(groupsNotifierProvider.notifier).load(),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  itemCount: groups.length,
+                  itemBuilder: (context, index) =>
+                      GroupCard(group: groups[index]),
+                ),
               ),
             );
           },

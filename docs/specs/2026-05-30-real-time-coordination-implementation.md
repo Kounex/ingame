@@ -1,6 +1,6 @@
 ---
 spec: real-time-coordination-implementation
-version: "1.0"
+version: "1.1"
 status: in-progress
 last_updated: "2026-06-04"
 sub_project: 2
@@ -32,6 +32,7 @@ This spec covers the implementation-facing SP2 details:
 - `presenceNotifierProvider` stores per-group member presence derived from snapshot plus events, including expiry-aware ready state
 - `presenceLifecycleProvider` sends lifecycle-derived away and active transitions
 - REST bootstrap providers remain responsible for initial group and member fetches
+- current-user membership mutations that change group scope (`create`, open `join`, `leave`) must refresh the authenticated WebSocket session so the next `presence_snapshot` is scoped to the latest memberships
 
 ### UI Integration
 
@@ -106,3 +107,4 @@ This spec covers the implementation-facing SP2 details:
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
 | 2026-06-04 | Spec topology | Created a dedicated implementation spec by extracting Flutter architecture, backend responsibilities, testing expectations, and deployment notes from the larger SP2 realtime spec | Keeps delivery-oriented details together without mixing them into the core transport or future coordination model contracts |
+| 2026-06-04 | Membership refresh reconnect | Documented that current-user group membership mutations must refresh the authenticated WebSocket session so presence bootstrap rehydrates against the new group scope | Keeps realtime presence aligned immediately after group create/join/leave instead of waiting for a full relog |

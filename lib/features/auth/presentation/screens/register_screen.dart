@@ -14,14 +14,12 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../data/auth_repository.dart';
 import '../../../../shared/widgets/tappable.dart';
+import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({
-    super.key,
-    this.redirectTo,
-  });
+  const RegisterScreen({super.key, this.redirectTo});
 
   final String? redirectTo;
 
@@ -47,6 +45,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   bool _hasAttemptedSubmit = false;
 
   static const _debounceDuration = Duration(milliseconds: 600);
+
+  void _clearAuthErrorIfNeeded() {
+    ref.read(authNotifierProvider.notifier).clearError();
+  }
 
   @override
   void initState() {
@@ -80,7 +82,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       return;
     }
 
-    setState(() => _emailChecking = true);
+    setState(() {
+      _emailChecking = true;
+      _emailAvailabilityError = null;
+    });
 
     _emailDebounce = Timer(_debounceDuration, () async {
       try {
@@ -89,10 +94,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         if (mounted && _emailController.text.trim() == email) {
           setState(() {
             _emailChecking = false;
-            _emailAvailabilityError =
-                available
-                    ? null
-                    : const LocalizedFailure(AppFailureMessageKey.registerEmailTaken);
+            _emailAvailabilityError = available
+                ? null
+                : const LocalizedFailure(
+                    AppFailureMessageKey.registerEmailTaken,
+                  );
           });
         }
       } catch (_) {
@@ -115,7 +121,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       return;
     }
 
-    setState(() => _displayNameChecking = true);
+    setState(() {
+      _displayNameChecking = true;
+      _displayNameAvailabilityError = null;
+    });
 
     _displayNameDebounce = Timer(_debounceDuration, () async {
       try {
@@ -124,12 +133,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         if (mounted && _displayNameController.text.trim() == name) {
           setState(() {
             _displayNameChecking = false;
-            _displayNameAvailabilityError =
-                available
-                    ? null
-                    : const LocalizedFailure(
-                        AppFailureMessageKey.registerDisplayNameTaken,
-                      );
+            _displayNameAvailabilityError = available
+                ? null
+                : const LocalizedFailure(
+                    AppFailureMessageKey.registerDisplayNameTaken,
+                  );
           });
         }
       } catch (_) {
@@ -148,7 +156,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         !isFormValid) {
       return;
     }
-    ref.read(authNotifierProvider.notifier).register(
+    ref
+        .read(authNotifierProvider.notifier)
+        .register(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           displayName: _displayNameController.text.trim(),
@@ -161,16 +171,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }) {
     if (checking) {
       return const SizedBox(
-        width: 18,
-        height: 18,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: AppColors.textTertiary,
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(end: 12),
+          child: Align(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ),
         ),
       );
     }
     if (error != null) {
-      return const Icon(Icons.cancel_outlined, color: AppColors.error, size: 20);
+      return const SizedBox(
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(end: 12),
+          child: Align(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Icon(
+              Icons.cancel_outlined,
+              color: AppColors.error,
+              size: 16,
+            ),
+          ),
+        ),
+      );
     }
     return const SizedBox.shrink();
   }
@@ -191,7 +223,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (_, next) {
       next.whenData((state) {
         state.whenOrNull(
-          authenticated: (_) => context.go(widget.redirectTo ?? RoutePaths.home),
+          authenticated: (_) =>
+              context.go(widget.redirectTo ?? RoutePaths.home),
         );
       });
     });
@@ -219,113 +252,126 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         ),
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: GlassCard(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: AppSpacing.xxl),
-                      GlassInput(
-                        controller: _displayNameController,
-                        label: l10n.registerDisplayNameLabel,
-                        hint: l10n.registerDisplayNameHint,
-                        textInputAction: TextInputAction.next,
-                        prefixIcon: Icons.person_outline,
-                        suffixIcon: _buildAvailabilityIndicator(
-                          checking: _displayNameChecking,
-                          error: _displayNameAvailabilityError,
+            child: DesktopContentRegion(
+              width: DesktopContentWidth.compact,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: AppSpacing.xxl),
+                        GlassInput(
+                          controller: _displayNameController,
+                          label: l10n.registerDisplayNameLabel,
+                          hint: l10n.registerDisplayNameHint,
+                          textInputAction: TextInputAction.next,
+                          prefixIcon: Icons.person_outline,
+                          onChanged: (_) => _clearAuthErrorIfNeeded(),
+                          errorText: _displayNameAvailabilityError?.userMessage(
+                            l10n,
+                          ),
+                          suffixIcon: _buildAvailabilityIndicator(
+                            checking: _displayNameChecking,
+                            error: _displayNameAvailabilityError,
+                          ),
+                          validator: (value) {
+                            final base = FormValidators.displayName(value);
+                            if (base != null) return base;
+                            if (_displayNameAvailabilityError != null) {
+                              return _displayNameAvailabilityError!.userMessage(
+                                l10n,
+                              );
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          final base = FormValidators.displayName(value);
-                          if (base != null) return base;
-                          if (_displayNameAvailabilityError != null) {
-                            return _displayNameAvailabilityError!.userMessage(l10n);
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      GlassInput(
-                        controller: _emailController,
-                        label: l10n.loginEmailLabel,
-                        hint: l10n.loginEmailHint,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        prefixIcon: Icons.email_outlined,
-                        suffixIcon: _buildAvailabilityIndicator(
-                          checking: _emailChecking,
-                          error: _emailAvailabilityError,
-                        ),
-                        validator: (value) {
-                          final base = FormValidators.email(value);
-                          if (base != null) return base;
-                          if (_emailAvailabilityError != null) {
-                            return _emailAvailabilityError!.userMessage(l10n);
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      GlassInput(
-                        controller: _passwordController,
-                        label: l10n.loginPasswordLabel,
-                        hint: l10n.registerPasswordHint,
-                        obscureText: true,
-                        textInputAction: TextInputAction.next,
-                        prefixIcon: Icons.lock_outline,
-                        validator: FormValidators.password,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      GlassInput(
-                        controller: _confirmPasswordController,
-                        label: l10n.registerConfirmPasswordLabel,
-                        hint: l10n.registerConfirmPasswordHint,
-                        obscureText: true,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _onRegister(),
-                        prefixIcon: Icons.lock_outline,
-                        validator: (value) => FormValidators.confirmPassword(
-                          value,
-                          _passwordController.text,
-                        ),
-                      ),
-                      if (errorFailure != null) ...[
                         const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.error.withValues(alpha: 0.3),
-                            ),
+                        GlassInput(
+                          controller: _emailController,
+                          label: l10n.loginEmailLabel,
+                          hint: l10n.loginEmailHint,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          prefixIcon: Icons.email_outlined,
+                          onChanged: (_) => _clearAuthErrorIfNeeded(),
+                          errorText: _emailAvailabilityError?.userMessage(l10n),
+                          suffixIcon: _buildAvailabilityIndicator(
+                            checking: _emailChecking,
+                            error: _emailAvailabilityError,
                           ),
-                          child: Text(
-                            errorFailure!.userMessage(l10n),
-                            style: const TextStyle(
-                              color: AppColors.error,
-                              fontSize: 13,
-                            ),
-                            textAlign: TextAlign.center,
+                          validator: (value) {
+                            final base = FormValidators.email(value);
+                            if (base != null) return base;
+                            if (_emailAvailabilityError != null) {
+                              return _emailAvailabilityError!.userMessage(l10n);
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        GlassInput(
+                          controller: _passwordController,
+                          label: l10n.loginPasswordLabel,
+                          hint: l10n.registerPasswordHint,
+                          obscureText: true,
+                          textInputAction: TextInputAction.next,
+                          prefixIcon: Icons.lock_outline,
+                          onChanged: (_) => _clearAuthErrorIfNeeded(),
+                          validator: FormValidators.password,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        GlassInput(
+                          controller: _confirmPasswordController,
+                          label: l10n.registerConfirmPasswordLabel,
+                          hint: l10n.registerConfirmPasswordHint,
+                          obscureText: true,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _onRegister(),
+                          onChanged: (_) => _clearAuthErrorIfNeeded(),
+                          prefixIcon: Icons.lock_outline,
+                          validator: (value) => FormValidators.confirmPassword(
+                            value,
+                            _passwordController.text,
                           ),
                         ),
+                        if (errorFailure != null) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.error.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              errorFailure!.userMessage(l10n),
+                              style: const TextStyle(
+                                color: AppColors.error,
+                                fontSize: 13,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.lg),
+                        GlassButton(
+                          onPressed: loading ? null : _onRegister,
+                          variant: GlassButtonVariant.primary,
+                          isLoading: loading,
+                          child: Text(l10n.registerSubmit),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildLoginLink(),
                       ],
-                      const SizedBox(height: AppSpacing.lg),
-                      GlassButton(
-                        onPressed: loading ? null : _onRegister,
-                        variant: GlassButtonVariant.primary,
-                        isLoading: loading,
-                        child: Text(l10n.registerSubmit),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      _buildLoginLink(),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -355,10 +401,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         const SizedBox(height: AppSpacing.sm),
         Text(
           context.l10n.registerSubtitle,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 16,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
         ),
       ],
     );
@@ -375,14 +418,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         ),
         const SizedBox(width: 4),
         Tappable(
-          onTap: () => context.go(
-            Uri(
-              path: RoutePaths.login,
-              queryParameters: widget.redirectTo == null
-                  ? null
-                  : {'from': widget.redirectTo!},
-            ).toString(),
-          ),
+          onTap: () {
+            _clearAuthErrorIfNeeded();
+            context.go(
+              Uri(
+                path: RoutePaths.login,
+                queryParameters: widget.redirectTo == null
+                    ? null
+                    : {'from': widget.redirectTo!},
+              ).toString(),
+            );
+          },
           child: Text(
             l10n.registerLogin,
             style: const TextStyle(

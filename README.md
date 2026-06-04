@@ -72,6 +72,12 @@ flutter pub get
 flutter run
 ```
 
+By default, Flutter runtime hosts stay repo-local for development:
+
+- `INGAME_API_BASE_URL=http://localhost:8000/api/v1`
+- `INGAME_WEB_APP_BASE_URL=http://localhost:8080`
+- `INGAME_INVITE_BASE_URL=http://localhost:8080`
+
 If you want the native app to target a different backend, browser-app host, or invite host:
 
 ```bash
@@ -110,8 +116,10 @@ helm template ingame-api deploy/helm/ingame-api -f deploy/helm/ingame-api/values
 helm template ingame-web deploy/helm/ingame-web -f deploy/helm/ingame-web/values.yaml
 ```
 
-Local compose wires MinIO automatically. Release-style deployments still require
-either an external S3-compatible store or the optional bundled MinIO profile.
+Local compose wires MinIO automatically. `docker-compose.release.yml` now also
+includes bundled MinIO by default for self-hosted deployments, while the same
+API contract can still point at a different external S3-compatible store if you
+intentionally customize the stack.
 
 Avatar uploads require runtime values for:
 
@@ -122,6 +130,10 @@ Avatar uploads require runtime values for:
 - `INGAME_AVATAR_STORAGE_ACCESS_KEY_ID`
 - `INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY`
 - `INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL`
+
+These avatar-storage and MinIO values are backend/runtime configuration only.
+Flutter does not have a separate MinIO `--dart-define`; it talks to the API and
+uses the backend-provided `upload_url` / `avatar_url` contract.
 
 If those are intentionally left unset, `POST /api/v1/users/me/avatar-upload/init`
 will return the structured fallback `503 user.avatar_upload_unavailable`.
@@ -143,6 +155,39 @@ python3 -m scripts.release.release_prep_report --base main --head dev
 
 ```bash
 python3 -m scripts.release.stack_version prepare-release --owner kounex --write
+```
+
+### iOS production build
+
+Use the iOS production wrapper so production hosts are opt-in instead of baked into the
+repo defaults:
+
+```bash
+./scripts/release/ios_prod.sh -d <device-id>
+```
+
+Without `--build`, the wrapper runs `flutter run`. With `--build`, it switches
+to `flutter build ipa`.
+
+The wrapper passes:
+
+- `INGAME_API_BASE_URL=https://api.in-game.app/api/v1`
+- `INGAME_WEB_APP_BASE_URL=https://app.in-game.app`
+- `INGAME_INVITE_BASE_URL=https://in-game.app`
+
+Build an IPA instead of running on a connected device:
+
+```bash
+./scripts/release/ios_prod.sh --build
+```
+
+You can override any of them for another environment, for example:
+
+```bash
+INGAME_API_BASE_URL=https://api.example.com/api/v1 \
+INGAME_WEB_APP_BASE_URL=https://app.example.com \
+INGAME_INVITE_BASE_URL=https://example.com \
+./scripts/release/ios_prod.sh --build
 ```
 
 4. Commit the release-prep changes on `dev`.
@@ -181,10 +226,16 @@ The semver tag is pushed after the SHA tag so GHCR surfaces the release version 
 Podman-hosted installs without bundled ingress. It supports:
 
 - the default API + web + marketing + PostgreSQL + Redis stack
+- bundled MinIO + bucket bootstrap for self-hosted avatar uploads
 - externally managed S3-compatible avatar storage via environment variables
-- an optional self-contained MinIO path via `--profile minio` for small self-hosted installs
 
-When using the optional MinIO profile, point the API at the bundled service and
+The release MinIO bootstrap is inlined directly in the compose service so
+Portainer stack deployments do not depend on mounting repo-side helper files,
+and the bootstrap runs through an explicit `/bin/sh -ec` entrypoint so the
+`minio/mc` image does not try to interpret the shell command as an `mc`
+subcommand.
+
+When using the bundled MinIO release stack, point the API at the bundled service and
 provide a browser-reachable public base URL. A typical self-hosted `.env` pairing is:
 
 ```bash
@@ -197,14 +248,14 @@ INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY=replace-me
 INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL=https://assets.example.com/ingame-avatars
 ```
 
-If you use the optional bundled MinIO profile on a non-`app.in-game.app` host,
+If you use the bundled MinIO release stack on a non-`app.in-game.app` host,
 set `MINIO_API_CORS_ALLOW_ORIGIN` to the browser origin you actually serve the
 app from, or leave the compose default `*` in place for a broad self-hosted setup.
 
 Then start the release stack with:
 
 ```bash
-podman compose -f docker-compose.release.yml --profile minio up -d
+podman compose -f docker-compose.release.yml up -d
 ```
 
 ### Helm charts
