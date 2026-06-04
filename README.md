@@ -203,7 +203,7 @@ Native invite-link validation is only complete once the Android release certific
 
 Useful project-local agent assets:
 
-- `.agents/skills/release-prep/SKILL.md`
+- `.agents/skills/tag-release/SKILL.md`
 - `.cursor/rules/localize-user-facing-strings.mdc`
 - `.cursor/rules/release-versioning.mdc`
 - `.cursor/rules/ghcr-image-conventions.mdc`

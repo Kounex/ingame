@@ -1,12 +1,12 @@
 ---
-name: release-prep
-description: Review the current dev branch against main, recommend the appropriate semantic version bump, and draft release notes before a release. Use when the user says a build should become a release, wants help deciding patch/minor/major, or wants release notes and release-prep guidance for this repository.
+name: tag-release
+description: Use when the user wants to prepare or execute a new repository release for this repo, asks for semver or release-tag help, or mentions release prep, merging dev to main, or tagging from main.
 disable-model-invocation: true
 ---
 
-# Release Prep
+# Tag Release
 
-Use this skill when the team is preparing a new release from `dev`.
+Use this skill when the team is preparing and executing a new release from `dev`.
 
 ## Workflow
 
@@ -63,6 +63,49 @@ python3 -m scripts.release.stack_version prepare-release --owner kounex --write
    - `deploy/helm/ingame-api/values.yaml`
    - `deploy/helm/ingame-web/Chart.yaml`
    - `deploy/helm/ingame-web/values.yaml`
+
+7. Commit the release-prep changes on `dev`.
+
+8. Push `dev` before touching `main`:
+
+```bash
+git push origin dev
+```
+
+9. Merge `dev` into `main` and push `main`:
+
+```bash
+git switch main
+git merge --ff-only dev
+git push origin main
+```
+
+10. Create the new semver tag from `main`, not from `dev`:
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+11. Confirm that `main` and the new tag point to the same commit.
+
+12. Finish by creating a GitHub release from that tag with a changelog since the previous release:
+
+```bash
+gh release create vX.Y.Z \
+  --title "vX.Y.Z" \
+  --generate-notes
+```
+
+Use the generated release notes as the baseline changelog since the previous GitHub release, and make sure they still match the drafted release notes before reporting release success.
+
+## Guardrails
+
+- Do not tag from `dev`.
+- Do not push the release tag before `main` has been updated to the same commit.
+- Do not create the GitHub release before the tag exists on `origin`.
+- If `main` cannot fast-forward to `dev`, stop and ask before creating the tag.
+- If the release version and tag do not match, stop and fix that before pushing.
 
 ## Guidance
 
