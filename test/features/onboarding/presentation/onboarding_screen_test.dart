@@ -187,9 +187,9 @@ void main() {
 
     expect(find.text('Timezone'), findsOneWidget);
 
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byKey(const ValueKey('timezone-selector-trigger')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Europe/Berlin').last);
+    await tester.tap(find.byKey(const ValueKey('timezone-option-Europe/Berlin')));
     await tester.pumpAndSettle();
 
     await _tapVisibleButton(tester, 'Next');
