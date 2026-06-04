@@ -5,8 +5,7 @@
       {
         "appID": "2CCV4GWY52.ingame.kounex.com",
         "paths": [
-          "/join/*",
-          "/auth/steam-callback.html"
+          "/join/*"
         ]
       }
     ]

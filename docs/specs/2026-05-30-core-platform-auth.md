@@ -1,6 +1,6 @@
 ---
 spec: core-platform-auth
-version: "1.4"
+version: "1.5"
 status: complete
 last_updated: "2026-06-04"
 sub_project: 1
@@ -117,17 +117,17 @@ Connected-account rows on the profile screen trigger these flows directly, then 
 
 | Platform | Steam callback | Apple Sign-In | Config file(s) |
 |----------|---------------|---------------|----------------|
-| **iOS** | `https://app.in-game.app/auth/steam-callback.html` via `ASWebAuthenticationSession` HTTPS callback + Universal Links | Native AuthenticationServices via entitlements | `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements`, `web/.well-known/apple-app-site-association` |
+| **iOS** | hosted `https://app.in-game.app/auth/steam-callback.html` page that bridges back to `ingame://auth/steam/callback` for the native auth session | Native AuthenticationServices via the app URL scheme | `ios/Runner/Info.plist`, `web/auth/steam-callback.html` |
 | **Android** | `ingame://` scheme via `CallbackActivity` intent filter | N/A (Apple Sign-In not on Android) | `android/app/src/main/AndroidManifest.xml` |
 | **Web** | `{origin}/auth/steam-callback.html` callback page resolves the browser flow | `{origin}/auth/apple-callback.html` + `WebAuthenticationOptions(clientId, redirectUri)` | `web/auth/steam-callback.html`, `web/auth/apple-callback.html` |
 
 Additional constraints:
 
 - The maintained SP1 auth callback contract covers the active product platforms only: iOS, Android, and Web.
-- `flutter_web_auth_2` uses `https` plus `httpsHost` and `httpsPath` for iOS Steam auth so the hosted callback page resolves through Universal Links; web still ignores the scheme and uses the callback HTML page messaging contract.
+- `flutter_web_auth_2` receives the valid custom scheme `ingame` for native Steam auth. The hosted Steam callback page adds an `ingame_native=1` bridge marker for native flows and redirects those sessions back into `ingame://auth/steam/callback`, while web still uses the callback HTML page messaging contract.
 - Flutter runtime host defaults stay repo-local for development: `INGAME_API_BASE_URL=http://localhost:8000/api/v1`, `INGAME_WEB_APP_BASE_URL=http://localhost:8080`, and `INGAME_INVITE_BASE_URL=http://localhost:8080`.
 - Native Steam callback generation uses `INGAME_WEB_APP_BASE_URL`, while invite/deep-link surfaces use `INGAME_INVITE_BASE_URL`.
-- iOS associated domains must include both `in-game.app` for invite links and `app.in-game.app` for the hosted Steam auth callback, and the hosted `apple-app-site-association` file must allow `/auth/steam-callback.html`.
+- iOS associated domains remain required for invite links on `in-game.app`, but Steam auth no longer depends on a Universal Link association for `app.in-game.app`.
 - Production native builds must pass explicit host `--dart-define` values rather than relying on repo defaults; the maintained iOS release path uses a dedicated `scripts/release/ios_prod.sh` wrapper, defaulting to `flutter run` and switching to `flutter build ipa` only when `--build` is provided.
 - Apple web Sign-In uses `--dart-define=APPLE_SERVICE_ID=com.ingame.web`.
 
@@ -157,3 +157,4 @@ Flutter maps these codes to locale-aware user-facing messages instead of parsing
 | 2026-06-04 | Runtime host defaults | Clarified that Flutter runtime host defaults stay localhost for repo-independent development and that production native builds must pass explicit host defines | Prevents production domains from being hidden in the default repo config while keeping callback host behavior explicit |
 | 2026-06-04 | iOS wrapper interface | Updated the maintained iOS production wrapper contract so `ios_prod.sh` defaults to `flutter run` and uses `--build` to produce an IPA | Keeps the documented production helper aligned with the implemented script behavior and interactive device testing workflow |
 | 2026-06-04 | iOS Steam callback | Switched the maintained iOS Steam callback contract to the hosted `https://app.in-game.app/auth/steam-callback.html` Universal Link flow and documented the required associated-domain/AASA coverage | Prevents iOS production Steam sign-in from stalling on the callback page and being misread as a manual cancellation |
+| 2026-06-04 | iOS Steam bridge fallback | Replaced the direct iOS HTTPS callback contract with a hosted-page bridge back into `ingame://auth/steam/callback` and removed the `app.in-game.app` auth-specific Universal Link dependency | Restores a more compatible native Steam auth flow after the direct iOS HTTPS callback path failed before presenting Steam on-device |

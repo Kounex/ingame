@@ -6,7 +6,27 @@
 <body>
   <p>Authentication is complete. If this does not happen automatically, please close the window.</p>
   <script>
+    function maybeRedirectToNativeApp() {
+      const currentUrl = new URL(window.location.href);
+      const isNativeBridge = currentUrl.searchParams.get('ingame_native') === '1';
+      if (!isNativeBridge) {
+        return false;
+      }
+
+      currentUrl.searchParams.delete('ingame_native');
+      const nativeCallbackUrl = new URL('ingame://auth/steam/callback');
+      currentUrl.searchParams.forEach((value, key) => {
+        nativeCallbackUrl.searchParams.append(key, value);
+      });
+      window.location.replace(nativeCallbackUrl);
+      return true;
+    }
+
     function postAuthenticationMessage() {
+      if (maybeRedirectToNativeApp()) {
+        return;
+      }
+
       const message = {
         'flutter-web-auth-2': window.location.href
       };

@@ -10,7 +10,7 @@ void main() {
         isWeb: false,
         webAppBaseUrl: 'https://app.in-game.app/groups/abc?foo=bar#frag',
       ),
-      'https://app.in-game.app/auth/steam-callback.html',
+      'https://app.in-game.app/auth/steam-callback.html?ingame_native=1',
     );
   });
 
@@ -30,7 +30,7 @@ void main() {
         isWeb: false,
         webAppBaseUrl: 'http://localhost:8080',
       ),
-      'http://localhost:8080/auth/steam-callback.html',
+      'http://localhost:8080/auth/steam-callback.html?ingame_native=1',
     );
   });
 
@@ -44,23 +44,23 @@ void main() {
     );
   });
 
-  test('iOS Steam auth expects https universal-link callback', () {
+  test('iOS Steam auth keeps custom ingame callback scheme', () {
     expect(
       OAuthLauncher.steamCallbackSchemeForPlatform(
         isWeb: false,
         platform: TargetPlatform.iOS,
       ),
-      'https',
+      'ingame',
     );
 
-    final options = OAuthLauncher.steamAuthOptionsForPlatform(
-      isWeb: false,
-      platform: TargetPlatform.iOS,
-      webAppBaseUrl: 'https://app.in-game.app/groups/abc?foo=bar#frag',
+    expect(
+      OAuthLauncher.steamAuthOptionsForPlatform(
+        isWeb: false,
+        platform: TargetPlatform.iOS,
+        webAppBaseUrl: 'https://app.in-game.app/groups/abc?foo=bar#frag',
+      ),
+      isNull,
     );
-
-    expect(options?.httpsHost, 'app.in-game.app');
-    expect(options?.httpsPath, '/auth/steam-callback.html');
   });
 
   test('Android Steam auth keeps custom ingame callback scheme', () {
