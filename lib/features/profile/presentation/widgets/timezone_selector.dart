@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 
@@ -126,10 +125,7 @@ class TimezoneSelector extends StatelessWidget {
 }
 
 class _TimezoneMenuItem extends StatelessWidget {
-  const _TimezoneMenuItem({
-    required this.label,
-    required this.selected,
-  });
+  const _TimezoneMenuItem({required this.label, required this.selected});
 
   final String label;
   final bool selected;
@@ -159,7 +155,9 @@ class _TimezoneMenuItem extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+                color: selected
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
                 fontSize: 15,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
@@ -167,11 +165,7 @@ class _TimezoneMenuItem extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           if (selected)
-            const Icon(
-              Icons.check_rounded,
-              color: AppColors.primary,
-              size: 18,
-            ),
+            const Icon(Icons.check_rounded, color: AppColors.primary, size: 18),
         ],
       ),
     );

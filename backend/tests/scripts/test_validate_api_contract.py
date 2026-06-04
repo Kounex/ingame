@@ -35,3 +35,16 @@ def test_extract_user_columns_from_split_specs_aggregates_user_contract():
     assert "revoked_at" not in columns
     assert "email" in columns
     assert "steam_id" in columns
+
+
+def test_extract_group_columns_ignores_overview_groups_heading_collision():
+    spec_text = load_spec_bundle("docs/specs/2026-05-30-core-platform-design.md")
+
+    columns = extract_spec_model_columns(spec_text, "Group")
+
+    assert "id" in columns
+    assert "name" in columns
+    assert "invite_code" in columns
+    assert "created_at" in columns
+    assert "updated_at" in columns
+    assert "Date" not in columns

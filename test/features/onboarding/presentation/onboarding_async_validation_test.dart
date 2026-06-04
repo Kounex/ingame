@@ -66,13 +66,13 @@ Future<void> _pumpOnboardingScreen(
             ),
           ),
         ),
-        profileNotifierProvider.overrideWith(() => _FakeProfileNotifier()),
+        profileNotifierProvider.overrideWith(_FakeProfileNotifier.new),
         authRepositoryProvider.overrideWithValue(authRepository),
       ],
-      child: MaterialApp(
+      child: const MaterialApp(
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: const OnboardingScreen(),
+        home: OnboardingScreen(),
       ),
     ),
   );

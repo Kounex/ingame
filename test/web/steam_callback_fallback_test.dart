@@ -12,8 +12,8 @@ void main() {
         "localStorage.setItem('flutter-web-auth-2', window.location.href);",
       ),
     );
-    expect(html, contains("window.location.replace(nativeCallbackUrl);"));
-    expect(html, contains("ingame://auth/steam/callback"));
-    expect(html, contains("ingame_native"));
+    expect(html, contains('window.location.replace(nativeCallbackUrl);'));
+    expect(html, contains('ingame://auth/steam/callback'));
+    expect(html, contains('ingame_native'));
   });
 }

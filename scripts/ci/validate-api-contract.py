@@ -116,12 +116,17 @@ def load_spec(spec_path: str) -> str:
 def _extract_first_table_columns_after_header(
     spec_text: str, header: str
 ) -> set[str]:
-    start = spec_text.find(header)
-    if start == -1:
+    all_lines = spec_text.splitlines()
+    start_index = None
+    for index, line in enumerate(all_lines):
+        if line.strip() == header:
+            start_index = index + 1
+            break
+
+    if start_index is None:
         return set()
 
-    after_header = spec_text[start + len(header) :]
-    lines = after_header.splitlines()
+    lines = all_lines[start_index:]
     columns = set()
     in_table = False
 

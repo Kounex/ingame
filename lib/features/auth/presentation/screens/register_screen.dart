@@ -409,14 +409,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   Widget _buildLoginLink() {
     final l10n = context.l10n;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 4,
       children: [
         Text(
           l10n.registerAlreadyHaveAccount,
           style: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
         ),
-        const SizedBox(width: 4),
         Tappable(
           onTap: () {
             _clearAuthErrorIfNeeded();

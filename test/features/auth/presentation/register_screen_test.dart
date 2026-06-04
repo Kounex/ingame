@@ -62,10 +62,10 @@ Future<void> _pumpRegisterScreen(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [authRepositoryProvider.overrideWithValue(authRepository)],
-      child: MaterialApp(
+      child: const MaterialApp(
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: const RegisterScreen(),
+        home: RegisterScreen(),
       ),
     ),
   );
