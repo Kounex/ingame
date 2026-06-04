@@ -89,21 +89,42 @@ git push origin vX.Y.Z
 
 11. Confirm that `main` and the new tag point to the same commit.
 
-12. Finish by creating a GitHub release from that tag with a changelog since the previous release:
+12. Identify the previous GitHub release tag and build the compare link for the new tag:
+
+```bash
+PREV_TAG="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName')"
+COMPARE_URL="https://github.com/Kounex/ingame/compare/${PREV_TAG}...vX.Y.Z"
+```
+
+13. Finish by creating a GitHub release from that tag with a changelog since the previous release. The release body must include:
+   - a short agent-written summary explaining what changed since the last release
+   - a markdown link to the compare view for `${PREV_TAG}...vX.Y.Z`
+   - the generated GitHub release notes
 
 ```bash
 gh release create vX.Y.Z \
   --title "vX.Y.Z" \
-  --generate-notes
+  --generate-notes \
+  --notes "$(cat <<EOF
+## What Changed Since ${PREV_TAG}
+
+- <2-4 bullets written by the agent summarizing the release in plain language>
+
+## Compare
+
+- [Full changelog](${COMPARE_URL})
+EOF
+)"
 ```
 
-Use the generated release notes as the baseline changelog since the previous GitHub release, and make sure they still match the drafted release notes before reporting release success.
+Use the generated release notes as the baseline changelog since the previous GitHub release, make sure they still match the drafted release notes, and make sure the added summary/compare section accurately describes the release before reporting release success.
 
 ## Guardrails
 
 - Do not tag from `dev`.
 - Do not push the release tag before `main` has been updated to the same commit.
 - Do not create the GitHub release before the tag exists on `origin`.
+- Do not publish the GitHub release without both the agent-written summary and the compare link.
 - If `main` cannot fast-forward to `dev`, stop and ask before creating the tag.
 - If the release version and tag do not match, stop and fix that before pushing.
 
@@ -112,4 +133,5 @@ Use the generated release notes as the baseline changelog since the previous Git
 - Favor `minor` when the release clearly adds new user-visible functionality, even if it also contains fixes.
 - Do not hide breaking changes behind `patch` or `minor`; call them out explicitly.
 - Release notes should prioritize user-facing changes first, then operational/deployment changes.
+- The added summary should explain the release in plain language, not just restate commit subjects.
 - If the snapshot shows mostly internal cleanup, say so directly and keep the release notes short.
