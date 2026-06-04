@@ -1,8 +1,8 @@
 ---
 spec: core-platform
-version: "2.41"
+version: "2.42"
 status: complete
-last_updated: "2026-06-03"
+last_updated: "2026-06-04"
 sub_project: 1
 ---
 
@@ -678,6 +678,8 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 
 **Released web runtime host config:** Tagged GHCR web images are built with `INGAME_API_BASE_URL=https://api.in-game.app/api/v1`, `INGAME_WEB_APP_BASE_URL=https://app.in-game.app`, and `INGAME_INVITE_BASE_URL=https://in-game.app`. Deployments that use those release images must route browser traffic for the SPA through `app.in-game.app` and API traffic through `api.in-game.app`. If the browser SPA host and invite-link host are split, ingress must still keep `https://in-game.app` serving the invite/deep-link and `/.well-known/*` contract; that base-domain surface may be the marketing site instead of the SPA runtime.
 
+**API CORS configuration:** Strict browser-origin allowlists are configured with `INGAME_CORS_ALLOW_ORIGINS` in release/prod deployment manifests. The backend also accepts the legacy `INGAME_CORS_ORIGINS` name for backward compatibility. Values may be provided as a single origin string, a comma-separated string, or a JSON array so Compose, Helm/Kustomize, and ad-hoc runtime environments can all express the same allowlist cleanly.
+
 **Deploy directory structure:**
 - `deploy/helm/ingame-api/` -- Helm chart for the FastAPI runtime (deployment, service, route, configmap, secret)
 - `deploy/helm/ingame-web/` -- Helm chart for the static web runtime (deployment, service, route)
@@ -777,3 +779,4 @@ OpenShift cluster with ArgoCD apps-of-app pattern (leveraging existing `ocp-gito
 | 2026-06-04 | Authentication / Deployment | Split browser-app host config from invite/deep-link host config via `INGAME_WEB_APP_BASE_URL` and `INGAME_INVITE_BASE_URL` | Keeps native auth callbacks on the SPA host while preserving `in-game.app` as the canonical mobile deep-link and invite domain |
 | 2026-06-04 | Deployment / CI/CD Pipeline | Renamed the image-based external-tunnel stack to `docker-compose.release.yml` and added `ingame-marketing` to the release image set | Keeps deployment naming generic while treating the base-domain marketing surface as a first-class runtime in release publishing |
 | 2026-06-04 | Deployment / Documentation | Removed provider-specific tunnel references from the release deployment wording | Keeps the public deployment docs provider-neutral |
+| 2026-06-04 | Deployment / Backend Architecture | Documented the release CORS env contract as `INGAME_CORS_ALLOW_ORIGINS` with legacy `INGAME_CORS_ORIGINS` compatibility plus string/comma/JSON parsing | Keeps release/prod deployment manifests aligned with the backend settings loader and prevents host allowlists from silently falling back to localhost defaults |

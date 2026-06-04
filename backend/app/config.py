@@ -1,4 +1,8 @@
-from pydantic_settings import BaseSettings
+import json
+from typing import Annotated
+
+from pydantic import AliasChoices, Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode
 
 
 class Settings(BaseSettings):
@@ -17,10 +21,29 @@ class Settings(BaseSettings):
     apple_key_id: str = ""
     apple_client_id: str = "ingame.kounex.com"
 
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8080"]
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default=["http://localhost:3000", "http://localhost:8080"],
+        validation_alias=AliasChoices(
+            "INGAME_CORS_ALLOW_ORIGINS",
+            "INGAME_CORS_ORIGINS",
+        ),
+    )
     cors_allow_all: bool = False
 
     debug: bool = False
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+
+        value = value.strip()
+        if not value:
+            return []
+        if value.startswith("["):
+            return json.loads(value)
+        return [item.strip() for item in value.split(",") if item.strip()]
 
 
 settings = Settings()
