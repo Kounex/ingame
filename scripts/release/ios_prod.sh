@@ -18,12 +18,15 @@ cd "${REPO_ROOT}"
 
 if [[ "${MODE}" == "build" ]]; then
   flutter build ipa \
+    --release \
     --dart-define="INGAME_API_BASE_URL=${API_BASE_URL}" \
     --dart-define="INGAME_WEB_APP_BASE_URL=${WEB_APP_BASE_URL}" \
     --dart-define="INGAME_INVITE_BASE_URL=${INVITE_BASE_URL}" \
     "$@"
 else
   flutter run \
+    --release \
+    --device-timeout 10 \
     --dart-define="INGAME_API_BASE_URL=${API_BASE_URL}" \
     --dart-define="INGAME_WEB_APP_BASE_URL=${WEB_APP_BASE_URL}" \
     --dart-define="INGAME_INVITE_BASE_URL=${INVITE_BASE_URL}" \

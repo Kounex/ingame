@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ingame/features/auth/data/oauth_launcher.dart';
@@ -40,6 +41,43 @@ void main() {
         webAppBaseUrl: 'http://localhost:8080',
       ),
       'http://localhost:8080',
+    );
+  });
+
+  test('iOS Steam auth expects https universal-link callback', () {
+    expect(
+      OAuthLauncher.steamCallbackSchemeForPlatform(
+        isWeb: false,
+        platform: TargetPlatform.iOS,
+      ),
+      'https',
+    );
+
+    final options = OAuthLauncher.steamAuthOptionsForPlatform(
+      isWeb: false,
+      platform: TargetPlatform.iOS,
+      webAppBaseUrl: 'https://app.in-game.app/groups/abc?foo=bar#frag',
+    );
+
+    expect(options?.httpsHost, 'app.in-game.app');
+    expect(options?.httpsPath, '/auth/steam-callback.html');
+  });
+
+  test('Android Steam auth keeps custom ingame callback scheme', () {
+    expect(
+      OAuthLauncher.steamCallbackSchemeForPlatform(
+        isWeb: false,
+        platform: TargetPlatform.android,
+      ),
+      'ingame',
+    );
+    expect(
+      OAuthLauncher.steamAuthOptionsForPlatform(
+        isWeb: false,
+        platform: TargetPlatform.android,
+        webAppBaseUrl: 'https://app.in-game.app',
+      ),
+      isNull,
     );
   });
 

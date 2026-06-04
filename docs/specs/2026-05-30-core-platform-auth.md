@@ -1,6 +1,6 @@
 ---
 spec: core-platform-auth
-version: "1.3"
+version: "1.4"
 status: complete
 last_updated: "2026-06-04"
 sub_project: 1
@@ -117,16 +117,17 @@ Connected-account rows on the profile screen trigger these flows directly, then 
 
 | Platform | Steam callback | Apple Sign-In | Config file(s) |
 |----------|---------------|---------------|----------------|
-| **iOS** | `ingame://auth/steam/callback` via `CFBundleURLTypes` | Native AuthenticationServices via entitlements | `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements`, `ios/Runner.xcodeproj/project.pbxproj` |
+| **iOS** | `https://app.in-game.app/auth/steam-callback.html` via `ASWebAuthenticationSession` HTTPS callback + Universal Links | Native AuthenticationServices via entitlements | `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements`, `web/.well-known/apple-app-site-association` |
 | **Android** | `ingame://` scheme via `CallbackActivity` intent filter | N/A (Apple Sign-In not on Android) | `android/app/src/main/AndroidManifest.xml` |
 | **Web** | `{origin}/auth/steam-callback.html` callback page resolves the browser flow | `{origin}/auth/apple-callback.html` + `WebAuthenticationOptions(clientId, redirectUri)` | `web/auth/steam-callback.html`, `web/auth/apple-callback.html` |
 
 Additional constraints:
 
 - The maintained SP1 auth callback contract covers the active product platforms only: iOS, Android, and Web.
-- `flutter_web_auth_2` always receives the valid custom scheme `ingame`; on web that scheme is ignored and the callback HTML page resolves the result.
+- `flutter_web_auth_2` uses `https` plus `httpsHost` and `httpsPath` for iOS Steam auth so the hosted callback page resolves through Universal Links; web still ignores the scheme and uses the callback HTML page messaging contract.
 - Flutter runtime host defaults stay repo-local for development: `INGAME_API_BASE_URL=http://localhost:8000/api/v1`, `INGAME_WEB_APP_BASE_URL=http://localhost:8080`, and `INGAME_INVITE_BASE_URL=http://localhost:8080`.
 - Native Steam callback generation uses `INGAME_WEB_APP_BASE_URL`, while invite/deep-link surfaces use `INGAME_INVITE_BASE_URL`.
+- iOS associated domains must include both `in-game.app` for invite links and `app.in-game.app` for the hosted Steam auth callback, and the hosted `apple-app-site-association` file must allow `/auth/steam-callback.html`.
 - Production native builds must pass explicit host `--dart-define` values rather than relying on repo defaults; the maintained iOS release path uses a dedicated `scripts/release/ios_prod.sh` wrapper, defaulting to `flutter run` and switching to `flutter build ipa` only when `--build` is provided.
 - Apple web Sign-In uses `--dart-define=APPLE_SERVICE_ID=com.ingame.web`.
 
@@ -155,3 +156,4 @@ Flutter maps these codes to locale-aware user-facing messages instead of parsing
 | 2026-06-04 | Failure contract alignment | Corrected the refresh-token revoke code, documented the Steam first-login `503` fallback, and narrowed the maintained callback table to iOS/Android/Web | Keeps the written auth contract aligned with the implemented backend/client behavior and current platform scope |
 | 2026-06-04 | Runtime host defaults | Clarified that Flutter runtime host defaults stay localhost for repo-independent development and that production native builds must pass explicit host defines | Prevents production domains from being hidden in the default repo config while keeping callback host behavior explicit |
 | 2026-06-04 | iOS wrapper interface | Updated the maintained iOS production wrapper contract so `ios_prod.sh` defaults to `flutter run` and uses `--build` to produce an IPA | Keeps the documented production helper aligned with the implemented script behavior and interactive device testing workflow |
+| 2026-06-04 | iOS Steam callback | Switched the maintained iOS Steam callback contract to the hosted `https://app.in-game.app/auth/steam-callback.html` Universal Link flow and documented the required associated-domain/AASA coverage | Prevents iOS production Steam sign-in from stalling on the callback page and being misread as a manual cancellation |

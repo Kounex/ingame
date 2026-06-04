@@ -18,6 +18,7 @@ class OAuthLauncher {
 
   static const _callbackScheme = 'ingame';
   static const _steamCallbackPath = '/auth/steam-callback.html';
+  static const _httpsCallbackScheme = 'https';
 
   static String get _steamReturnTo {
     return steamReturnToForPlatform(
@@ -67,11 +68,51 @@ class OAuthLauncher {
     );
   }
 
+  @visibleForTesting
+  static String steamCallbackSchemeForPlatform({
+    required bool isWeb,
+    required TargetPlatform platform,
+  }) {
+    if (isWeb) {
+      return _callbackScheme;
+    }
+
+    return platform == TargetPlatform.iOS
+        ? _httpsCallbackScheme
+        : _callbackScheme;
+  }
+
+  @visibleForTesting
+  static FlutterWebAuth2Options? steamAuthOptionsForPlatform({
+    required bool isWeb,
+    required TargetPlatform platform,
+    required String webAppBaseUrl,
+  }) {
+    if (isWeb || platform != TargetPlatform.iOS) {
+      return null;
+    }
+
+    final callbackUri = _steamCallbackUri(webAppBaseUrl);
+    return FlutterWebAuth2Options(
+      httpsHost: callbackUri.host,
+      httpsPath: callbackUri.path,
+    );
+  }
+
   /// Launches the Steam OpenID 2.0 browser flow and returns the callback
   /// query parameters on success. Throws on cancellation or failure.
   static Future<Map<String, String>> launchSteamAuth() async {
     final returnTo = _steamReturnTo;
     final realm = _steamRealm;
+    final callbackUrlScheme = steamCallbackSchemeForPlatform(
+      isWeb: kIsWeb,
+      platform: defaultTargetPlatform,
+    );
+    final options = steamAuthOptionsForPlatform(
+      isWeb: kIsWeb,
+      platform: defaultTargetPlatform,
+      webAppBaseUrl: ApiEndpoints.webAppBaseUrl,
+    );
 
     final authUrl = Uri.https('steamcommunity.com', '/openid/login', {
       'openid.ns': 'http://specs.openid.net/auth/2.0',
@@ -84,10 +125,12 @@ class OAuthLauncher {
 
     // On web, callbackUrlScheme is ignored — flutter_web_auth_2 detects
     // the callback via postMessage from the callback HTML page.
-    // The scheme must still be a valid RFC 3986 scheme for native platforms.
+    // Native iOS expects the hosted HTTPS callback to resolve via Universal
+    // Links; other native platforms still use the custom ingame scheme.
     final resultUrl = await FlutterWebAuth2.authenticate(
       url: authUrl.toString(),
-      callbackUrlScheme: _callbackScheme,
+      callbackUrlScheme: callbackUrlScheme,
+      options: options ?? const FlutterWebAuth2Options(),
     );
 
     return Uri.parse(resultUrl).queryParameters;
