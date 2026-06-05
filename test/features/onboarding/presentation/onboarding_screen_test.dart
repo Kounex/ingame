@@ -112,6 +112,22 @@ void main() {
     expect(find.text('Gaming-Präferenzen'), findsNothing);
   });
 
+  testWidgets('onboarding welcome page uses the canonical logo asset', (
+    tester,
+  ) async {
+    await pumpOnboardingScreen(tester);
+    await tester.pumpAndSettle();
+
+    final image = tester.widget<Image>(find.byType(Image).first);
+
+    expect(image.image, isA<AssetImage>());
+    expect(
+      (image.image as AssetImage).assetName,
+      'assets/images/ingame-logo.png',
+    );
+    expect(find.byIcon(Icons.sports_esports), findsNothing);
+  });
+
   testWidgets('onboarding keeps the welcome CTA constrained on desktop', (
     tester,
   ) async {

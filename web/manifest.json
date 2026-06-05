@@ -3,9 +3,9 @@
     "short_name": "InGame",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A0E1A",
+    "theme_color": "#0A0E1A",
+    "description": "InGame helps friends coordinate gaming sessions, availability, and groups across mobile and web.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

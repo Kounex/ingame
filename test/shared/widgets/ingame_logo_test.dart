@@ -26,4 +26,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Finde deine Crew. Spielt zusammen.'), findsOneWidget);
   });
+
+  testWidgets('logo uses the canonical asset instead of the gamepad icon', (
+    tester,
+  ) async {
+    await pumpLogo(tester, const Locale('en'));
+
+    final image = tester.widget<Image>(find.byType(Image).first);
+
+    expect(image.image, isA<AssetImage>());
+    expect(
+      (image.image as AssetImage).assetName,
+      'assets/images/ingame-logo.png',
+    );
+    expect(find.byIcon(Icons.sports_esports), findsNothing);
+  });
 }

@@ -4,6 +4,8 @@ import '../../core/utils/extensions.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/spacing.dart';
 
+const ingameLogoAssetPath = 'assets/images/ingame-logo.png';
+
 enum InGameLogoSize { small, medium, large }
 
 class InGameLogo extends StatelessWidget {
@@ -20,12 +22,6 @@ class InGameLogo extends StatelessWidget {
         InGameLogoSize.small => 28,
         InGameLogoSize.medium => 32,
         InGameLogoSize.large => 48,
-      };
-
-  double get _iconSize => switch (size) {
-        InGameLogoSize.small => 16,
-        InGameLogoSize.medium => 18,
-        InGameLogoSize.large => 28,
       };
 
   double get _fontSize => switch (size) {
@@ -45,21 +41,13 @@ class InGameLogo extends StatelessWidget {
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: _iconContainerSize,
-          height: _iconContainerSize,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(_borderRadius),
-          ),
-          child: Icon(
-            Icons.sports_esports,
-            color: Colors.white,
-            size: _iconSize,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(_borderRadius),
+          child: Image.asset(
+            ingameLogoAssetPath,
+            width: _iconContainerSize,
+            height: _iconContainerSize,
+            fit: BoxFit.cover,
           ),
         ),
         SizedBox(width: size == InGameLogoSize.large ? AppSpacing.md : AppSpacing.sm),

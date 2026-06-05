@@ -1,8 +1,8 @@
 ---
 spec: roadmap
-version: "1.41"
+version: "1.42"
 status: active
-last_updated: "2026-06-04"
+last_updated: "2026-06-05"
 ---
 
 # InGame -- Product Roadmap
@@ -75,7 +75,7 @@ graph LR
 - Route-aware redirect normalization for auth/onboarding return targets
 - Hybrid persistent navigation: sidebar/bottom nav stays visible during browsing; focused flows (auth, onboarding) hide nav
 - Desktop/web width-aware content framing: focused flows and shell pages use shared page-width archetypes (`compact`, `form`, `reading`, `wide`, opt-in `full`) so ultrawide layouts keep readable canvases while persistent navigation stays fixed
-- Reusable `InGameLogo` brand widget with gradient styling
+- Reusable `InGameLogo` brand widget with the canonical logo image plus gradient wordmark styling
 - Platform-authentic social login buttons (Steam brand palette, Apple HIG)
 - Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus, and existing page transitions where retained
 - Platform-aware route pages so web keeps custom fade/slide while iOS/Android preserve native navigation gestures
@@ -256,6 +256,7 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-04 | Host responsibility split | Split the browser-app host from the invite/deep-link host and documented that the base-domain marketing surface may own `/.well-known/*` and `/join/*` | Preserves mobile deep-link verification on `in-game.app` while keeping the SPA on `app.in-game.app` |
 | 2026-06-04 | Marketing site foundation | Added the standalone `marketing/` Astro project deliverable for `in-game.app`, including static export, app-aligned glassmorphism branding, `/.well-known/*` hosting, and nginx `/join/*` proxying | Establishes a dedicated base-domain marketing surface without breaking deep-link hosting |
 | 2026-06-04 | Marketing runtime publishing | Added `Dockerfile.marketing`, GHCR publishing for `ingame-marketing`, and Compose entries for local and release deployment under `docker-compose.release.yml` | Makes the base-domain marketing site deployable as a separate runtime alongside the API and browser app without hardcoding a deployment-platform name |
+| 2026-06-05 | Shared brand asset rollout | Updated the SP1 branding deliverable wording to reflect the canonical logo-backed `InGameLogo` treatment | Keeps the roadmap summary aligned with the shipped asset-driven branding contract |
 | 2026-06-04 | SP1 recurring-availability UX | Aligned onboarding and profile editing on a shared per-day preset gaming-hours editor with multi-select days and an `All day` shortcut | Removes the remaining SP1 mismatch between onboarding's one-size-fits-all schedule capture and profile editing's richer recurring availability UX |
 | 2026-06-04 | SP1 spec split | Split the oversized SP1 core-platform spec into overview, auth, profiles, groups, and implementation-oriented child specs | Keeps future SP1 updates smaller, more reviewable, and less conflict-prone |
 | 2026-06-04 | SP1 avatar editor spike | Added the shared `Upload photo` square editor path while keeping native mobile library/camera crop flows in place | Validates a narrower migration path toward cross-platform avatar editing without forcing a full cropper replacement at once |

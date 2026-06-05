@@ -1,8 +1,8 @@
 ---
 spec: core-platform-implementation
-version: "1.11"
+version: "1.12"
 status: complete
-last_updated: "2026-06-04"
+last_updated: "2026-06-05"
 sub_project: 1
 ---
 
@@ -82,6 +82,7 @@ lib/
 - `EditableAvatarField` -- shared avatar editing surface for onboarding and profile edit
 - `WeeklyAvailabilityEditor` -- shared recurring-availability editor
 - `LanguageSwitcher` -- shared locale-switching surface
+- `InGameLogo` -- shared brand wordmark that pairs the canonical logo image asset with the gradient `InGame` text treatment
 - `AppToast` -- shared feedback/toast system
 
 ### Shared Services
@@ -154,6 +155,14 @@ lib/
 - iOS/Android should preserve native navigation feel
 - Cue is used where it has clear value: card entry, toasts, social hover states, onboarding feedback, and status pulses
 
+### Brand Asset Contract
+
+- `assets/images/ingame-logo.png` is the canonical brand asset source for app icons, native splash imagery, and shared brand-mark usage in Flutter UI
+- native Android/iOS launch icons are generated from that asset via `flutter_launcher_icons`
+- native Android/iOS splash imagery is generated from that asset via `flutter_native_splash`
+- Flutter web favicon and manifest icons should resolve to derived outputs generated from the same source asset
+- standalone gameplay icons may remain generic where they communicate a feature meaning rather than product identity
+
 ## Navigation Structure
 
 ### Hybrid Persistent Navigation
@@ -201,3 +210,4 @@ Outside the shell:
 | 2026-06-04 | Spec topology | Reframed the former UI-architecture child spec as the SP1 implementation spec while preserving its content focus on Flutter structure, shared app contracts, design-system rules, navigation, localization, and testing expectations | Aligns SP1 naming with the SP2 overview plus implementation pattern without a broad content rewrite |
 | 2026-06-04 | Runtime storage integration | Documented the bundled MinIO local-dev path, the default bundled MinIO release-compose path for self-hosted installs, the split between internal storage endpoints and browser-facing upload hosts when needed, and that Flutter consumes backend-provided upload URLs rather than a separate MinIO define | Captures the supported self-hosted avatar-storage topology without changing the Flutter/backend upload contract |
 | 2026-06-04 | Portainer-safe release bootstrap | Clarified that the release MinIO bootstrap is inlined in compose rather than mounted from repo files, and that it overrides the `minio/mc` entrypoint with `/bin/sh -ec` for Podman/Portainer compatibility | Keeps the self-hosted release path compatible with stack deployers that do not project repo-relative helper files into containers |
+| 2026-06-05 | Brand asset contract | Documented `assets/images/ingame-logo.png` as the canonical generated icon/splash source and clarified that `InGameLogo` now uses the real logo image beside the gradient wordmark | Keeps the shared Flutter branding contract aligned with the shipped asset-driven rollout |

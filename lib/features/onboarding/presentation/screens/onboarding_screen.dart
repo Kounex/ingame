@@ -18,6 +18,7 @@ import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/editable_avatar_field.dart';
+import '../../../../shared/widgets/ingame_logo.dart';
 import '../../../../shared/widgets/weekly_availability_editor.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../auth/domain/auth_state.dart';
@@ -456,10 +457,12 @@ class _WelcomePage extends StatelessWidget {
                 radius: 0.8,
               ),
             ),
-            child: const Icon(
-              Icons.sports_esports,
-              size: 64,
-              color: AppColors.primary,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Image.asset(
+                ingameLogoAssetPath,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),

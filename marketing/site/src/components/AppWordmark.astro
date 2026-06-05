@@ -4,9 +4,21 @@ interface Props {
 }
 
 const { size = 'md' } = Astro.props as Props;
-const sizeClass = size === 'lg' ? 'text-4xl md:text-6xl' : 'text-xl md:text-2xl';
+const textSizeClass =
+  size === 'lg' ? 'text-4xl md:text-6xl' : 'text-xl md:text-2xl';
+const logoSizeClass = size === 'lg' ? 'h-14 w-14 rounded-2xl' : 'h-9 w-9 rounded-xl';
 ---
 
-<span class:list={['brand-gradient font-black tracking-[0.02em]', sizeClass]}>
-  InGame
+<span class="inline-flex items-center gap-3">
+  <img
+    src="/ingame-logo.png"
+    alt=""
+    aria-hidden="true"
+    class:list={['shrink-0 object-cover', logoSizeClass]}
+    width={size === 'lg' ? 56 : 36}
+    height={size === 'lg' ? 56 : 36}
+  />
+  <span class:list={['brand-gradient font-black tracking-[0.02em]', textSizeClass]}>
+    InGame
+  </span>
 </span>
