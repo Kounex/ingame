@@ -9,6 +9,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
@@ -77,14 +78,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
       shouldRevalidate: _hasAttemptedSubmit,
     );
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.background, AppColors.backgroundLight],
-        ),
-      ),
+    return AppBackgroundSurface(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
@@ -168,7 +162,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
                           ],
                         ),
                         if (_isDiscoverable) ...[
-                          const Divider(color: AppColors.glassBorder, height: 24),
+                          const Divider(height: 24),
                           Text(
                             l10n.createGroupJoinModeLabel,
                             style: const TextStyle(

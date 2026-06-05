@@ -60,6 +60,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: RoutePaths.home,
+    requestFocus: false,
     refreshListenable: ref.watch(_authRefreshListenableProvider),
     redirect: (context, state) {
       final currentLocation = state.uri.toString();
@@ -137,22 +138,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.login,
         name: RouteNames.login,
-        builder: (context, state) => LoginScreen(
-          redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+        pageBuilder: (context, state) => focusedFlowRoutePage(
+          key: state.pageKey,
+          child: LoginScreen(
+            redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+          ),
         ),
       ),
       GoRoute(
         path: RoutePaths.register,
         name: RouteNames.register,
-        builder: (context, state) => RegisterScreen(
-          redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+        pageBuilder: (context, state) => focusedFlowRoutePage(
+          key: state.pageKey,
+          child: RegisterScreen(
+            redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+          ),
         ),
       ),
       GoRoute(
         path: RoutePaths.steamAuth,
         name: RouteNames.steamAuth,
-        builder: (context, state) => SteamAuthScreen(
-          redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+        pageBuilder: (context, state) => focusedFlowRoutePage(
+          key: state.pageKey,
+          child: SteamAuthScreen(
+            redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+          ),
         ),
       ),
       GoRoute(
@@ -160,7 +170,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: RouteNames.joinGroup,
         pageBuilder: (context, state) {
           final code = state.pathParameters['code']!;
-          return adaptiveRoutePage(
+          return focusedFlowRoutePage(
             key: state.pageKey,
             child: JoinGroupScreen(inviteCode: code),
           );
@@ -173,7 +183,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RoutePaths.onboarding,
         name: RouteNames.onboarding,
-        pageBuilder: (context, state) => adaptiveRoutePage(
+        pageBuilder: (context, state) => focusedFlowRoutePage(
           key: state.pageKey,
           child: const OnboardingScreen(),
         ),

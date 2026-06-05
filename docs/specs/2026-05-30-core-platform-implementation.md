@@ -1,6 +1,6 @@
 ---
 spec: core-platform-implementation
-version: "1.12"
+version: "1.26"
 status: complete
 last_updated: "2026-06-05"
 sub_project: 1
@@ -84,6 +84,8 @@ lib/
 - `LanguageSwitcher` -- shared locale-switching surface
 - `InGameLogo` -- shared brand wordmark that pairs the canonical logo image asset with the gradient `InGame` text treatment
 - `AppToast` -- shared feedback/toast system
+- `SharedAnimatedBackground` -- one shared premium ambient background layer rendered behind routes
+- `AppBackgroundSurface` -- shared translucent page scrim that keeps route content readable over the animated background while still letting ambient color and motion register
 
 ### Shared Services
 
@@ -143,10 +145,15 @@ lib/
 - desktop/web pages use shared width archetypes so single-column content stays readable on ultrawide screens while the shell/sidebar remains fixed; the maintained presets are `compact` (~560), `form` (~720), `reading` (~960), `wide` (~1120), and opt-in `full`
 - width constraints apply to the page canvas, not every nested card or button; screens should assign one preset by archetype instead of inventing ad-hoc per-screen max widths
 - focused flows outside the shell center their constrained content in the viewport, while shell-contained pages center their constrained content inside the right-hand content pane without moving the left navigation rail
+- focused flows that render over the shared ambient background may use a dedicated transition distinct from generic shell/detail pushes; the current maintained contract is a staggered focused-flow custom transition where the covered auth/onboarding/join route starts fading out and moving left first, while the incoming route stays invisible until late in the animation and then fades in, with the shared root `AppBackgroundSurface` above the navigator keeping the ambient background and scrim stable beneath navigation
+- the root router should disable automatic route focus requests on push so initial web view focus changes do not ask Flutter focus traversal to inspect navigator theater layout before the route tree has settled
 - shared app bars may align to the same width preset as the page body on desktop/web so toolbar content and constrained page content stay visually connected
 - shell-route dialogs and bottom sheets use the root navigator so overlays render above persistent navigation
+- route-level backgrounds should prefer the shared `AppBackgroundSurface` scrim over bespoke opaque full-screen gradients so the ambient app background can remain visible behind content
+- the app root may host a single shared `AppBackgroundSurface` above the navigator so focused-flow route transitions reuse one stable scrim instead of animating separate per-screen background layers; nested route-level `AppBackgroundSurface` usage should collapse to a no-op when that shared root surface is already present
 - new user-facing strings must be localized through ARB files
 - popup menus follow the global glass theme
+- app-wide `Divider` and `PopupMenuDivider` usage should resolve to an ultra-subtle cool-gray hairline separator so list rows, section splits, and menu groupings stay barely visible in the liquid-glass visual language
 - async field-availability feedback uses compact suffix status affordances where both loading and error glyphs share the same aligned wrapper, and surfaces localized inline error text through the input instead of relying on icon-only failure states
 
 ### Motion Rules
@@ -154,6 +161,12 @@ lib/
 - web may keep richer custom route transitions where appropriate
 - iOS/Android should preserve native navigation feel
 - Cue is used where it has clear value: card entry, toasts, social hover states, onboarding feedback, and status pulses
+- continuous shader motion should stay centralized in one shared ambient background layer and remain subtle, low-contrast, and premium rather than visually loud
+- web should prefer a robust animated orb fallback when runtime shader output is inconsistent or too faint in browser renderers; the fallback still needs clearly visible hue drift and spatial motion rather than reading as a brightness-only wash
+- browser ambient motion should use a legible cadence and travel distance so movement remains perceptible behind translucent surfaces instead of requiring users to stare for several seconds to notice drift
+- shared ambient loops must be seamless; browser fallback paths should use periodic motion curves that return to the same trajectory at cycle boundaries instead of snapping back to a new starting position
+- shader-driven accents may be added to a small number of hero or navigation surfaces, but dense lists, per-member presence rows, and blur-heavy repeated cards should stay on event-driven motion only
+- animated background systems must provide a graceful fallback and respect reduced-motion expectations
 
 ### Brand Asset Contract
 
@@ -211,3 +224,15 @@ Outside the shell:
 | 2026-06-04 | Runtime storage integration | Documented the bundled MinIO local-dev path, the default bundled MinIO release-compose path for self-hosted installs, the split between internal storage endpoints and browser-facing upload hosts when needed, and that Flutter consumes backend-provided upload URLs rather than a separate MinIO define | Captures the supported self-hosted avatar-storage topology without changing the Flutter/backend upload contract |
 | 2026-06-04 | Portainer-safe release bootstrap | Clarified that the release MinIO bootstrap is inlined in compose rather than mounted from repo files, and that it overrides the `minio/mc` entrypoint with `/bin/sh -ec` for Podman/Portainer compatibility | Keeps the self-hosted release path compatible with stack deployers that do not project repo-relative helper files into containers |
 | 2026-06-05 | Brand asset contract | Documented `assets/images/ingame-logo.png` as the canonical generated icon/splash source and clarified that `InGameLogo` now uses the real logo image beside the gradient wordmark | Keeps the shared Flutter branding contract aligned with the shipped asset-driven rollout |
+| 2026-06-05 | Interaction conventions | Added the maintained ultra-subtle cool-gray hairline divider treatment for app-wide `Divider` and `PopupMenuDivider` usage | Aligns separators with the liquid-glass visual target so they organize content without reading as bright borders |
+| 2026-06-05 | Shared background and motion rules | Added the shared animated ambient background layer, the translucent page-surface scrim contract, and guardrails for keeping shader motion subtle and centralized | Increases visual fidelity without scattering continuous heavy rendering across every screen or glass component |
+| 2026-06-05 | Shared background and motion rules | Clarified that web may use a stronger animated orb fallback and that the page scrim must still leave visible color/motion behind content | Fixes the browser case where the ambient system read as a brightness-only overlay instead of visible ambient motion |
+| 2026-06-05 | Shared background and motion rules | Tightened the browser ambient fallback cadence/travel expectation so shared background motion stays visibly alive instead of reading as static glow | Captures the follow-up fix for web where color became visible but movement still felt imperceptible |
+| 2026-06-05 | Shared background and motion rules | Added the seamless-loop requirement for ambient fallback motion so cycle resets do not produce visible jumps in browser rendering | Captures the follow-up fix for web where motion became noticeable but the loop seam still snapped at the end of each cycle |
+| 2026-06-05 | Interaction conventions | Clarified that focused full-screen flows over the shared ambient background should avoid web cross-fade/slide route transitions when transparent surfaces would ghost the outgoing screen beneath the incoming one | Fixes the auth-flow routing artifact introduced once focused flows adopted the shared translucent background treatment |
+| 2026-06-05 | Interaction conventions | Refined focused-flow web transitions to allow slide/fade motion again when a stable full-screen backdrop is staged above the outgoing route during the transition | Keeps the auth/onboarding flows feeling polished without reintroducing the ghosted previous-screen artifact |
+| 2026-06-05 | Interaction conventions | Added the shared root-surface contract above the navigator and documented that nested per-screen background scrims collapse when that root surface exists | Aligns the transition fix with the maintained architecture so the ambient background and scrim remain stable across route animations instead of moving page-by-page |
+| 2026-06-05 | Interaction conventions | Reverted focused-flow routes back to the original standard web fade/slide transition now that the shared root surface keeps the ambient background and scrim stable across navigation | Restores the original motion feel after the root-surface fix removed the earlier need for a helper-owned transition backdrop |
+| 2026-06-05 | Interaction conventions | Switched the focused auth/onboarding/join flow experiment to a dedicated custom transition where the incoming route fades in while the covered route fades out and moves left | Matches the desired navigation feel more directly than the prior Cupertino-page experiment while preserving the shared root-surface stability beneath route changes |
+| 2026-06-05 | Interaction conventions | Disabled automatic router focus requests on push so initial web view focus changes no longer race navigator theater layout during startup redirects into focused flows | Fixes the startup `_RenderTheater ... was not laid out` assertion path triggered from `didChangeViewFocus` rather than from user-driven route transitions |
+| 2026-06-05 | Interaction conventions | Refined the focused-flow custom transition into a staggered handoff so the covered route begins fading/moving out before the incoming route starts fading in late via an interval | Matches the desired auth-flow motion more closely by avoiding a direct crossfade between two nearly identical centered-card screens |

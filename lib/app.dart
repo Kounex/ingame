@@ -12,6 +12,7 @@ import 'l10n/app_localizations.dart';
 import 'shared/providers/presence_lifecycle_binder.dart';
 import 'shared/providers/presence_provider.dart';
 import 'shared/providers/websocket_provider.dart';
+import 'shared/widgets/app_background.dart';
 
 class InGameApp extends ConsumerWidget {
   const InGameApp({super.key});
@@ -37,15 +38,36 @@ class InGameApp extends ConsumerWidget {
         supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
-          Widget appChild = child!;
+          final transparentTheme = Theme.of(context).copyWith(
+            scaffoldBackgroundColor: Colors.transparent,
+            canvasColor: Colors.transparent,
+          );
+          Widget appChild = Theme(data: transparentTheme, child: child!);
 
           if (kDebugMode) {
             appChild = CueDebugTools(child: appChild);
           }
 
+          Widget layeredApp = Stack(
+            fit: StackFit.expand,
+            children: [
+              const SharedAnimatedBackground(),
+              Positioned.fill(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: AppBackgroundSurface(child: appChild),
+                ),
+              ),
+            ],
+          );
+
+          if (kDebugMode) {
+            layeredApp = AmbientMotionDebugLayer(child: layeredApp);
+          }
+
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: AppTheme.darkSystemUiOverlayStyle,
-            child: appChild,
+            child: layeredApp,
           );
         },
       ),

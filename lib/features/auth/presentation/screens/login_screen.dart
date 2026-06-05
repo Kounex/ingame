@@ -11,6 +11,7 @@ import '../../../../core/networking/app_failure.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/language_switcher.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
@@ -89,14 +90,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.background, AppColors.backgroundLight],
-          ),
-        ),
+      backgroundColor: Colors.transparent,
+      body: AppBackgroundSurface(
         child: SafeArea(
           child: Center(
             child: DesktopContentRegion(

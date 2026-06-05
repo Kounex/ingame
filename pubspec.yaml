@@ -64,6 +64,8 @@ flutter:
     - assets/images/ingame-logo.png
     - assets/images/ingame-logo-splash.png
     - assets/images/ingame-logo-splash-ios.png
+  shaders:
+    - shaders/ambient_background.frag
 
 flutter_launcher_icons:
   android: true

@@ -9,6 +9,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/avatar_with_status.dart';
@@ -353,14 +354,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
     final l10n = context.l10n;
     final canManageSettings = detailAsync.value?.canManageSettings ?? false;
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.background, AppColors.backgroundLight],
-        ),
-      ),
+    return AppBackgroundSurface(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
@@ -484,10 +478,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                                 : null,
                           ),
                           if (_isDiscoverable) ...[
-                            const Divider(
-                              color: AppColors.glassBorder,
-                              height: 1,
-                            ),
+                            const Divider(height: 1),
                             _SettingsRadio(
                               icon: Icons.door_front_door_outlined,
                               title: l10n.createGroupJoinModeLabel,
@@ -523,10 +514,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                         children: [
                           for (var i = 0; i < detail.members.length; i++) ...[
                             if (i > 0)
-                              const Divider(
-                                color: AppColors.glassBorder,
-                                height: 1,
-                              ),
+                              const Divider(height: 1),
                             _MemberSettingsRow(
                               groupId: widget.groupId,
                               member: detail.members[i],
@@ -585,10 +573,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                               i++
                             ) ...[
                               if (i > 0)
-                                const Divider(
-                                  color: AppColors.glassBorder,
-                                  height: 1,
-                                ),
+                                const Divider(height: 1),
                               _JoinRequestRow(
                                 request: detail.pendingRequests[i],
                                 onApprove: () =>

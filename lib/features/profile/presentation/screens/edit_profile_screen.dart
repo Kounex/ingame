@@ -9,6 +9,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/editable_avatar_field.dart';
@@ -105,6 +106,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     );
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
         title: context.l10n.editProfileTitle,
@@ -114,14 +116,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           onPressed: () => context.pop(),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.background, AppColors.backgroundLight],
-          ),
-        ),
+      body: AppBackgroundSurface(
         child: SafeArea(
           child: DesktopContentRegion(
             width: DesktopContentWidth.form,

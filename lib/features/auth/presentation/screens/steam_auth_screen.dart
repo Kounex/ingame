@@ -8,6 +8,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/networking/app_failure.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/tappable.dart';
@@ -74,14 +75,8 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
     });
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.background, AppColors.backgroundLight],
-          ),
-        ),
+      backgroundColor: Colors.transparent,
+      body: AppBackgroundSurface(
         child: SafeArea(
           child: Center(
             child: DesktopContentRegion(

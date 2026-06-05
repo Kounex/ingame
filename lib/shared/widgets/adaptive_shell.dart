@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/utils/extensions.dart';
+import 'app_background.dart';
 import 'glass_bottom_nav.dart';
 import 'ingame_logo.dart';
 import 'tappable.dart';
@@ -29,24 +30,30 @@ class AdaptiveShell extends StatelessWidget {
         final useWideLayout = constraints.maxWidth >= AppBreakpoints.sidebar;
 
         if (useWideLayout) {
-          return Scaffold(
-            body: Row(
-              children: [
-                _GlassSidebar(
-                  currentIndex: navigationShell.currentIndex,
-                  onDestinationSelected: _onDestinationSelected,
-                ),
-                Expanded(child: navigationShell),
-              ],
+          return AppBackgroundSurface(
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Row(
+                children: [
+                  _GlassSidebar(
+                    currentIndex: navigationShell.currentIndex,
+                    onDestinationSelected: _onDestinationSelected,
+                  ),
+                  Expanded(child: navigationShell),
+                ],
+              ),
             ),
           );
         }
 
-        return Scaffold(
-          body: navigationShell,
-          bottomNavigationBar: GlassBottomNav(
-            currentIndex: navigationShell.currentIndex,
-            onTap: _onDestinationSelected,
+        return AppBackgroundSurface(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: navigationShell,
+            bottomNavigationBar: GlassBottomNav(
+              currentIndex: navigationShell.currentIndex,
+              onTap: _onDestinationSelected,
+            ),
           ),
         );
       },
@@ -164,37 +171,58 @@ class _SidebarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tappable(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm + 2,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : AppColors.textTertiary,
-              size: 22,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              label,
-              style: TextStyle(
-                color:
-                    isSelected ? AppColors.primary : AppColors.textTertiary,
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      child: AnimatedScale(
+        scale: isSelected ? 1.0 : 0.985,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm + 2,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      blurRadius: 18,
+                      spreadRadius: -4,
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Row(
+            children: [
+              AnimatedScale(
+                scale: isSelected ? 1.0 : 0.94,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  icon,
+                  color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                  size: 22,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.md),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                style: TextStyle(
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textTertiary,
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                child: Text(label),
+              ),
+            ],
+          ),
         ),
       ),
     );
