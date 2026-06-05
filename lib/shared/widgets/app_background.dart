@@ -3,13 +3,16 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../core/theme/app_theme.dart';
+import 'debug_overlay_card.dart';
 
 const _ambientBackgroundShaderAsset = 'shaders/ambient_background.frag';
 
 class AmbientMotionController extends ChangeNotifier {
-  AmbientMotionController({double intensity = 0.8}) : _intensity = intensity;
+  AmbientMotionController({double intensity = 0.8})
+    : _intensity = intensity.clamp(0.0, 1.0).toDouble();
 
   double _intensity;
 
@@ -41,8 +44,7 @@ class _AmbientSurfaceScope extends InheritedWidget {
   const _AmbientSurfaceScope({required super.child});
 
   static bool isPresent(BuildContext context) {
-    return context
-            .dependOnInheritedWidgetOfExactType<_AmbientSurfaceScope>() !=
+    return context.dependOnInheritedWidgetOfExactType<_AmbientSurfaceScope>() !=
         null;
   }
 
@@ -56,7 +58,8 @@ class AmbientMotionDebugLayer extends StatefulWidget {
   final Widget child;
 
   @override
-  State<AmbientMotionDebugLayer> createState() => _AmbientMotionDebugLayerState();
+  State<AmbientMotionDebugLayer> createState() =>
+      _AmbientMotionDebugLayerState();
 }
 
 class _AmbientMotionDebugLayerState extends State<AmbientMotionDebugLayer> {
@@ -89,8 +92,52 @@ class _AmbientMotionDebugLayerState extends State<AmbientMotionDebugLayer> {
 class AmbientMotionDebugPanel extends StatelessWidget {
   const AmbientMotionDebugPanel({super.key});
 
-  static const _presetValues = [0.15, 0.45, 0.8];
-  static const _presetLabels = ['Subtle', 'Balanced', 'Expressive'];
+  @override
+  Widget build(BuildContext context) {
+    return const _AmbientDebugOverlay();
+  }
+}
+
+class _AmbientDebugOverlay extends StatefulWidget {
+  const _AmbientDebugOverlay();
+
+  @override
+  State<_AmbientDebugOverlay> createState() => _AmbientDebugOverlayState();
+}
+
+class _AmbientDebugOverlayState extends State<_AmbientDebugOverlay> {
+  static const _intensityPresetValues = [0.15, 0.45, 0.8];
+  static const _intensityPresetLabels = ['Subtle', 'Balanced', 'Expressive'];
+  static const _timeDilationPresetValues = [1.0, 5.0, 20.0];
+  static const _timeDilationPresetLabels = ['1x', '5x', '20x'];
+  static const _defaultDebugTimeDilation = 1.0;
+
+  bool _isCollapsed = false;
+  bool _motionExpanded = true;
+  bool _shaderExpanded = false;
+  late double _timeDilationValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeDilationValue = timeDilation <= 1.0
+        ? _defaultDebugTimeDilation
+        : timeDilation;
+    timeDilation = _timeDilationValue;
+  }
+
+  @override
+  void dispose() {
+    timeDilation = 1.0;
+    super.dispose();
+  }
+
+  void _setTimeDilation(double value) {
+    final next = value.clamp(1.0, 40.0).toDouble();
+    if ((_timeDilationValue - next).abs() < 0.001) return;
+    setState(() => _timeDilationValue = next);
+    timeDilation = next;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,63 +148,101 @@ class AmbientMotionDebugPanel extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         final intensity = controller.intensity;
-        return Material(
-          color: Colors.transparent,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.background.withValues(alpha: 0.82),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.glassBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 24,
+        return DebugOverlayCard(
+          title: 'Debug',
+          icon: Icons.bug_report_outlined,
+          isCollapsed: _isCollapsed,
+          onToggleCollapsed: () => setState(() => _isCollapsed = !_isCollapsed),
+          children: [
+            DebugOverlaySection(
+              title: 'Motion',
+              icon: Icons.waves_rounded,
+              isExpanded: _motionExpanded,
+              onToggle: () =>
+                  setState(() => _motionExpanded = !_motionExpanded),
+              trailing: Text(
+                '${(intensity * 100).round()}%',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints.tightFor(width: 248),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DebugOverlayMetricBlock(
+                    label: 'Ambient intensity',
+                    value: '${(intensity * 100).round()}%',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.waves_rounded,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        const Flexible(
-                          child: Text(
-                            'Ambient motion',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                        Row(
+                          children: [
+                            _IntensityStepButton(
+                              icon: Icons.remove,
+                              onPressed: () => controller.setIntensity(
+                                (intensity - 0.1).clamp(0.0, 1.0),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  for (
+                                    var i = 0;
+                                    i < _intensityPresetValues.length;
+                                    i++
+                                  )
+                                    _IntensityPresetChip(
+                                      label: _intensityPresetLabels[i],
+                                      isSelected:
+                                          (intensity -
+                                                  _intensityPresetValues[i])
+                                              .abs() <
+                                          0.01,
+                                      onTap: () => controller.setIntensity(
+                                        _intensityPresetValues[i],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _IntensityStepButton(
+                              icon: Icons.add,
+                              onPressed: () => controller.setIntensity(
+                                (intensity + 0.1).clamp(0.0, 1.0),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${(intensity * 100).round()}%',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: intensity,
+                          minHeight: 3,
+                          borderRadius: BorderRadius.circular(999),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
                           ),
+                          backgroundColor: AppColors.glassBorder,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Row(
+                  ),
+                  const SizedBox(height: 10),
+                  DebugOverlayMetricBlock(
+                    label: 'Time dilation',
+                    value:
+                        '${_timeDilationValue.toStringAsFixed(_timeDilationValue < 10 ? 1 : 0)}x',
+                    child: Row(
                       children: [
                         _IntensityStepButton(
                           icon: Icons.remove,
-                          onPressed: () => controller.setIntensity(
-                            (intensity - 0.1).clamp(0.0, 1.0),
-                          ),
+                          onPressed: () =>
+                              _setTimeDilation(_timeDilationValue - 1),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -165,13 +250,21 @@ class AmbientMotionDebugPanel extends StatelessWidget {
                             spacing: 6,
                             runSpacing: 6,
                             children: [
-                              for (var i = 0; i < _presetValues.length; i++)
+                              for (
+                                var i = 0;
+                                i < _timeDilationPresetValues.length;
+                                i++
+                              )
                                 _IntensityPresetChip(
-                                  label: _presetLabels[i],
+                                  label: _timeDilationPresetLabels[i],
                                   isSelected:
-                                      (intensity - _presetValues[i]).abs() < 0.01,
-                                  onTap: () =>
-                                      controller.setIntensity(_presetValues[i]),
+                                      (_timeDilationValue -
+                                              _timeDilationPresetValues[i])
+                                          .abs() <
+                                      0.01,
+                                  onTap: () => _setTimeDilation(
+                                    _timeDilationPresetValues[i],
+                                  ),
                                 ),
                             ],
                           ),
@@ -179,29 +272,93 @@ class AmbientMotionDebugPanel extends StatelessWidget {
                         const SizedBox(width: 8),
                         _IntensityStepButton(
                           icon: Icons.add,
-                          onPressed: () => controller.setIntensity(
-                            (intensity + 0.1).clamp(0.0, 1.0),
-                          ),
+                          onPressed: () =>
+                              _setTimeDilation(_timeDilationValue + 1),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: intensity,
-                      minHeight: 3,
-                      borderRadius: BorderRadius.circular(999),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.primary,
-                      ),
-                      backgroundColor: AppColors.glassBorder,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ),
+            const SizedBox(height: 10),
+            DebugOverlaySection(
+              title: 'Shader',
+              icon: Icons.auto_awesome_outlined,
+              isExpanded: _shaderExpanded,
+              onToggle: () =>
+                  setState(() => _shaderExpanded = !_shaderExpanded),
+              trailing: const DebugOverlayStatusBadge(
+                label: kIsWeb ? 'Fallback' : 'Auto',
+                highlighted: !kIsWeb,
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DebugOverlayInfoPanel(
+                    children: [
+                      _DebugInfoRow(
+                        label: 'Renderer',
+                        value: kIsWeb
+                            ? 'Fallback orbs (web)'
+                            : 'Automatic shader',
+                      ),
+                      SizedBox(height: 8),
+                      _DebugInfoRow(
+                        label: 'Asset',
+                        value: _ambientBackgroundShaderAsset,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Falls back to animated orbs automatically if shader loading fails.',
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _DebugInfoRow extends StatelessWidget {
+  const _DebugInfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 58,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 10),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -218,14 +375,14 @@ class _IntensityStepButton extends StatelessWidget {
       onTap: onPressed,
       radius: 18,
       child: Container(
-        width: 28,
-        height: 28,
+        width: 30,
+        height: 30,
         decoration: BoxDecoration(
-          color: AppColors.glassSurfaceLight,
+          color: AppColors.background.withValues(alpha: 0.28),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: AppColors.glassBorder),
         ),
-        child: Icon(icon, size: 16, color: AppColors.textPrimary),
+        child: Icon(icon, size: 15, color: AppColors.textPrimary),
       ),
     );
   }
@@ -250,11 +407,11 @@ class _IntensityPresetChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.18)
-              : AppColors.glassSurfaceLight,
+              : AppColors.background.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.glassBorder,
@@ -264,7 +421,7 @@ class _IntensityPresetChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -274,15 +431,13 @@ class _IntensityPresetChip extends StatelessWidget {
 }
 
 class SharedAnimatedBackground extends StatefulWidget {
-  const SharedAnimatedBackground({
-    super.key,
-    this.forceFallback = false,
-  });
+  const SharedAnimatedBackground({super.key, this.forceFallback = false});
 
   final bool forceFallback;
 
   @override
-  State<SharedAnimatedBackground> createState() => _SharedAnimatedBackgroundState();
+  State<SharedAnimatedBackground> createState() =>
+      _SharedAnimatedBackgroundState();
 }
 
 class _SharedAnimatedBackgroundState extends State<SharedAnimatedBackground>
@@ -297,7 +452,8 @@ class _SharedAnimatedBackgroundState extends State<SharedAnimatedBackground>
   ui.FragmentProgram? _program;
   bool _shaderLoadFailed = false;
 
-  bool get _reduceMotion => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  bool get _reduceMotion =>
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
   @override
   void initState() {
@@ -448,12 +604,19 @@ class _AmbientShaderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final shader = program.fragmentShader();
     final accent = Color.lerp(AppColors.primary, AppColors.secondary, 0.55)!;
-    final glow = Color.lerp(AppColors.backgroundLight, AppColors.primary, 0.35)!;
+    final glow = Color.lerp(
+      AppColors.backgroundLight,
+      AppColors.primary,
+      0.35,
+    )!;
 
     shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
-      ..setFloat(2, progress * _SharedAnimatedBackgroundState._cycleDuration.inSeconds)
+      ..setFloat(
+        2,
+        progress * _SharedAnimatedBackgroundState._cycleDuration.inSeconds,
+      )
       ..setFloat(3, AppColors.background.r / 255)
       ..setFloat(4, AppColors.background.g / 255)
       ..setFloat(5, AppColors.background.b / 255)
@@ -468,10 +631,7 @@ class _AmbientShaderPainter extends CustomPainter {
       ..setFloat(14, glow.b / 255)
       ..setFloat(15, intensity);
 
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..shader = shader,
-    );
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
 
   @override

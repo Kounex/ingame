@@ -39,13 +39,13 @@ CustomTransitionPage<void> focusedFlowTransitionPage({
     transitionDuration: const Duration(milliseconds: 600),
     reverseTransitionDuration: const Duration(milliseconds: 600),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final delayedFadeIn = CurvedAnimation(
+      final incomingFade = CurvedAnimation(
         parent: animation,
-        curve: const Interval(0.65, 1.0, curve: Curves.easeIn),
+        curve: const Interval(0.08, 0.5, curve: Curves.easeIn),
       );
       final fadeOut = CurvedAnimation(
         parent: secondaryAnimation,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.18, curve: Curves.easeIn),
       );
 
       final isCoveredRoute = secondaryAnimation.value > 0.0;
@@ -63,7 +63,7 @@ CustomTransitionPage<void> focusedFlowTransitionPage({
         );
       }
 
-      return FadeTransition(opacity: delayedFadeIn, child: child);
+      return FadeTransition(opacity: incomingFade, child: child);
     },
   );
 }
@@ -77,20 +77,47 @@ CustomTransitionPage<void> fadeSlideTransition({
     key: key,
     child: child,
     transitionDuration: const Duration(milliseconds: 300),
-    reverseTransitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
+      final incomingSlide = CurvedAnimation(
         parent: animation,
-        curve: Curves.easeInOut,
+        curve: Curves.easeOutCubic,
+      );
+      final incomingFade = CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeIn),
+      );
+      final outgoingFade = CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+      );
+      final outgoingSlide = CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       );
 
+      final isCoveredRoute = secondaryAnimation.value > 0.0;
+
+      if (isCoveredRoute) {
+        return FadeTransition(
+          opacity: ReverseAnimation(outgoingFade),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: Offset.zero,
+              end: const Offset(-0.03, 0),
+            ).animate(outgoingSlide),
+            child: child,
+          ),
+        );
+      }
+
       return FadeTransition(
-        opacity: curved,
+        opacity: incomingFade,
         child: SlideTransition(
           position: Tween<Offset>(
             begin: beginOffset,
             end: Offset.zero,
-          ).animate(curved),
+          ).animate(incomingSlide),
           child: child,
         ),
       );

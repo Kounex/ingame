@@ -1,9 +1,9 @@
 ---
 spec: game-matching
-version: "1.0"
+version: "1.1"
 status: planned
-last_updated: "2026-06-02"
-sub_project: 3
+last_updated: "2026-06-05"
+sub_project: 4
 ---
 
 # InGame -- Game Matching Design Spec
@@ -12,9 +12,9 @@ sub_project: 3
 
 ## Overview
 
-This spec covers **Sub-Project 3: Game Matching**. It builds on the Core Platform foundation from [2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) and the realtime coordination overview from [2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md).
+This spec covers **Sub-Project 4: Game Matching**. It builds on the Core Platform foundation from [2026-05-30-core-platform-design.md](2026-05-30-core-platform-design.md) and the realtime coordination overview from [2026-05-30-real-time-coordination-design.md](2026-05-30-real-time-coordination-design.md).
 
-SP3 gives InGame a durable, provider-agnostic game domain so members can compare what they own, discover common titles, and eventually connect shared libraries to coordination features. Steam is the first provider, but the data model must remain generic rather than baking Steam assumptions into every table and API.
+SP4 gives InGame a durable, provider-agnostic game domain so members can compare what they own, discover common titles, and eventually connect shared libraries to coordination features. Steam is the first provider, but the data model must remain generic rather than baking Steam assumptions into every table and API.
 
 ---
 
@@ -40,7 +40,7 @@ SP3 gives InGame a durable, provider-agnostic game domain so members can compare
 - graceful behavior when a required provider account is unlinked
 
 ### Out of Scope
-- push notifications about library changes (SP4)
+- push notifications about library changes (SP3)
 - public matchmaking across strangers (SP5)
 - manual freeform genre creation by users
 - reusing recurring availability (`preferred_gaming_hours`) as if it were a game-preference model
@@ -54,7 +54,7 @@ SP3 gives InGame a durable, provider-agnostic game domain so members can compare
 - Genres are **catalog metadata**, not arbitrary user-entered tags.
 - A member's "games in common" view is computed from durable ownership data, not from ephemeral ready-state data.
 - Steam-backed library features require an active linked `steam_id`; unlinking Steam removes access to Steam-derived library sync until the provider is relinked.
-- Future coordination surfaces may reference a selected game or genre from this catalog, but SP3 owns the catalog and ownership data itself.
+- Future coordination surfaces may reference a selected game or genre from this catalog, but SP4 owns the catalog and ownership data itself.
 
 ---
 
@@ -219,7 +219,7 @@ flowchart TD
 ## Privacy And Visibility
 
 - Group members may view overlap/common-games data only within groups they share.
-- Broader public library visibility controls belong with SP4 privacy settings, but SP3 must be designed so that those future controls can hide or scope user libraries cleanly.
+- Broader public library visibility controls belong with SP3 privacy settings, but SP4 must be designed so that those future controls can hide or scope user libraries cleanly.
 - Until broader privacy controls exist, library features should default to the minimum sharing needed for the current private-group use case.
 
 ---
@@ -248,3 +248,4 @@ flowchart TD
 | Date | Section | Change | Reason |
 |------|---------|--------|--------|
 | 2026-06-02 | Initial spec | Created the SP3 Game Matching spec with a generic game catalog, provider-specific ingestion model, Steam-first library sync, common-games surfaces, and unlink/privacy constraints | Gives game-library and overlap work its own maintained contract instead of leaving it only as a roadmap stub |
+| 2026-06-05 | Sub-project renumbering | Updated Game Matching from SP3 to SP4 and retargeted notification/privacy cross-references to the new numbering | Keeps the maintained game-library spec aligned with the reordered roadmap where Notifications move ahead of Game Matching |

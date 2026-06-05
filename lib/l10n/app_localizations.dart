@@ -1757,6 +1757,288 @@ abstract class AppLocalizations {
   /// **'Reconnecting…'**
   String get groupDetailReadyToggleReconnectingHint;
 
+  /// No description provided for @groupDetailCoordinationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan together'**
+  String get groupDetailCoordinationTitle;
+
+  /// No description provided for @groupDetailCoordinationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See availability windows, session RSVPs, and recent group activity.'**
+  String get groupDetailCoordinationSubtitle;
+
+  /// No description provided for @groupDetailCoordinationNextSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Next up: {title}'**
+  String groupDetailCoordinationNextSession(String title);
+
+  /// No description provided for @groupDetailCoordinationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open planning hub'**
+  String get groupDetailCoordinationAction;
+
+  /// No description provided for @groupCoordinationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Coordination'**
+  String get groupCoordinationTitle;
+
+  /// No description provided for @groupCoordinationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan sessions with scheduled availability, RSVPs, and a shared activity stream.'**
+  String get groupCoordinationSubtitle;
+
+  /// No description provided for @groupCoordinationWindowsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} windows'**
+  String groupCoordinationWindowsCount(int count);
+
+  /// No description provided for @groupCoordinationSessionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sessions'**
+  String groupCoordinationSessionsCount(int count);
+
+  /// No description provided for @groupCoordinationActivityCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} updates'**
+  String groupCoordinationActivityCount(int count);
+
+  /// No description provided for @groupCoordinationCalendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability Calendar'**
+  String get groupCoordinationCalendarTitle;
+
+  /// No description provided for @groupCoordinationCalendarAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add window'**
+  String get groupCoordinationCalendarAdd;
+
+  /// No description provided for @groupCoordinationCalendarEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled ready windows yet.'**
+  String get groupCoordinationCalendarEmpty;
+
+  /// No description provided for @groupCoordinationCalendarEmptyRange.
+  ///
+  /// In en, this message translates to:
+  /// **'No ready windows in this range.'**
+  String get groupCoordinationCalendarEmptyRange;
+
+  /// No description provided for @groupCoordinationCalendarThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This Week'**
+  String get groupCoordinationCalendarThisWeek;
+
+  /// No description provided for @groupCoordinationCalendarPreviousRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous range'**
+  String get groupCoordinationCalendarPreviousRange;
+
+  /// No description provided for @groupCoordinationCalendarNextRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Next range'**
+  String get groupCoordinationCalendarNextRange;
+
+  /// No description provided for @groupCoordinationCalendarRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} - {end}'**
+  String groupCoordinationCalendarRangeLabel(String start, String end);
+
+  /// No description provided for @groupCoordinationSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get groupCoordinationSessionsTitle;
+
+  /// No description provided for @groupCoordinationSessionAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose session'**
+  String get groupCoordinationSessionAdd;
+
+  /// No description provided for @groupCoordinationSessionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions planned yet.'**
+  String get groupCoordinationSessionsEmpty;
+
+  /// No description provided for @groupCoordinationActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get groupCoordinationActivityTitle;
+
+  /// No description provided for @groupCoordinationActivityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet.'**
+  String get groupCoordinationActivityEmpty;
+
+  /// No description provided for @groupCoordinationAddWindowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ready window'**
+  String get groupCoordinationAddWindowTitle;
+
+  /// No description provided for @groupCoordinationEditWindowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit ready window'**
+  String get groupCoordinationEditWindowTitle;
+
+  /// No description provided for @groupCoordinationAddSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose session'**
+  String get groupCoordinationAddSessionTitle;
+
+  /// No description provided for @groupCoordinationEditSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit session'**
+  String get groupCoordinationEditSessionTitle;
+
+  /// No description provided for @groupCoordinationStartsAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get groupCoordinationStartsAt;
+
+  /// No description provided for @groupCoordinationEndsAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get groupCoordinationEndsAt;
+
+  /// No description provided for @groupCoordinationFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get groupCoordinationFieldTitle;
+
+  /// No description provided for @groupCoordinationFieldGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Game'**
+  String get groupCoordinationFieldGame;
+
+  /// No description provided for @groupCoordinationFieldNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get groupCoordinationFieldNotes;
+
+  /// No description provided for @groupCoordinationFieldStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get groupCoordinationFieldStatus;
+
+  /// No description provided for @groupCoordinationStatusProposed.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get groupCoordinationStatusProposed;
+
+  /// No description provided for @groupCoordinationStatusConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get groupCoordinationStatusConfirmed;
+
+  /// No description provided for @groupCoordinationStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get groupCoordinationStatusCancelled;
+
+  /// No description provided for @groupCoordinationRsvpIn.
+  ///
+  /// In en, this message translates to:
+  /// **'In'**
+  String get groupCoordinationRsvpIn;
+
+  /// No description provided for @groupCoordinationRsvpMaybe.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe'**
+  String get groupCoordinationRsvpMaybe;
+
+  /// No description provided for @groupCoordinationRsvpOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Out'**
+  String get groupCoordinationRsvpOut;
+
+  /// No description provided for @groupCoordinationRsvpUpdating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating RSVP...'**
+  String get groupCoordinationRsvpUpdating;
+
+  /// No description provided for @groupCoordinationOwnedByYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get groupCoordinationOwnedByYou;
+
+  /// No description provided for @groupCoordinationUntitledSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled session'**
+  String get groupCoordinationUntitledSession;
+
+  /// No description provided for @groupCoordinationProposedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed by {displayName}'**
+  String groupCoordinationProposedBy(String displayName);
+
+  /// No description provided for @groupCoordinationActivityScheduledReadyUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} updated a ready window'**
+  String groupCoordinationActivityScheduledReadyUpdated(String displayName);
+
+  /// No description provided for @groupCoordinationActivityScheduledReadyDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} removed a ready window'**
+  String groupCoordinationActivityScheduledReadyDeleted(String displayName);
+
+  /// No description provided for @groupCoordinationActivitySessionProposed.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} proposed a session'**
+  String groupCoordinationActivitySessionProposed(String displayName);
+
+  /// No description provided for @groupCoordinationActivitySessionUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} updated a session'**
+  String groupCoordinationActivitySessionUpdated(String displayName);
+
+  /// No description provided for @groupCoordinationActivitySessionRsvpUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} responded to a session'**
+  String groupCoordinationActivitySessionRsvpUpdated(String displayName);
+
   /// No description provided for @languageSwitcherLabel.
   ///
   /// In en, this message translates to:

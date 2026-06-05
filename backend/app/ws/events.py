@@ -11,6 +11,12 @@ class EventType(str, Enum):
     USER_OFFLINE = "user_offline"
     CONNECTION_CHANGED = "connection_changed"
     READY_CHANGED = "ready_changed"
+    SCHEDULED_READY_UPDATED = "scheduled_ready_updated"
+    SCHEDULED_READY_DELETED = "scheduled_ready_deleted"
+    SESSION_PROPOSED = "session_proposed"
+    SESSION_UPDATED = "session_updated"
+    SESSION_RSVP_UPDATED = "session_rsvp_updated"
+    ACTIVITY_RECORDED = "activity_recorded"
 
 
 class BaseEvent(BaseModel):
@@ -61,3 +67,34 @@ class ReadyChangedEvent(BaseEvent):
     ready: bool
     ready_since: str | None = None
     ready_expires_at: str | None = None
+
+
+class ScheduledReadyUpdatedEvent(BaseEvent):
+    type: EventType = EventType.SCHEDULED_READY_UPDATED
+    window: dict
+
+
+class ScheduledReadyDeletedEvent(BaseEvent):
+    type: EventType = EventType.SCHEDULED_READY_DELETED
+    window_id: uuid.UUID
+    user_id: uuid.UUID
+
+
+class SessionProposedEvent(BaseEvent):
+    type: EventType = EventType.SESSION_PROPOSED
+    session: dict
+
+
+class SessionUpdatedEvent(BaseEvent):
+    type: EventType = EventType.SESSION_UPDATED
+    session: dict
+
+
+class SessionRsvpUpdatedEvent(BaseEvent):
+    type: EventType = EventType.SESSION_RSVP_UPDATED
+    rsvp: dict
+
+
+class ActivityRecordedEvent(BaseEvent):
+    type: EventType = EventType.ACTIVITY_RECORDED
+    activity: dict

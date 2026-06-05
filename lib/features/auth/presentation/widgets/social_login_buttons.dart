@@ -202,7 +202,7 @@ class _SocialDivider extends StatelessWidget {
     final l10n = context.l10n;
     return Row(
       children: [
-        const Expanded(child: Divider(color: AppColors.glassBorder)),
+        const Expanded(child: Divider()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
@@ -210,7 +210,7 @@ class _SocialDivider extends StatelessWidget {
             style: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
           ),
         ),
-        const Expanded(child: Divider(color: AppColors.glassBorder)),
+        const Expanded(child: Divider()),
       ],
     );
   }

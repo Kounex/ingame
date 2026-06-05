@@ -12,10 +12,16 @@ from app.redis.status_store import (
     sweep_expired_ready,
 )
 from app.ws.events import (
+    ActivityRecordedEvent,
     EventType,
     GroupPresenceSnapshot,
     MemberPresence,
     PresenceSnapshotEvent,
+    ScheduledReadyDeletedEvent,
+    ScheduledReadyUpdatedEvent,
+    SessionProposedEvent,
+    SessionRsvpUpdatedEvent,
+    SessionUpdatedEvent,
     UserOfflineEvent,
     UserOnlineEvent,
 )
@@ -141,6 +147,39 @@ class ConnectionManager:
             group_id=uuid.UUID(group_id),
             connection=connection,
         )
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_scheduled_ready_updated(self, window: dict) -> None:
+        group_id = window["group_id"]
+        event = ScheduledReadyUpdatedEvent(group_id=uuid.UUID(group_id), window=window)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_scheduled_ready_deleted(self, payload: dict) -> None:
+        group_id = payload["group_id"]
+        event = ScheduledReadyDeletedEvent(
+            group_id=uuid.UUID(group_id),
+            window_id=uuid.UUID(payload["window_id"]),
+            user_id=uuid.UUID(payload["user_id"]),
+        )
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_session_proposed(self, session: dict) -> None:
+        group_id = session["group_id"]
+        event = SessionProposedEvent(group_id=uuid.UUID(group_id), session=session)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_session_updated(self, session: dict) -> None:
+        group_id = session["group_id"]
+        event = SessionUpdatedEvent(group_id=uuid.UUID(group_id), session=session)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_session_rsvp_updated(self, group_id: str, rsvp: dict) -> None:
+        event = SessionRsvpUpdatedEvent(group_id=uuid.UUID(group_id), rsvp=rsvp)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_activity_recorded(self, activity: dict) -> None:
+        group_id = activity["group_id"]
+        event = ActivityRecordedEvent(group_id=uuid.UUID(group_id), activity=activity)
         await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
 
     async def sweep_all_groups(self, group_ids: list[str]) -> None:

@@ -10,6 +10,7 @@ import 'package:ingame/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ingame/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:ingame/features/profile/presentation/providers/profile_provider.dart';
 import 'package:ingame/l10n/app_localizations.dart';
+import 'package:ingame/shared/widgets/ingame_logo.dart';
 
 class _FakeAuthNotifier extends AuthNotifier {
   _FakeAuthNotifier(this._initialState);
@@ -117,6 +118,8 @@ void main() {
   ) async {
     await pumpOnboardingScreen(tester);
     await tester.pumpAndSettle();
+
+    expect(find.byType(InGameLogo), findsOneWidget);
 
     final image = tester.widget<Image>(find.byType(Image).first);
 

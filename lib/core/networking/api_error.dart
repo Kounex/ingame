@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:async';
 
 import '../../l10n/app_localizations.dart';
 import 'app_failure.dart';
@@ -9,6 +10,9 @@ class ApiError {
   static AppFailure toFailure(Object error) {
     if (error is AppFailure) {
       return error;
+    }
+    if (error is TimeoutException) {
+      return const NetworkFailure(AppNetworkFailureType.timeout);
     }
     if (error is DioException) {
       return _fromDio(error);

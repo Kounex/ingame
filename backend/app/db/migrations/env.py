@@ -8,7 +8,16 @@ from alembic import context
 
 from app.config import settings
 from app.db.database import Base
-from app.db.models import User, Group, GroupMembership, JoinRequest  # noqa: F401
+from app.db.models import (  # noqa: F401
+    Group,
+    GroupActivityEvent,
+    GroupMembership,
+    JoinRequest,
+    ScheduledReadyWindow,
+    Session,
+    SessionRsvp,
+    User,
+)
 
 config = context.config
 

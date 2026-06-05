@@ -12,6 +12,7 @@ class AppColors {
   static const Color glassSurfaceLight = Color(0x26FFFFFF);
   static const Color glassBorder = Color(0x1AFFFFFF);
   static const Color glassBorderFocused = Color(0x33FFFFFF);
+  static const Color hairlineDivider = Color(0x14D6DCE6);
 
   static const Color primary = Color(0xFF4FC3F7);
   static const Color primaryDark = Color(0xFF0288D1);
@@ -159,12 +160,156 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.backgroundLight,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: AppColors.textSecondary,
+          height: 1.4,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: AppColors.backgroundLight,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        headerBackgroundColor: Colors.transparent,
+        headerForegroundColor: AppColors.textPrimary,
+        weekdayStyle: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        dayStyle: textTheme.bodyLarge?.copyWith(color: AppColors.textPrimary),
+        yearStyle: textTheme.bodyLarge?.copyWith(color: AppColors.textPrimary),
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return AppColors.textDisabled;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.background;
+          }
+          return AppColors.textPrimary;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.textPrimary;
+          }
+          return Colors.transparent;
+        }),
+        todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.background;
+          }
+          return AppColors.primary;
+        }),
+        todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.textPrimary;
+          }
+          return Colors.transparent;
+        }),
+        todayBorder: const BorderSide(color: AppColors.primary),
+        yearForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.background;
+          }
+          return AppColors.textPrimary;
+        }),
+        yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.textPrimary;
+          }
+          return Colors.transparent;
+        }),
+        cancelButtonStyle: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+        ),
+        confirmButtonStyle: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+        ),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: AppColors.backgroundLight,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        hourMinuteShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        dayPeriodShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        dayPeriodBorderSide: const BorderSide(color: AppColors.glassBorder),
+        hourMinuteColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.textPrimary;
+          }
+          return AppColors.glassSurface;
+        }),
+        hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.background;
+          }
+          return AppColors.textPrimary;
+        }),
+        dayPeriodColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.textPrimary;
+          }
+          return AppColors.glassSurface;
+        }),
+        dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.background;
+          }
+          return AppColors.textPrimary;
+        }),
+        dialHandColor: AppColors.primary,
+        dialBackgroundColor: AppColors.glassSurface,
+        dialTextColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.background;
+          }
+          return AppColors.textPrimary;
+        }),
+        entryModeIconColor: AppColors.textSecondary,
+        helpTextStyle: textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
+        hourMinuteTextStyle: textTheme.headlineMedium?.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        dayPeriodTextStyle: textTheme.titleMedium?.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        cancelButtonStyle: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+        ),
+        confirmButtonStyle: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+        ),
+      ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.transparent,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textTertiary,
       ),
-      dividerColor: AppColors.glassBorder,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.hairlineDivider,
+        thickness: 0,
+      ),
+      dividerColor: AppColors.hairlineDivider,
       useMaterial3: true,
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ingame/core/auth/auth_session.dart';
 import 'package:ingame/core/routing/app_router.dart';
+import 'package:ingame/core/routing/route_names.dart';
 import 'package:ingame/core/storage/preferences.dart';
 import 'package:ingame/features/auth/presentation/screens/login_screen.dart';
 import 'package:ingame/features/auth/domain/auth_state.dart';
@@ -14,6 +15,7 @@ import 'package:ingame/features/groups/domain/group_model.dart';
 import 'package:ingame/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:ingame/features/profile/presentation/providers/profile_provider.dart';
 import 'package:ingame/l10n/app_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeAuthNotifier extends AuthNotifier {
@@ -88,6 +90,34 @@ User _completedUser() => const User(
 );
 
 void main() {
+  test('shell branch root routes use page builders', () {
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(const AuthState.unauthenticated()),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final router = container.read(routerProvider);
+    final routes = router.configuration.routes;
+    final shellRoute = routes.whereType<StatefulShellRoute>().single;
+    final branchRoots = shellRoute.branches
+        .expand((branch) => branch.routes)
+        .whereType<GoRoute>()
+        .where(
+          (route) =>
+              route.path == RoutePaths.home ||
+              route.path == RoutePaths.discover ||
+              route.path == RoutePaths.profile,
+        )
+        .toList();
+
+    expect(branchRoots, hasLength(3));
+    expect(branchRoots.every((route) => route.pageBuilder != null), isTrue);
+  });
+
   testWidgets(
     'protected profile route stays behind login while auth is still resolving',
     (tester) async {

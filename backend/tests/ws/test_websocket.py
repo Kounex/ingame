@@ -1,5 +1,7 @@
 import asyncio
 import time
+from datetime import datetime, timedelta, timezone
+import uuid
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +9,7 @@ from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from app.auth.jwt import create_access_token
+from app.db.database import get_db
 from app.db.models.group import Group, GroupMembership
 from app.db.models.user import User
 from app.main import app
@@ -30,21 +33,22 @@ async def _create_user(
 async def _create_group_with_members(
     db_session: AsyncSession,
 ) -> tuple[User, User, Group]:
+    nonce = uuid.uuid4().hex
     owner = await _create_user(
         db_session,
         display_name="Owner",
-        email="owner@example.com",
+        email=f"owner-{nonce}@example.com",
     )
     member = await _create_user(
         db_session,
         display_name="Member",
-        email="member@example.com",
+        email=f"member-{nonce}@example.com",
     )
 
     group = Group(
         name="Raid Night",
         description="Realtime test group",
-        invite_code="RAID42",
+        invite_code=f"RAID{nonce[:8].upper()}",
         created_by=owner.id,
     )
     db_session.add(group)
@@ -58,6 +62,18 @@ async def _create_group_with_members(
     )
     await db_session.commit()
     return owner, member, group
+
+
+def _auth(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _receive_until_event_type(ws, event_type: str, max_attempts: int = 4) -> dict:
+    for _ in range(max_attempts):
+        event = ws.receive_json()
+        if event["type"] == event_type:
+            return event
+    raise AssertionError(f"Did not receive event type {event_type!r}")
 
 
 def test_websocket_no_token():
@@ -135,6 +151,202 @@ async def test_ready_toggle_is_broadcast_to_other_group_members(
 
 
 @pytest.mark.asyncio
+async def test_rest_session_create_is_broadcast_to_other_group_members(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+    starts_at = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0)
+
+    async def override_get_db():
+        try:
+            yield db_session
+            await db_session.commit()
+        except Exception:
+            await db_session.rollback()
+            raise
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    try:
+        with TestClient(app) as tc:
+            with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+                owner_ws.receive_json()
+
+                with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                    member_ws.receive_json()
+                    owner_ws.receive_json()
+
+                    response = tc.post(
+                        f"/api/v1/groups/{group.id}/sessions",
+                        headers=_auth(member_token),
+                        json={
+                            "title": "Valheim Night",
+                            "game": "Valheim",
+                            "starts_at": starts_at.isoformat(),
+                        },
+                    )
+                    assert response.status_code == 201
+
+                    proposed_event = _receive_until_event_type(owner_ws, "session_proposed")
+                    activity_event = _receive_until_event_type(
+                        owner_ws, "activity_recorded"
+                    )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert proposed_event["type"] == "session_proposed"
+    assert proposed_event["group_id"] == str(group.id)
+    assert proposed_event["session"]["title"] == "Valheim Night"
+    assert activity_event["type"] == "activity_recorded"
+    assert activity_event["activity"]["type"] == "session_proposed"
+
+
+@pytest.mark.asyncio
+async def test_rest_scheduled_ready_create_and_delete_are_broadcast(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+    starts_at = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0)
+    ends_at = starts_at + timedelta(hours=2)
+
+    async def override_get_db():
+        try:
+            yield db_session
+            await db_session.commit()
+        except Exception:
+            await db_session.rollback()
+            raise
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    try:
+        with TestClient(app) as tc:
+            with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+                owner_ws.receive_json()
+
+                with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                    member_ws.receive_json()
+                    owner_ws.receive_json()
+
+                    create_response = tc.post(
+                        f"/api/v1/groups/{group.id}/scheduled-ready",
+                        headers=_auth(member_token),
+                        json={
+                            "starts_at": starts_at.isoformat(),
+                            "ends_at": ends_at.isoformat(),
+                        },
+                    )
+                    assert create_response.status_code == 201
+                    created_window = create_response.json()
+
+                    updated_event = _receive_until_event_type(
+                        owner_ws, "scheduled_ready_updated"
+                    )
+                    create_activity = _receive_until_event_type(
+                        owner_ws, "activity_recorded"
+                    )
+
+                    delete_response = tc.delete(
+                        f"/api/v1/groups/{group.id}/scheduled-ready/{created_window['id']}",
+                        headers=_auth(member_token),
+                    )
+                    assert delete_response.status_code == 204
+
+                    deleted_event = _receive_until_event_type(
+                        owner_ws, "scheduled_ready_deleted"
+                    )
+                    delete_activity = _receive_until_event_type(
+                        owner_ws, "activity_recorded"
+                    )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert updated_event["window"]["id"] == created_window["id"]
+    assert create_activity["activity"]["type"] == "scheduled_ready_updated"
+    assert deleted_event["window_id"] == created_window["id"]
+    assert delete_activity["activity"]["type"] == "scheduled_ready_deleted"
+
+
+@pytest.mark.asyncio
+async def test_rest_session_update_and_rsvp_are_broadcast(
+    db_session: AsyncSession,
+):
+    owner, member, group = await _create_group_with_members(db_session)
+    owner_token = create_access_token(owner.id)
+    member_token = create_access_token(member.id)
+    starts_at = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0)
+
+    async def override_get_db():
+        try:
+            yield db_session
+            await db_session.commit()
+        except Exception:
+            await db_session.rollback()
+            raise
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    try:
+        with TestClient(app) as tc:
+            with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
+                owner_ws.receive_json()
+
+                with tc.websocket_connect(f"/api/v1/ws?token={member_token}") as member_ws:
+                    member_ws.receive_json()
+                    owner_ws.receive_json()
+
+                    create_response = tc.post(
+                        f"/api/v1/groups/{group.id}/sessions",
+                        headers=_auth(owner_token),
+                        json={
+                            "title": "Valheim Night",
+                            "game": "Valheim",
+                            "starts_at": starts_at.isoformat(),
+                        },
+                    )
+                    assert create_response.status_code == 201
+                    session = create_response.json()
+
+                    _receive_until_event_type(owner_ws, "session_proposed")
+                    _receive_until_event_type(owner_ws, "activity_recorded")
+
+                    update_response = tc.patch(
+                        f"/api/v1/groups/{group.id}/sessions/{session['id']}",
+                        headers=_auth(owner_token),
+                        json={"status": "confirmed"},
+                    )
+                    assert update_response.status_code == 200
+
+                    updated_event = _receive_until_event_type(owner_ws, "session_updated")
+                    update_activity = _receive_until_event_type(
+                        owner_ws, "activity_recorded"
+                    )
+
+                    rsvp_response = tc.post(
+                        f"/api/v1/groups/{group.id}/sessions/{session['id']}/rsvp",
+                        headers=_auth(member_token),
+                        json={"response": "maybe"},
+                    )
+                    assert rsvp_response.status_code == 200
+
+                    rsvp_event = _receive_until_event_type(owner_ws, "session_rsvp_updated")
+                    rsvp_activity = _receive_until_event_type(
+                        owner_ws, "activity_recorded"
+                    )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert updated_event["session"]["status"] == "confirmed"
+    assert update_activity["activity"]["type"] == "session_updated"
+    assert rsvp_event["rsvp"]["response"] == "maybe"
+    assert rsvp_activity["activity"]["type"] == "session_rsvp_updated"
+
+
+@pytest.mark.asyncio
 async def test_presence_lifecycle_away_and_active_broadcast_connection_changed(
     db_session: AsyncSession,
 ):
@@ -204,7 +416,7 @@ async def test_ready_toggle_off_clears_ready_state(
                         "ready": False,
                     }
                 )
-                cleared_event = owner_ws.receive_json()
+                cleared_event = _receive_until_event_type(owner_ws, "ready_changed")
 
     assert cleared_event["type"] == "ready_changed"
     assert cleared_event["ready"] is False
@@ -277,6 +489,8 @@ async def test_ready_persists_across_disconnect_until_cleared(
                     "ready": True,
                 }
             )
+
+        await asyncio.sleep(0.2)
 
         with tc.websocket_connect(f"/api/v1/ws?token={owner_token}") as owner_ws:
             snapshot = owner_ws.receive_json()

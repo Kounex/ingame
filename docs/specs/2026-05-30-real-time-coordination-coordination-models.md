@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination-models
-version: "1.0"
-status: planned
-last_updated: "2026-06-04"
+version: "1.2"
+status: complete
+last_updated: "2026-06-05"
 sub_project: 2
 ---
 
@@ -12,11 +12,11 @@ sub_project: 2
 
 ## Scope
 
-This spec covers the planned SP2 coordination models that build on the phase-1 transport foundation:
+This spec covers the shipped SP2 coordination models that build on the transport/presence foundation:
 - scheduled ready windows
 - calendar surface rules
 - session scheduling
-- planned REST and WebSocket contracts for those future surfaces
+- activity feed and the delivered REST / WebSocket contracts for those surfaces
 
 ## Scheduled Ready Windows
 
@@ -27,6 +27,7 @@ A scheduled ready window is a future slot published by one member for one group,
 Rules:
 
 - a member may publish multiple future windows at once
+- each window must start in the future and end after it starts
 - scheduled ready windows are not RSVP objects
 - they do not imply that anyone else has committed to attend
 - they complement the immediate `ready` toggle rather than replacing it
@@ -47,28 +48,27 @@ Rules:
 | `created_at` | TIMESTAMP | Auto-set |
 | `updated_at` | TIMESTAMP | Auto-updated |
 
-### Planned REST Contract
+### REST Contract
 
 - `GET /api/v1/groups/{group_id}/scheduled-ready`
 - `POST /api/v1/groups/{group_id}/scheduled-ready`
 - `PATCH /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
 - `DELETE /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
 
-### Planned WebSocket Contract
-
-Client commands:
-- `scheduled_ready_upsert`
-- `scheduled_ready_delete`
+### WebSocket Contract
 
 Server events:
 - `scheduled_ready_updated`
 - `scheduled_ready_deleted`
 
+Mutations are REST-backed. WebSocket carries server fan-out after durable writes complete.
+
 ### Calendar Surface Rules
 
 - the primary group calendar view shows scheduled ready windows for all visible members in the selected time range
-- a filter or toggle may switch the same calendar into a recurring-availability comparison mode backed by SP1 `preferred_gaming_hours`
-- recurring availability is read-only inside that comparison surface unless the user explicitly navigates to profile editing
+- the shipped planning hub uses a browsable 7-day range selector, groups visible windows by day, and lets members create, edit, and remove only the windows they are authorized to manage from the same surface
+- a future filter or toggle may switch the same calendar into a recurring-availability comparison mode backed by SP1 `preferred_gaming_hours`
+- recurring availability remains read-only inside that comparison surface unless the user explicitly navigates to profile editing
 
 ## Session Scheduling
 
@@ -104,11 +104,11 @@ Session scheduling is the explicit group planning layer: propose a future time s
 | `updated_at` | TIMESTAMP | Auto-updated |
 | Unique constraint | | `(session_id, user_id)` |
 
-### Planned REST Contract
+### REST Contract
 
-- `GET /api/v1/groups/{group_id}/presence`
 - `GET /api/v1/groups/{group_id}/scheduled-ready`
 - `GET /api/v1/groups/{group_id}/sessions`
+- `GET /api/v1/groups/{group_id}/activity`
 - `POST /api/v1/groups/{group_id}/scheduled-ready`
 - `POST /api/v1/groups/{group_id}/sessions`
 - `PATCH /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
@@ -116,14 +116,7 @@ Session scheduling is the explicit group planning layer: propose a future time s
 - `DELETE /api/v1/groups/{group_id}/scheduled-ready/{window_id}`
 - `POST /api/v1/groups/{group_id}/sessions/{session_id}/rsvp`
 
-### Planned WebSocket Contract
-
-Client commands:
-- `scheduled_ready_upsert`
-- `scheduled_ready_delete`
-- `session_propose`
-- `session_update`
-- `session_rsvp`
+### WebSocket Contract
 
 Server events:
 - `scheduled_ready_updated`
@@ -131,9 +124,42 @@ Server events:
 - `session_proposed`
 - `session_updated`
 - `session_rsvp_updated`
+- `activity_recorded`
+
+Mutations are REST-backed. WebSocket is the shared live-update channel for group members only after the durable REST write commits successfully.
+
+## Activity Feed
+
+### Model
+
+Group activity is a lightweight chronological feed of coordination-relevant events for one group.
+
+**GroupActivityEvent**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID | Primary key |
+| `group_id` | UUID | FK -> Group |
+| `actor_user_id` | UUID | FK -> User |
+| `type` | VARCHAR | e.g. `scheduled_ready_updated`, `scheduled_ready_deleted`, `session_proposed`, `session_rsvp_updated` |
+| `message` | TEXT | Compatibility summary; maintained clients localize feed rows from typed event data |
+| `session_id` | UUID? | Nullable FK -> Session |
+| `scheduled_ready_window_id` | UUID? | Nullable FK -> ScheduledReadyWindow |
+| `created_at` | TIMESTAMP | Auto-set |
+
+### REST Contract
+
+- `GET /api/v1/groups/{group_id}/activity`
+
+### WebSocket Contract
+
+Server events:
+- `activity_recorded`
 
 ## Change Log
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
 | 2026-06-04 | Spec topology | Created a dedicated coordination-models spec by extracting scheduled-ready, calendar, and session-planning contracts from the larger SP2 realtime spec | Separates planned future coordination work from the active phase-1 transport contract so each can evolve without excess noise |
+| 2026-06-05 | Delivered coordination slice | Marked the coordination models complete, documented the shipped activity model/feed, and clarified that durable scheduled-ready/session mutations are REST-backed with WebSocket server fan-out | Aligns the maintained SP2 contract with the implementation that now closes the gap between the earlier presence-only kickoff and the full coordination slice |
+| 2026-06-05 | Audit follow-up contract polish | Added future-window validation, commit-before-fan-out wording, range-based calendar browsing, permission-aware edit affordances, and client-localized activity guidance | Keeps the coordination contract aligned with the corrected backend semantics and the upgraded shipped planning UX |

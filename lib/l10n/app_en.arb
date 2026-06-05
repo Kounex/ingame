@@ -503,6 +503,133 @@
   "groupDetailReadyToggleHint": "Let your group know you're available to game",
   "groupDetailReadyToggleOfflineHint": "Connect to change your ready status",
   "groupDetailReadyToggleReconnectingHint": "Reconnecting…",
+  "groupDetailCoordinationTitle": "Plan together",
+  "groupDetailCoordinationSubtitle": "See availability windows, session RSVPs, and recent group activity.",
+  "groupDetailCoordinationNextSession": "Next up: {title}",
+  "@groupDetailCoordinationNextSession": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "groupDetailCoordinationAction": "Open planning hub",
+  "groupCoordinationTitle": "Group Coordination",
+  "groupCoordinationSubtitle": "Plan sessions with scheduled availability, RSVPs, and a shared activity stream.",
+  "groupCoordinationWindowsCount": "{count} windows",
+  "@groupCoordinationWindowsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationSessionsCount": "{count} sessions",
+  "@groupCoordinationSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityCount": "{count} updates",
+  "@groupCoordinationActivityCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationCalendarTitle": "Availability Calendar",
+  "groupCoordinationCalendarAdd": "Add window",
+  "groupCoordinationCalendarEmpty": "No scheduled ready windows yet.",
+  "groupCoordinationCalendarEmptyRange": "No ready windows in this range.",
+  "groupCoordinationCalendarThisWeek": "This Week",
+  "groupCoordinationCalendarPreviousRange": "Previous range",
+  "groupCoordinationCalendarNextRange": "Next range",
+  "groupCoordinationCalendarRangeLabel": "{start} - {end}",
+  "@groupCoordinationCalendarRangeLabel": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationSessionsTitle": "Sessions",
+  "groupCoordinationSessionAdd": "Propose session",
+  "groupCoordinationSessionsEmpty": "No sessions planned yet.",
+  "groupCoordinationActivityTitle": "Activity",
+  "groupCoordinationActivityEmpty": "No activity yet.",
+  "groupCoordinationAddWindowTitle": "Add ready window",
+  "groupCoordinationEditWindowTitle": "Edit ready window",
+  "groupCoordinationAddSessionTitle": "Propose session",
+  "groupCoordinationEditSessionTitle": "Edit session",
+  "groupCoordinationStartsAt": "Starts",
+  "groupCoordinationEndsAt": "Ends",
+  "groupCoordinationFieldTitle": "Title",
+  "groupCoordinationFieldGame": "Game",
+  "groupCoordinationFieldNotes": "Notes",
+  "groupCoordinationFieldStatus": "Status",
+  "groupCoordinationStatusProposed": "Proposed",
+  "groupCoordinationStatusConfirmed": "Confirmed",
+  "groupCoordinationStatusCancelled": "Cancelled",
+  "groupCoordinationRsvpIn": "In",
+  "groupCoordinationRsvpMaybe": "Maybe",
+  "groupCoordinationRsvpOut": "Out",
+  "groupCoordinationRsvpUpdating": "Updating RSVP...",
+  "groupCoordinationOwnedByYou": "You",
+  "groupCoordinationUntitledSession": "Untitled session",
+  "groupCoordinationProposedBy": "Proposed by {displayName}",
+  "@groupCoordinationProposedBy": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivityScheduledReadyUpdated": "{displayName} updated a ready window",
+  "@groupCoordinationActivityScheduledReadyUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivityScheduledReadyDeleted": "{displayName} removed a ready window",
+  "@groupCoordinationActivityScheduledReadyDeleted": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionProposed": "{displayName} proposed a session",
+  "@groupCoordinationActivitySessionProposed": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionUpdated": "{displayName} updated a session",
+  "@groupCoordinationActivitySessionUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionRsvpUpdated": "{displayName} responded to a session",
+  "@groupCoordinationActivitySessionRsvpUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "languageSwitcherLabel": "Language",
   "languageEnglish": "English",
   "languageGerman": "Deutsch"

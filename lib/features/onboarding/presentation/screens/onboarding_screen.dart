@@ -16,6 +16,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../../../../shared/widgets/ingame_logo.dart';
@@ -317,14 +318,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     });
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.background, AppColors.backgroundLight],
-          ),
-        ),
+      backgroundColor: Colors.transparent,
+      body: AppBackgroundSurface(
         child: SafeArea(
           child: DesktopContentRegion(
             width: DesktopContentWidth.form,
@@ -444,27 +439,7 @@ class _WelcomePage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(flex: 2),
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.3),
-                  AppColors.primary.withValues(alpha: 0.0),
-                ],
-                radius: 0.8,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Image.asset(
-                ingameLogoAssetPath,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
+          const InGameLogo(size: InGameLogoSize.large),
           const SizedBox(height: AppSpacing.xl),
           Text(
             context.l10n.onboardingWelcomeTitle,

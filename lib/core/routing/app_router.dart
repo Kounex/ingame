@@ -9,6 +9,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/steam_auth_screen.dart';
 import '../../features/groups/presentation/screens/create_group_screen.dart';
+import '../../features/groups/presentation/screens/group_coordination_screen.dart';
 import '../../features/groups/presentation/screens/group_detail_screen.dart';
 import '../../features/groups/presentation/screens/group_settings_screen.dart';
 import '../../features/onboarding/presentation/providers/onboarding_provider.dart';
@@ -141,7 +142,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => focusedFlowRoutePage(
           key: state.pageKey,
           child: LoginScreen(
-            redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+            redirectTo: sanitizeRedirectTarget(
+              state.uri.queryParameters['from'],
+            ),
           ),
         ),
       ),
@@ -151,7 +154,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => focusedFlowRoutePage(
           key: state.pageKey,
           child: RegisterScreen(
-            redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+            redirectTo: sanitizeRedirectTarget(
+              state.uri.queryParameters['from'],
+            ),
           ),
         ),
       ),
@@ -161,7 +166,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => focusedFlowRoutePage(
           key: state.pageKey,
           child: SteamAuthScreen(
-            redirectTo: sanitizeRedirectTarget(state.uri.queryParameters['from']),
+            redirectTo: sanitizeRedirectTarget(
+              state.uri.queryParameters['from'],
+            ),
           ),
         ),
       ),
@@ -191,16 +198,20 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Shell — persistent sidebar / bottom nav
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return AdaptiveShell(navigationShell: navigationShell);
-        },
+        pageBuilder: (context, state, navigationShell) => focusedFlowRoutePage(
+          key: state.pageKey,
+          child: AdaptiveShell(navigationShell: navigationShell),
+        ),
         branches: [
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: RoutePaths.home,
                 name: RouteNames.home,
-                builder: (context, state) => const GroupsListScreen(),
+                pageBuilder: (context, state) => adaptiveRoutePage(
+                  key: state.pageKey,
+                  child: const GroupsListScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'groups/create',
@@ -221,6 +232,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                       );
                     },
                     routes: [
+                      GoRoute(
+                        path: 'coordination',
+                        name: RouteNames.groupCoordination,
+                        pageBuilder: (context, state) {
+                          final id = state.pathParameters['id']!;
+                          return adaptiveRoutePage(
+                            key: state.pageKey,
+                            child: GroupCoordinationScreen(groupId: id),
+                          );
+                        },
+                      ),
                       GoRoute(
                         path: 'settings',
                         name: RouteNames.groupSettings,
@@ -243,7 +265,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: RoutePaths.discover,
                 name: RouteNames.discover,
-                builder: (context, state) => const GroupDirectoryScreen(),
+                pageBuilder: (context, state) => adaptiveRoutePage(
+                  key: state.pageKey,
+                  child: const GroupDirectoryScreen(),
+                ),
               ),
             ],
           ),
@@ -252,7 +277,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: RoutePaths.profile,
                 name: RouteNames.profile,
-                builder: (context, state) => const ProfileScreen(),
+                pageBuilder: (context, state) => adaptiveRoutePage(
+                  key: state.pageKey,
+                  child: const ProfileScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'edit',

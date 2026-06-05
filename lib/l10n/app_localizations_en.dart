@@ -902,6 +902,169 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupDetailReadyToggleReconnectingHint => 'Reconnecting…';
 
   @override
+  String get groupDetailCoordinationTitle => 'Plan together';
+
+  @override
+  String get groupDetailCoordinationSubtitle => 'See availability windows, session RSVPs, and recent group activity.';
+
+  @override
+  String groupDetailCoordinationNextSession(String title) {
+    return 'Next up: $title';
+  }
+
+  @override
+  String get groupDetailCoordinationAction => 'Open planning hub';
+
+  @override
+  String get groupCoordinationTitle => 'Group Coordination';
+
+  @override
+  String get groupCoordinationSubtitle => 'Plan sessions with scheduled availability, RSVPs, and a shared activity stream.';
+
+  @override
+  String groupCoordinationWindowsCount(int count) {
+    return '$count windows';
+  }
+
+  @override
+  String groupCoordinationSessionsCount(int count) {
+    return '$count sessions';
+  }
+
+  @override
+  String groupCoordinationActivityCount(int count) {
+    return '$count updates';
+  }
+
+  @override
+  String get groupCoordinationCalendarTitle => 'Availability Calendar';
+
+  @override
+  String get groupCoordinationCalendarAdd => 'Add window';
+
+  @override
+  String get groupCoordinationCalendarEmpty => 'No scheduled ready windows yet.';
+
+  @override
+  String get groupCoordinationCalendarEmptyRange => 'No ready windows in this range.';
+
+  @override
+  String get groupCoordinationCalendarThisWeek => 'This Week';
+
+  @override
+  String get groupCoordinationCalendarPreviousRange => 'Previous range';
+
+  @override
+  String get groupCoordinationCalendarNextRange => 'Next range';
+
+  @override
+  String groupCoordinationCalendarRangeLabel(String start, String end) {
+    return '$start - $end';
+  }
+
+  @override
+  String get groupCoordinationSessionsTitle => 'Sessions';
+
+  @override
+  String get groupCoordinationSessionAdd => 'Propose session';
+
+  @override
+  String get groupCoordinationSessionsEmpty => 'No sessions planned yet.';
+
+  @override
+  String get groupCoordinationActivityTitle => 'Activity';
+
+  @override
+  String get groupCoordinationActivityEmpty => 'No activity yet.';
+
+  @override
+  String get groupCoordinationAddWindowTitle => 'Add ready window';
+
+  @override
+  String get groupCoordinationEditWindowTitle => 'Edit ready window';
+
+  @override
+  String get groupCoordinationAddSessionTitle => 'Propose session';
+
+  @override
+  String get groupCoordinationEditSessionTitle => 'Edit session';
+
+  @override
+  String get groupCoordinationStartsAt => 'Starts';
+
+  @override
+  String get groupCoordinationEndsAt => 'Ends';
+
+  @override
+  String get groupCoordinationFieldTitle => 'Title';
+
+  @override
+  String get groupCoordinationFieldGame => 'Game';
+
+  @override
+  String get groupCoordinationFieldNotes => 'Notes';
+
+  @override
+  String get groupCoordinationFieldStatus => 'Status';
+
+  @override
+  String get groupCoordinationStatusProposed => 'Proposed';
+
+  @override
+  String get groupCoordinationStatusConfirmed => 'Confirmed';
+
+  @override
+  String get groupCoordinationStatusCancelled => 'Cancelled';
+
+  @override
+  String get groupCoordinationRsvpIn => 'In';
+
+  @override
+  String get groupCoordinationRsvpMaybe => 'Maybe';
+
+  @override
+  String get groupCoordinationRsvpOut => 'Out';
+
+  @override
+  String get groupCoordinationRsvpUpdating => 'Updating RSVP...';
+
+  @override
+  String get groupCoordinationOwnedByYou => 'You';
+
+  @override
+  String get groupCoordinationUntitledSession => 'Untitled session';
+
+  @override
+  String groupCoordinationProposedBy(String displayName) {
+    return 'Proposed by $displayName';
+  }
+
+  @override
+  String groupCoordinationActivityScheduledReadyUpdated(String displayName) {
+    return '$displayName updated a ready window';
+  }
+
+  @override
+  String groupCoordinationActivityScheduledReadyDeleted(String displayName) {
+    return '$displayName removed a ready window';
+  }
+
+  @override
+  String groupCoordinationActivitySessionProposed(String displayName) {
+    return '$displayName proposed a session';
+  }
+
+  @override
+  String groupCoordinationActivitySessionUpdated(String displayName) {
+    return '$displayName updated a session';
+  }
+
+  @override
+  String groupCoordinationActivitySessionRsvpUpdated(String displayName) {
+    return '$displayName responded to a session';
+  }
+
+  @override
   String get languageSwitcherLabel => 'Language';
 
   @override

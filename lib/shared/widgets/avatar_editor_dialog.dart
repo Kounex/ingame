@@ -78,7 +78,6 @@ class _AvatarEditorDialogState extends State<AvatarEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.backgroundLight,
       title: Text(context.l10n.avatarEditorCropTitle),
       content: SizedBox(
         width: 420,

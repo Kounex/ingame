@@ -902,6 +902,169 @@ class AppLocalizationsDe extends AppLocalizations {
   String get groupDetailReadyToggleReconnectingHint => 'Verbindung wird wiederhergestellt…';
 
   @override
+  String get groupDetailCoordinationTitle => 'Zusammen planen';
+
+  @override
+  String get groupDetailCoordinationSubtitle => 'Sieh Verfügbarkeitsfenster, Session-Zusagen und die letzten Gruppenaktivitäten.';
+
+  @override
+  String groupDetailCoordinationNextSession(String title) {
+    return 'Als Nächstes: $title';
+  }
+
+  @override
+  String get groupDetailCoordinationAction => 'Planung öffnen';
+
+  @override
+  String get groupCoordinationTitle => 'Gruppenkoordination';
+
+  @override
+  String get groupCoordinationSubtitle => 'Plane Sessions mit geplanten Verfügbarkeiten, RSVPs und einem gemeinsamen Aktivitätsstream.';
+
+  @override
+  String groupCoordinationWindowsCount(int count) {
+    return '$count Fenster';
+  }
+
+  @override
+  String groupCoordinationSessionsCount(int count) {
+    return '$count Sessions';
+  }
+
+  @override
+  String groupCoordinationActivityCount(int count) {
+    return '$count Updates';
+  }
+
+  @override
+  String get groupCoordinationCalendarTitle => 'Verfügbarkeitskalender';
+
+  @override
+  String get groupCoordinationCalendarAdd => 'Fenster hinzufügen';
+
+  @override
+  String get groupCoordinationCalendarEmpty => 'Noch keine geplanten Verfügbarkeitsfenster.';
+
+  @override
+  String get groupCoordinationCalendarEmptyRange => 'In diesem Zeitraum gibt es keine Bereitschaftsfenster.';
+
+  @override
+  String get groupCoordinationCalendarThisWeek => 'Diese Woche';
+
+  @override
+  String get groupCoordinationCalendarPreviousRange => 'Vorheriger Zeitraum';
+
+  @override
+  String get groupCoordinationCalendarNextRange => 'Nächster Zeitraum';
+
+  @override
+  String groupCoordinationCalendarRangeLabel(String start, String end) {
+    return '$start - $end';
+  }
+
+  @override
+  String get groupCoordinationSessionsTitle => 'Sessions';
+
+  @override
+  String get groupCoordinationSessionAdd => 'Session vorschlagen';
+
+  @override
+  String get groupCoordinationSessionsEmpty => 'Noch keine geplanten Sessions.';
+
+  @override
+  String get groupCoordinationActivityTitle => 'Aktivität';
+
+  @override
+  String get groupCoordinationActivityEmpty => 'Noch keine Aktivität.';
+
+  @override
+  String get groupCoordinationAddWindowTitle => 'Bereitschaftsfenster hinzufügen';
+
+  @override
+  String get groupCoordinationEditWindowTitle => 'Bereitschaftsfenster bearbeiten';
+
+  @override
+  String get groupCoordinationAddSessionTitle => 'Session vorschlagen';
+
+  @override
+  String get groupCoordinationEditSessionTitle => 'Session bearbeiten';
+
+  @override
+  String get groupCoordinationStartsAt => 'Beginn';
+
+  @override
+  String get groupCoordinationEndsAt => 'Ende';
+
+  @override
+  String get groupCoordinationFieldTitle => 'Titel';
+
+  @override
+  String get groupCoordinationFieldGame => 'Spiel';
+
+  @override
+  String get groupCoordinationFieldNotes => 'Notizen';
+
+  @override
+  String get groupCoordinationFieldStatus => 'Status';
+
+  @override
+  String get groupCoordinationStatusProposed => 'Vorgeschlagen';
+
+  @override
+  String get groupCoordinationStatusConfirmed => 'Bestätigt';
+
+  @override
+  String get groupCoordinationStatusCancelled => 'Abgesagt';
+
+  @override
+  String get groupCoordinationRsvpIn => 'Dabei';
+
+  @override
+  String get groupCoordinationRsvpMaybe => 'Vielleicht';
+
+  @override
+  String get groupCoordinationRsvpOut => 'Raus';
+
+  @override
+  String get groupCoordinationRsvpUpdating => 'RSVP wird aktualisiert...';
+
+  @override
+  String get groupCoordinationOwnedByYou => 'Du';
+
+  @override
+  String get groupCoordinationUntitledSession => 'Unbenannte Session';
+
+  @override
+  String groupCoordinationProposedBy(String displayName) {
+    return 'Vorgeschlagen von $displayName';
+  }
+
+  @override
+  String groupCoordinationActivityScheduledReadyUpdated(String displayName) {
+    return '$displayName hat ein Bereitschaftsfenster aktualisiert';
+  }
+
+  @override
+  String groupCoordinationActivityScheduledReadyDeleted(String displayName) {
+    return '$displayName hat ein Bereitschaftsfenster entfernt';
+  }
+
+  @override
+  String groupCoordinationActivitySessionProposed(String displayName) {
+    return '$displayName hat eine Session vorgeschlagen';
+  }
+
+  @override
+  String groupCoordinationActivitySessionUpdated(String displayName) {
+    return '$displayName hat eine Session aktualisiert';
+  }
+
+  @override
+  String groupCoordinationActivitySessionRsvpUpdated(String displayName) {
+    return '$displayName hat auf eine Session geantwortet';
+  }
+
+  @override
   String get languageSwitcherLabel => 'Sprache';
 
   @override

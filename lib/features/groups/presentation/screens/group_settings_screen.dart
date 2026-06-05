@@ -94,7 +94,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupSettingsRemoveMemberTitle,
           style: const TextStyle(color: AppColors.textPrimary),
@@ -158,7 +157,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupSettingsDenyRequestTitle,
           style: const TextStyle(color: AppColors.textPrimary),
@@ -204,7 +202,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupSettingsDeleteTitle,
           style: const TextStyle(color: AppColors.textPrimary),
@@ -253,7 +250,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.backgroundLight,
         title: Text(
           nextRole == 'admin'
               ? l10n.groupSettingsPromoteTitle
@@ -308,7 +304,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupSettingsTransferOwnershipTitle,
           style: const TextStyle(color: AppColors.textPrimary),

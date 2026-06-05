@@ -13,6 +13,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/language_switcher.dart';
@@ -34,14 +35,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(profileNotifierProvider);
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.background, AppColors.backgroundLight],
-        ),
-      ),
+    return AppBackgroundSurface(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
@@ -211,10 +205,7 @@ class _AccountInfoCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           for (var i = 0; i < rows.length; i++) ...[
             if (i > 0)
-              Divider(
-                color: AppColors.glassBorder.withValues(alpha: 0.4),
-                height: 1,
-              ),
+              const Divider(height: 1),
             _InfoRow(icon: rows[i].$1, label: rows[i].$2, value: rows[i].$3),
           ],
         ],
@@ -398,7 +389,7 @@ class _GamingHoursCard extends StatelessWidget {
               if (group != groups.first)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Divider(color: AppColors.glassBorder, height: 1),
+                  child: Divider(height: 1),
                 ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -522,7 +513,6 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.backgroundLight,
         title: Text(l10n.profileDisconnectTitle(provider)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -730,10 +720,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
                 ? null
                 : () => _handleEmailTap(context, ref),
           ),
-          Divider(
-            color: AppColors.glassBorder.withValues(alpha: 0.4),
-            height: 1,
-          ),
+          const Divider(height: 1),
           _AccountRow(
             icon: Icons.gamepad_outlined,
             label: context.l10n.profileConnectedAccountsSteam,
@@ -743,10 +730,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
                 : null,
             onTap: () => _handleSteamTap(context, ref),
           ),
-          Divider(
-            color: AppColors.glassBorder.withValues(alpha: 0.4),
-            height: 1,
-          ),
+          const Divider(height: 1),
           _AccountRow(
             icon: Icons.apple,
             label: context.l10n.profileConnectedAccountsApple,
@@ -891,7 +875,6 @@ class _SetEmailPasswordDialogState extends State<_SetEmailPasswordDialog>
     );
 
     return AlertDialog(
-      backgroundColor: AppColors.backgroundLight,
       title: Text(l10n.profileSetEmailPasswordTitle),
       content: Form(
         key: _formKey,

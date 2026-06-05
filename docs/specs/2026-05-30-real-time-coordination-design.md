@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination
-version: "2.0"
-status: in-progress
-last_updated: "2026-06-04"
+version: "2.2"
+status: complete
+last_updated: "2026-06-05"
 sub_project: 2
 ---
 
@@ -20,17 +20,26 @@ This spec covers **Sub-Project 2: Real-Time Coordination**. It builds on the Cor
 - lightweight group activity
 - session scheduling
 
-The goal of SP2 is to make coordination feel immediate: a user can mark themselves as ready, other group members see that update live, and the app can grow into both scheduled personal availability publication and explicit session proposals on top of the same transport and event model.
+The goal of SP2 is to make coordination feel immediate: a user can mark themselves as ready, other group members see that update live, and the app can coordinate both scheduled personal availability publication and explicit session proposals on top of the same transport and event model.
 
 This file is now the SP2 entry point. Detailed contracts live in focused child specs linked below.
 
 ---
 
-## Phase 1 Scope (Presence-First Kickoff)
+## Delivered Scope
 
-Phase 1 delivers **presence only**. Session scheduling, activity feed, and related REST endpoints remain planned but out of the first implementation slice.
+SP2 now delivers the full coordination slice on top of the earlier presence-first transport foundation:
 
-### Product Rules
+- authenticated WebSocket connection lifecycle
+- derived connection presence (`online`, `away`, `offline`)
+- group-scoped ready state with 8-hour fallback expiry
+- scheduled ready windows with CRUD over REST and live server-event fan-out
+- group calendar and coordination hub surfaces in Flutter
+- session proposals with RSVP (`in`, `maybe`, `out`)
+- lightweight group activity stream for scheduled-ready and session lifecycle updates
+- backend and frontend test coverage for presence plus coordination fan-out
+
+### Presence Rules
 
 - only **`ready`** is user-controlled
 - **`online`**, **`offline`**, and **`away`** are derived states
@@ -40,7 +49,7 @@ Phase 1 delivers **presence only**. Session scheduling, activity feed, and relat
 - **`ready`** persists until the user turns it off, with an automatic **8-hour fallback expiry**
 - presence renders app-wide wherever group members are shown, not only on group detail
 
-### Display Priority
+### Presence Display Priority
 
 When rendering a member's single status badge:
 
@@ -55,29 +64,25 @@ Ready remains visible even when the user backgrounds the app or disconnects. Con
 
 ## Scope
 
-### In Scope (Phase 1)
+### In Scope
 
-- authenticated WebSocket connection lifecycle
-- derived connection presence (`online`, `away`, `offline`)
-- group-scoped ready state with 8-hour fallback expiry
 - initial presence bootstrap when a client connects
 - Redis-backed pub/sub fan-out across multiple backend replicas
-- Flutter realtime providers and presence UI integration
-- backend and frontend test coverage for phase-1 realtime behavior
+- Flutter realtime providers for presence plus coordination models
+- REST bootstrap and mutation endpoints for scheduled-ready windows, sessions, RSVPs, and activity
+- Flutter planning hub navigation and group coordination surfaces
+- backend and frontend test coverage for realtime behavior beyond the presence-only kickoff
 
-### Planned Later (Phase 2+)
+### Follow-On Enhancements
 
-- scheduled ready windows with multiple future slots per member
-- group calendar views for scheduled ready windows
 - recurring-availability overlay/filter that consumes SP1 `preferred_gaming_hours` data without redefining it inside SP2
-- group activity events for scheduled-ready and session lifecycle changes
-- session scheduling data model and CRUD contract for RSVP-based plans
-- REST bootstrap endpoints for scheduled-ready windows, sessions, and richer presence beyond WebSocket snapshots
+- richer calendar filters or alternate time-range views beyond the shipped planning hub
+- reminders or countdown affordances that sit on top of SP2 session data without changing the core data model
 
 ### Out of Scope
 
-- push notifications (SP4)
-- game matching and Steam library sync (SP3)
+- push notifications (SP3)
+- game matching and Steam library sync (SP4)
 - public lobbies and open matchmaking (SP5)
 
 SP2 deliberately separates:
@@ -93,8 +98,8 @@ SP2 deliberately separates:
 SP2 is now split into one overview plus focused realtime specs:
 
 - [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) -- WebSocket transport, event envelope, presence model, Redis structures, bootstrap, commands, and fan-out rules
-- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) -- scheduled ready windows, calendar rules, session scheduling, and planned REST/WebSocket contracts
-- [Implementation](2026-05-30-real-time-coordination-implementation.md) -- Flutter architecture, backend responsibilities, testing expectations, and deployment notes
+- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) -- scheduled ready windows, calendar rules, session scheduling, activity feed, and the shipped REST/WebSocket contracts
+- [Implementation](2026-05-30-real-time-coordination-implementation.md) -- Flutter architecture, backend responsibilities, completion gates, testing expectations, and deployment notes
 
 Use this overview for SP2 boundaries and current delivery scope. Use the child specs for precise contracts.
 
@@ -123,10 +128,10 @@ flowchart TD
 ### Core Principles
 
 - REST remains the source for bootstrap and durable writes
-- WebSocket is used for live fan-out and fast UI updates
+- WebSocket is used for live fan-out and fast UI updates only after durable coordination mutations commit successfully
 - Redis pub/sub is mandatory for cross-instance fan-out in staging and production
 - PostgreSQL stores durable session/activity records while Redis stores ephemeral presence
-- Flutter hydrates from WebSocket snapshots, then applies live updates incrementally
+- Flutter hydrates presence from WebSocket snapshots, coordination models from REST, then applies live updates incrementally without blanking the planning hub during routine coordination mutations
 
 ---
 
@@ -135,3 +140,5 @@ flowchart TD
 | Date | Section | Change | Reason |
 |------|---------|--------|--------|
 | 2026-06-04 | Spec topology | Converted the larger SP2 realtime spec into a thin overview plus focused transport/presence, coordination-models, and implementation child specs | Keeps phase-1 delivery contracts readable while letting future SP2 planning evolve without bloating one document |
+| 2026-06-05 | Delivery status | Marked SP2 complete and updated the overview to reflect the shipped scheduled-ready, session, RSVP, activity, and coordination-hub slice | Keeps the SP2 entry point aligned with the delivered coordination contract before Notifications becomes the next numbered sub-project |
+| 2026-06-05 | Durability and coordination UX follow-through | Clarified commit-before-fan-out websocket semantics and the incremental planning-hub update model after the audit follow-up | Keeps the maintained SP2 overview aligned with the corrected backend durability contract and the shipped non-disruptive coordination UX |

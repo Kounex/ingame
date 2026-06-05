@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.42"
+version: "1.54"
 status: active
 last_updated: "2026-06-05"
 ---
@@ -38,9 +38,9 @@ Full SP1 architectural details are documented in the [Core Platform overview](20
 ```mermaid
 graph LR
     SP1["SP1: Core Platform\n(COMPLETE)"] --> SP2["SP2: Real-Time\nCoordination"]
-    SP1 --> SP3["SP3: Game\nMatching"]
-    SP2 --> SP3
-    SP2 --> SP4["SP4: Settings &\nNotifications"]
+    SP2 --> SP3["SP3: Settings &\nNotifications"]
+    SP1 --> SP4["SP4: Game\nMatching"]
+    SP2 --> SP4
     SP3 --> SP5["SP5: Open\nMatching"]
     SP4 --> SP5
 ```
@@ -48,9 +48,9 @@ graph LR
 | # | Sub-Project | Status | Spec | Depends On |
 |---|-------------|--------|------|------------|
 | 1 | Core Platform | Complete | [spec](2026-05-30-core-platform-design.md) | -- |
-| 2 | Real-Time Coordination | In Progress | [spec](2026-05-30-real-time-coordination-design.md) | SP1 |
-| 3 | Game Matching | Planned | [spec](2026-06-02-game-matching-design.md) | SP1, SP2 |
-| 4 | Settings & Notifications | Planned | -- | SP2 |
+| 2 | Real-Time Coordination | Complete | [spec](2026-05-30-real-time-coordination-design.md) | SP1 |
+| 3 | Settings & Notifications | Planned | [spec](2026-06-05-notifications-design.md) | SP2 |
+| 4 | Game Matching | Planned | [spec](2026-06-02-game-matching-design.md) | SP1, SP2 |
 | 5 | Open Matching (V2) | Planned | -- | SP3, SP4 |
 
 ---
@@ -87,24 +87,22 @@ graph LR
 - [Auth](2026-05-30-core-platform-auth.md) (v1.3)
 - [Profiles](2026-05-30-core-platform-profiles.md) (v1.7)
 - [Groups](2026-05-30-core-platform-groups.md) (v1.0)
-- [Implementation](2026-05-30-core-platform-implementation.md) (v1.10)
+- [Implementation](2026-05-30-core-platform-implementation.md) (v1.36)
 
 ---
 
-### SP2: Real-Time Coordination
+### SP2: Real-Time Coordination (COMPLETE)
 
 **Goal:** Let users signal "ready to game" and coordinate both short-horizon availability and group play plans with their groups in real time.
 
-**Phase 1 (in progress): presence-first kickoff**
+**Delivered in SP2:**
 - **Derived connection presence** -- online/offline from WebSocket lifecycle; away from app background/inactive
 - **Group-scoped ready** -- user-controlled ready toggle per group with 8-hour fallback expiry
 - **App-wide live member status** -- member surfaces consume one presence provider contract
-
-**Planned later in SP2:**
 - **Scheduled ready windows** -- members can publish multiple future "ready to play" windows without creating a formal RSVP event
-- **Group calendar views** -- shared calendar surfaces show scheduled ready windows and can optionally overlay each member's recurring profile availability from SP1
-- **Session scheduling** -- propose a future time slot for a gaming session; group members RSVP (in/out/maybe); reminders when session is approaching
-- **Activity feed** -- lightweight event stream in each group (e.g., "Alex is ready to game", "Session proposed for tonight 8 PM")
+- **Group calendar views** -- shared coordination surfaces show scheduled ready windows with browsable time ranges and establish the foundation for later recurring-availability comparison
+- **Session scheduling** -- propose a future time slot for a gaming session; group members RSVP (`in` / `maybe` / `out`)
+- **Activity feed** -- lightweight event stream in each group for scheduled-ready and session lifecycle changes
 
 SP2 intentionally distinguishes two coordination models:
 - **Scheduled personal readiness** -- "I expect to be ready at these times"
@@ -112,25 +110,53 @@ SP2 intentionally distinguishes two coordination models:
 
 **Technical scope:**
 - Redis pub/sub channels per group for real-time event fan-out
-- WebSocket event handlers for status changes, scheduled-ready updates, session proposals, RSVPs
+- WebSocket event handlers for status changes plus live coordination fan-out after durable scheduled-ready/session writes
 - `StatusIndicator` widget integration (already built in SP1, needs wiring to live data)
-- New data models: scheduled-ready windows for personal availability publication plus `Session` for explicit group proposals
+- New data models: scheduled-ready windows for personal availability publication, `Session` for explicit group proposals, `SessionRsvp`, and a lightweight activity record
 - Backend: status store in Redis, scheduled-ready/session persistence in PostgreSQL where durable history is needed
-- Flutter: real-time providers, ready scheduling flows, and calendar surfaces that listen to live updates and can combine SP2 events with SP1 recurring availability data
+- Flutter: real-time providers, ready scheduling flows, coordination hub surfaces, incremental mutation handling, localized activity copy, and calendar/session/activity views that listen to live updates
 
 **Depends on:** SP1
 
 **Estimated effort:** Medium-large (core feature of the app, involves real-time infrastructure)
 
 **Spec set:**
-- [Overview](2026-05-30-real-time-coordination-design.md) (v2.0)
+- [Overview](2026-05-30-real-time-coordination-design.md) (v2.2)
 - [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.0)
-- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.0)
-- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.1)
+- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.2)
+- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.3)
 
 ---
 
-### SP3: Game Matching
+### SP3: Settings & Notifications
+
+**Goal:** Push notifications for offline users and comprehensive user settings/preferences.
+
+**Key features:**
+- **Push notifications (FCM/APNs)** -- notify offline users when someone in their group goes "ready to game", when a session is proposed, when a join request needs approval
+- **Notification preferences** -- per-group mute, quiet hours (don't notify between 11 PM - 8 AM), toggle by event type (status changes, sessions, join requests)
+- **Account management** -- change password, account deletion (GDPR compliance), export user data
+- **Privacy settings** -- control who can see online status, game library visibility (friends only / public)
+- **App preferences** -- theme selection (if we add light mode), default status on app open
+
+**Technical scope:**
+- Firebase Cloud Messaging (FCM) for Android/web, APNs for iOS
+- Device token registration endpoint, notification dispatch service
+- Notification preferences data model (per-user, per-group overrides)
+- Settings screens in Flutter (notification, privacy, account sections)
+- Backend: notification worker that checks preferences before dispatching
+
+**Rationale for being a separate sub-project:** Notifications are the next highest-leverage layer after SP2 because they turn newly-delivered ready/session events into useful offline follow-through. Account management and privacy settings also need a maintained home before any public-facing features in SP5.
+
+**Depends on:** SP2
+
+**Estimated effort:** Medium (FCM/APNs setup is boilerplate-heavy but well-documented; settings UI is straightforward)
+
+**Spec:** [docs/specs/2026-06-05-notifications-design.md](2026-06-05-notifications-design.md) (v1.0)
+
+---
+
+### SP4: Game Matching
 
 **Goal:** Help friends find games they can play together by building a generic game library, ingesting owned titles from linked providers, and surfacing common interests.
 
@@ -153,33 +179,7 @@ SP2 intentionally distinguishes two coordination models:
 
 **Estimated effort:** Medium (Steam API integration is well-documented; matching logic is straightforward)
 
-**Spec:** [docs/specs/2026-06-02-game-matching-design.md](2026-06-02-game-matching-design.md) (v1.0)
-
----
-
-### SP4: Settings & Notifications
-
-**Goal:** Push notifications for offline users and comprehensive user settings/preferences.
-
-**Key features:**
-- **Push notifications (FCM/APNs)** -- notify offline users when someone in their group goes "ready to game", when a session is proposed, when a join request needs approval
-- **Notification preferences** -- per-group mute, quiet hours (don't notify between 11 PM - 8 AM), toggle by event type (status changes, sessions, join requests)
-- **Account management** -- change password, account deletion (GDPR compliance), export user data
-- **Privacy settings** -- control who can see online status, game library visibility (friends only / public)
-- **App preferences** -- theme selection (if we add light mode), default status on app open
-
-**Technical scope:**
-- Firebase Cloud Messaging (FCM) for Android/web, APNs for iOS
-- Device token registration endpoint, notification dispatch service
-- Notification preferences data model (per-user, per-group overrides)
-- Settings screens in Flutter (notification, privacy, account sections)
-- Backend: notification worker that checks preferences before dispatching
-
-**Rationale for being a separate sub-project:** Push notifications are a cross-cutting concern needed by SP2 and SP3 but involve significant platform-specific setup (FCM project, APNs certificates, entitlements). Bundling with SP2 would make it too large. Account management and privacy settings are also prerequisites before any public-facing features in SP5.
-
-**Depends on:** SP2 (notifications are triggered by real-time events)
-
-**Estimated effort:** Medium (FCM/APNs setup is boilerplate-heavy but well-documented; settings UI is straightforward)
+**Spec:** [docs/specs/2026-06-02-game-matching-design.md](2026-06-02-game-matching-design.md) (v1.1)
 
 ---
 
@@ -202,7 +202,7 @@ SP2 intentionally distinguishes two coordination models:
 - Flutter: public lobby browser, match suggestions screen, report flow, admin moderation UI
 - Content policy definition and enforcement
 
-**Depends on:** SP3 (game library data for matching), SP4 (notification infrastructure, privacy/account controls)
+**Depends on:** SP4 (game library data for matching), SP3 (notification infrastructure, privacy/account controls)
 
 **Estimated effort:** Large (trust/safety and public matchmaking are complex; moderation requires ongoing operational work)
 
@@ -257,6 +257,15 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-04 | Marketing site foundation | Added the standalone `marketing/` Astro project deliverable for `in-game.app`, including static export, app-aligned glassmorphism branding, `/.well-known/*` hosting, and nginx `/join/*` proxying | Establishes a dedicated base-domain marketing surface without breaking deep-link hosting |
 | 2026-06-04 | Marketing runtime publishing | Added `Dockerfile.marketing`, GHCR publishing for `ingame-marketing`, and Compose entries for local and release deployment under `docker-compose.release.yml` | Makes the base-domain marketing site deployable as a separate runtime alongside the API and browser app without hardcoding a deployment-platform name |
 | 2026-06-05 | Shared brand asset rollout | Updated the SP1 branding deliverable wording to reflect the canonical logo-backed `InGameLogo` treatment | Keeps the roadmap summary aligned with the shipped asset-driven branding contract |
+| 2026-06-05 | SP1 debug overlay contract | Bumped the SP1 implementation spec reference after documenting the shared collapsible debug overlay and session-only motion tooling contract | Keeps the roadmap's spec-set pointers aligned with the maintained implementation docs |
+| 2026-06-05 | SP1 focused-flow transition tuning | Bumped the SP1 implementation spec reference after tightening the focused auth-to-shell handoff so the covered route fades almost immediately and the incoming shell becomes readable earlier | Keeps the roadmap's maintained transition contract aligned with the shipped web-navigation behavior |
+| 2026-06-05 | SP1 logged-in transition staggering | Bumped the SP1 implementation spec reference after documenting the delayed-entry fade contract for logged-in web shell/detail transitions | Keeps the roadmap aligned with the maintained in-app navigation timing after the new staggered handoff landed |
+| 2026-06-05 | SP1 overlap-free shell handoff | Bumped the SP1 implementation spec reference after refining logged-in web route timing so covered shell/detail pages clear before the delayed incoming fade begins | Keeps the roadmap aligned with the overlap-free in-app navigation contract for transparent shell pages |
+| 2026-06-05 | SP1 shell root page-builder fix | Bumped the SP1 implementation spec reference after documenting that shell branch root routes must use explicit page builders so outgoing in-shell pages can animate during logged-in web transitions | Keeps the roadmap aligned with the route-configuration fix behind the remaining transparent-page overlap case |
+| 2026-06-05 | SP1 dead-zone removal | Bumped the SP1 implementation spec reference after refining logged-in web route timing so incoming content starts fading shortly before the covered page fully clears | Keeps the roadmap aligned with the tuned in-app navigation handoff after the outgoing page began disappearing too early |
+| 2026-06-05 | SP1 visible outgoing push motion | Bumped the SP1 implementation spec reference after refining logged-in web push timing so the covered page remains visibly sliding/fading out instead of appearing to vanish immediately | Keeps the roadmap aligned with the polished forward in-shell navigation handoff |
+| 2026-06-05 | SP1 slower covered-route push timing | Bumped the SP1 implementation spec reference after lengthening the covered-route push fade/slide window so forward in-shell pushes better match the perceived pacing of the reverse handoff | Keeps the roadmap aligned with the latest navigation timing refinement after the outgoing page still felt too fast |
+| 2026-06-05 | SP1 final transition contract sync | Bumped the SP1 implementation spec reference after aligning the logged-in web transition contract to the final head-start-then-overlap timing model and restoring the debug overlay's default slowdown to `1x` | Keeps the roadmap's implementation pointer aligned with the user-approved route feel and current debug tooling behavior |
 | 2026-06-04 | SP1 recurring-availability UX | Aligned onboarding and profile editing on a shared per-day preset gaming-hours editor with multi-select days and an `All day` shortcut | Removes the remaining SP1 mismatch between onboarding's one-size-fits-all schedule capture and profile editing's richer recurring availability UX |
 | 2026-06-04 | SP1 spec split | Split the oversized SP1 core-platform spec into overview, auth, profiles, groups, and implementation-oriented child specs | Keeps future SP1 updates smaller, more reviewable, and less conflict-prone |
 | 2026-06-04 | SP1 avatar editor spike | Added the shared `Upload photo` square editor path while keeping native mobile library/camera crop flows in place | Validates a narrower migration path toward cross-platform avatar editing without forcing a full cropper replacement at once |
@@ -270,3 +279,5 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-04 | Self-hosted avatar storage path | Added MinIO-backed local compose support, documented release-compose MinIO as the default self-hosted path, clarified the split between internal storage endpoints and browser-facing upload hosts when needed, and inlined the release bootstrap behind an explicit `/bin/sh -ec` entrypoint for Portainer-style stack deployers | Makes the maintained deployment story match the new self-hosted avatar upload path without coupling every production topology to bundled storage |
 | 2026-06-04 | SP1 onboarding timezone parity | Documented that onboarding now reuses the shared timezone selector from profile editing alongside the shared availability editor | Keeps the roadmap summary aligned with the implemented onboarding/profile setup flow |
 | 2026-06-04 | SP1 desktop width baseline | Added the maintained desktop/web page-width archetype contract and aligned focused flows plus shell pages on constrained content canvases for ultrawide layouts | Keeps single-column content readable on large monitors without moving the persistent sidebar |
+| 2026-06-05 | SP2 completion and roadmap reorder | Marked SP2 complete, promoted Settings & Notifications to SP3 with a dedicated spec, and renumbered Game Matching to SP4 | Aligns the roadmap with the delivered coordination slice and the newly approved priority order for the next implementation phase |
+| 2026-06-05 | SP2 audit follow-through | Clarified that coordination fan-out is commit-gated and the shipped planning hub now uses richer range/notes/localization behavior with stronger regression coverage | Keeps the roadmap summary aligned with the corrected SP2 backend contract and the polished coordination UX now in the repo |

@@ -74,7 +74,6 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
             context: context,
             useRootNavigator: true,
             builder: (_) => AlertDialog(
-              backgroundColor: AppColors.backgroundLight,
               title: Text(context.l10n.avatarEditorActionTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -304,7 +303,6 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
       useRootNavigator: true,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.backgroundLight,
           title: Text(context.l10n.avatarEditorUseUrlTitle),
           content: TextField(
             key: const Key('editable-avatar-url-input'),

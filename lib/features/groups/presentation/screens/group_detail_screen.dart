@@ -11,11 +11,13 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/providers/websocket_provider.dart';
+import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../providers/group_coordination_provider.dart';
 import '../providers/group_detail_provider.dart';
 import '../providers/groups_provider.dart';
 import '../widgets/invite_link_share.dart';
@@ -31,14 +33,7 @@ class GroupDetailScreen extends ConsumerWidget {
     final detailAsync = ref.watch(groupDetailNotifierProvider(groupId));
     final l10n = context.l10n;
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.background, AppColors.backgroundLight],
-        ),
-      ),
+    return AppBackgroundSurface(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
@@ -178,6 +173,8 @@ class GroupDetailScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.lg),
                     _ReadyToggleCard(groupId: groupId),
                     const SizedBox(height: AppSpacing.lg),
+                    _CoordinationHubCard(groupId: groupId),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       l10n.groupDetailSectionMembers,
                       style: const TextStyle(
@@ -268,7 +265,6 @@ class GroupDetailScreen extends ConsumerWidget {
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.backgroundLight,
         title: Text(
           context.l10n.groupDetailLeaveTitle,
           style: const TextStyle(color: AppColors.textPrimary),
@@ -420,6 +416,95 @@ class _ReadyToggleCard extends ConsumerWidget {
                         .toggleReady(groupId: groupId, ready: ready);
                   }
                 : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoordinationHubCard extends ConsumerWidget {
+  const _CoordinationHubCard({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final coordinationAsync = ref.watch(groupCoordinationNotifierProvider(groupId));
+    final coordination = coordinationAsync.value;
+    final nextSession = coordination?.sessions.isNotEmpty == true
+        ? coordination!.sessions.first
+        : null;
+
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.groupDetailCoordinationTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.groupDetailCoordinationSubtitle,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          if (coordination != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _InfoChip(
+                  icon: Icons.calendar_month_outlined,
+                  label: l10n.groupCoordinationWindowsCount(
+                    coordination.windows.length,
+                  ),
+                ),
+                _InfoChip(
+                  icon: Icons.sports_esports_outlined,
+                  label: l10n.groupCoordinationSessionsCount(
+                    coordination.sessions.length,
+                  ),
+                ),
+                _InfoChip(
+                  icon: Icons.bolt_outlined,
+                  label: l10n.groupCoordinationActivityCount(
+                    coordination.activity.length,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (nextSession != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.groupDetailCoordinationNextSession(
+                nextSession.title ?? nextSession.game ?? l10n.groupCoordinationUntitledSession,
+              ),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          GlassButton(
+            variant: GlassButtonVariant.secondary,
+            onPressed: () => context.goNamed(
+              RouteNames.groupCoordination,
+              pathParameters: {'id': groupId},
+            ),
+            child: Text(l10n.groupDetailCoordinationAction),
           ),
         ],
       ),

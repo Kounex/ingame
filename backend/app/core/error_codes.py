@@ -45,3 +45,12 @@ class ErrorCode(str, Enum):
     JOIN_REQUEST_NOT_FOUND = "join_request.not_found"
     JOIN_REQUEST_PENDING_ALREADY_EXISTS = "join_request.pending_already_exists"
     JOIN_REQUEST_ADMIN_OR_OWNER_REQUIRED = "join_request.admin_or_owner_required"
+
+    COORDINATION_WINDOW_NOT_FOUND = "coordination.window_not_found"
+    COORDINATION_WINDOW_EDIT_FORBIDDEN = "coordination.window_edit_forbidden"
+    COORDINATION_WINDOW_TIME_INVALID = "coordination.window_time_invalid"
+    COORDINATION_SESSION_NOT_FOUND = "coordination.session_not_found"
+    COORDINATION_SESSION_EDIT_FORBIDDEN = "coordination.session_edit_forbidden"
+    COORDINATION_SESSION_TIME_INVALID = "coordination.session_time_invalid"
+    COORDINATION_SESSION_STATUS_INVALID = "coordination.session_status_invalid"
+    COORDINATION_RSVP_INVALID = "coordination.rsvp_invalid"

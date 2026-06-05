@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 import 'package:ingame/core/networking/api_error.dart';
 
@@ -126,6 +127,17 @@ void main() {
     expect(
       failure.userMessage(),
       'Serverfehler. Bitte versuche es später erneut.',
+    );
+  });
+
+  test('maps timeout exceptions to the localized timeout failure', () {
+    final failure = ApiError.toFailure(
+      TimeoutException('coordination load timed out'),
+    );
+
+    expect(
+      failure.userMessage(),
+      'Zeitüberschreitung bei der Verbindung. Bitte prüfe dein Internet.',
     );
   });
 }

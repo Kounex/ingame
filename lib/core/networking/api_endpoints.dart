@@ -44,6 +44,15 @@ class ApiEndpoints {
   static const String groups = '/groups';
   static String group(String id) => '/groups/$id';
   static String groupMembers(String id) => '/groups/$id/members';
+  static String groupScheduledReady(String id) => '/groups/$id/scheduled-ready';
+  static String groupScheduledReadyWindow(String groupId, String windowId) =>
+      '/groups/$groupId/scheduled-ready/$windowId';
+  static String groupSessions(String groupId) => '/groups/$groupId/sessions';
+  static String groupSession(String groupId, String sessionId) =>
+      '/groups/$groupId/sessions/$sessionId';
+  static String groupSessionRsvp(String groupId, String sessionId) =>
+      '/groups/$groupId/sessions/$sessionId/rsvp';
+  static String groupActivity(String groupId) => '/groups/$groupId/activity';
   static String groupMemberRole(String groupId, String userId) =>
       '/groups/$groupId/members/$userId/role';
   static String transferGroupOwnership(String groupId) =>

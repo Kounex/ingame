@@ -503,6 +503,133 @@
   "groupDetailReadyToggleHint": "Zeig deiner Gruppe, dass du zum Spielen verfügbar bist",
   "groupDetailReadyToggleOfflineHint": "Verbinde dich, um deinen Spielbereit-Status zu ändern",
   "groupDetailReadyToggleReconnectingHint": "Verbindung wird wiederhergestellt…",
+  "groupDetailCoordinationTitle": "Zusammen planen",
+  "groupDetailCoordinationSubtitle": "Sieh Verfügbarkeitsfenster, Session-Zusagen und die letzten Gruppenaktivitäten.",
+  "groupDetailCoordinationNextSession": "Als Nächstes: {title}",
+  "@groupDetailCoordinationNextSession": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "groupDetailCoordinationAction": "Planung öffnen",
+  "groupCoordinationTitle": "Gruppenkoordination",
+  "groupCoordinationSubtitle": "Plane Sessions mit geplanten Verfügbarkeiten, RSVPs und einem gemeinsamen Aktivitätsstream.",
+  "groupCoordinationWindowsCount": "{count} Fenster",
+  "@groupCoordinationWindowsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationSessionsCount": "{count} Sessions",
+  "@groupCoordinationSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityCount": "{count} Updates",
+  "@groupCoordinationActivityCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationCalendarTitle": "Verfügbarkeitskalender",
+  "groupCoordinationCalendarAdd": "Fenster hinzufügen",
+  "groupCoordinationCalendarEmpty": "Noch keine geplanten Verfügbarkeitsfenster.",
+  "groupCoordinationCalendarEmptyRange": "In diesem Zeitraum gibt es keine Bereitschaftsfenster.",
+  "groupCoordinationCalendarThisWeek": "Diese Woche",
+  "groupCoordinationCalendarPreviousRange": "Vorheriger Zeitraum",
+  "groupCoordinationCalendarNextRange": "Nächster Zeitraum",
+  "groupCoordinationCalendarRangeLabel": "{start} - {end}",
+  "@groupCoordinationCalendarRangeLabel": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationSessionsTitle": "Sessions",
+  "groupCoordinationSessionAdd": "Session vorschlagen",
+  "groupCoordinationSessionsEmpty": "Noch keine geplanten Sessions.",
+  "groupCoordinationActivityTitle": "Aktivität",
+  "groupCoordinationActivityEmpty": "Noch keine Aktivität.",
+  "groupCoordinationAddWindowTitle": "Bereitschaftsfenster hinzufügen",
+  "groupCoordinationEditWindowTitle": "Bereitschaftsfenster bearbeiten",
+  "groupCoordinationAddSessionTitle": "Session vorschlagen",
+  "groupCoordinationEditSessionTitle": "Session bearbeiten",
+  "groupCoordinationStartsAt": "Beginn",
+  "groupCoordinationEndsAt": "Ende",
+  "groupCoordinationFieldTitle": "Titel",
+  "groupCoordinationFieldGame": "Spiel",
+  "groupCoordinationFieldNotes": "Notizen",
+  "groupCoordinationFieldStatus": "Status",
+  "groupCoordinationStatusProposed": "Vorgeschlagen",
+  "groupCoordinationStatusConfirmed": "Bestätigt",
+  "groupCoordinationStatusCancelled": "Abgesagt",
+  "groupCoordinationRsvpIn": "Dabei",
+  "groupCoordinationRsvpMaybe": "Vielleicht",
+  "groupCoordinationRsvpOut": "Raus",
+  "groupCoordinationRsvpUpdating": "RSVP wird aktualisiert...",
+  "groupCoordinationOwnedByYou": "Du",
+  "groupCoordinationUntitledSession": "Unbenannte Session",
+  "groupCoordinationProposedBy": "Vorgeschlagen von {displayName}",
+  "@groupCoordinationProposedBy": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivityScheduledReadyUpdated": "{displayName} hat ein Bereitschaftsfenster aktualisiert",
+  "@groupCoordinationActivityScheduledReadyUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivityScheduledReadyDeleted": "{displayName} hat ein Bereitschaftsfenster entfernt",
+  "@groupCoordinationActivityScheduledReadyDeleted": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionProposed": "{displayName} hat eine Session vorgeschlagen",
+  "@groupCoordinationActivitySessionProposed": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionUpdated": "{displayName} hat eine Session aktualisiert",
+  "@groupCoordinationActivitySessionUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionRsvpUpdated": "{displayName} hat auf eine Session geantwortet",
+  "@groupCoordinationActivitySessionRsvpUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "languageSwitcherLabel": "Sprache",
   "languageEnglish": "English",
   "languageGerman": "Deutsch"
