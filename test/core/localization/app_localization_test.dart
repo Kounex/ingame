@@ -34,7 +34,8 @@ void main() {
         child: const InGameApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
 
@@ -72,15 +73,14 @@ void main() {
     expect(find.text('Mit Steam fortfahren'), findsOneWidget);
   });
 
-  testWidgets('German app surfaces expose localized profile and groups copy',
-      (tester) async {
+  testWidgets('German app surfaces expose localized profile and groups copy', (
+    tester,
+  ) async {
     Future<void> pumpGermanHome(Widget home) async {
       final container = ProviderContainer(
         overrides: [
           groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
-          groupsNotifierProvider.overrideWith(
-            _EmptyGroupsNotifier.new,
-          ),
+          groupsNotifierProvider.overrideWith(_EmptyGroupsNotifier.new),
           profileNotifierProvider.overrideWith(
             () => _FakeProfileNotifier(_profileUser()),
           ),
@@ -127,9 +127,7 @@ void main() {
         locale: Locale('de'),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: Scaffold(
-          body: InviteLinkShare(inviteCode: 'ABC123'),
-        ),
+        home: Scaffold(body: InviteLinkShare(inviteCode: 'ABC123')),
       ),
     );
     await tester.pumpAndSettle();
@@ -199,13 +197,13 @@ class _FakeProfileNotifier extends ProfileNotifier {
 }
 
 User _profileUser() => const User(
-      id: 'user-1',
-      displayName: 'Ready Player',
-      bio: 'InGame-Spieler',
-      timezone: 'Europe/Berlin',
-      preferredGamingHours: {
-        'monday': [
-          {'start': '18:00', 'end': '22:00'},
-        ],
-      },
-    );
+  id: 'user-1',
+  displayName: 'Ready Player',
+  bio: 'InGame-Spieler',
+  timezone: 'Europe/Berlin',
+  preferredGamingHours: {
+    'monday': [
+      {'start': '18:00', 'end': '22:00'},
+    ],
+  },
+);

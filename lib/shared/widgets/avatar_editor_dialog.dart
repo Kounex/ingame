@@ -4,7 +4,6 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
-import '../../core/theme/app_theme.dart';
 import '../../core/utils/extensions.dart';
 import '../services/avatar_image_editor.dart';
 import 'app_toast.dart';
