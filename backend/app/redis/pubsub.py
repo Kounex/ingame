@@ -10,7 +10,7 @@ async def publish_event(channel: str, event_data: dict) -> None:
 
 
 async def subscribe_to_channels(channels: list[str]) -> AsyncGenerator[dict]:
-    redis = redis_pool.client
+    redis = redis_pool.pubsub_client
     pubsub = redis.pubsub()
     await pubsub.subscribe(*channels)
     try:
@@ -24,7 +24,7 @@ async def subscribe_to_channels(channels: list[str]) -> AsyncGenerator[dict]:
 
 
 async def subscribe_to_patterns(patterns: list[str]) -> AsyncGenerator[dict]:
-    redis = redis_pool.client
+    redis = redis_pool.pubsub_client
     pubsub = redis.pubsub()
     await pubsub.psubscribe(*patterns)
     try:

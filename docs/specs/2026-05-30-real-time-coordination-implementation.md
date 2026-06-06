@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination-implementation
-version: "1.3"
+version: "1.4"
 status: complete
-last_updated: "2026-06-05"
+last_updated: "2026-06-06"
 sub_project: 2
 ---
 
@@ -123,6 +123,7 @@ SP2 is considered complete only when all of the following are true:
 ## Deployment Notes
 
 - staging and production run multiple replicas and therefore require Redis subscriber fan-out
+- the long-lived Redis subscriber loop uses a dedicated pub/sub client with blocking reads and periodic health checks rather than the default 5-second command socket timeout
 - health checks should evolve to include realtime dependencies where feasible
 - production WebSocket traffic must use `wss://`
 
@@ -134,3 +135,4 @@ SP2 is considered complete only when all of the following are true:
 | 2026-06-04 | Membership refresh reconnect | Documented that current-user group membership mutations must refresh the authenticated WebSocket session so presence bootstrap rehydrates against the new group scope | Keeps realtime presence aligned immediately after group create/join/leave instead of waiting for a full relog |
 | 2026-06-05 | Completion gate and shipped coordination slice | Marked the implementation spec complete, documented the coordination repository/provider/screen architecture, and added the explicit SP2 completion gate | Makes the delivery contract reviewable now that SP2 includes durable scheduled-ready/session/activity work instead of only the original presence-first kickoff |
 | 2026-06-05 | Audit follow-up implementation details | Documented commit-before-fan-out backend semantics, incremental provider mutations, richer planning-hub UX, and the expanded backend/Flutter regression matrix | Keeps the implementation spec honest after the audit-driven correctness and UX polish pass |
+| 2026-06-06 | Deployment notes | Documented the dedicated blocking Redis pub/sub client and health-check behavior for the long-lived subscriber loop | Keeps the maintained SP2 implementation notes aligned with the idle-timeout fix needed for stable cross-replica websocket fan-out |

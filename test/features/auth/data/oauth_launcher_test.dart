@@ -134,7 +134,7 @@ void main() {
       OAuthLauncher.appleSignInAvailableForPlatform(
         isWeb: true,
         platform: TargetPlatform.windows,
-        webServiceId: 'com.ingame.web',
+        webServiceId: 'com.kounex.ingame.web',
       ),
       isTrue,
     );

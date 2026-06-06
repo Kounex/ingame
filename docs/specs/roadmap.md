@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.65"
+version: "1.67"
 status: active
 last_updated: "2026-06-06"
 ---
@@ -231,6 +231,8 @@ These patterns and practices apply across all sub-projects:
 
 | Date | Change | Detail |
 |------|--------|--------|
+| 2026-06-06 | SP1 Apple web SDK wiring | Added the required Apple browser SDK script to the Flutter web entrypoint and documented that the web flow needs both the baked Service ID and Apple's JS client | Keeps the roadmap aligned with the verified browser-side Apple Sign-In requirement after confirming prod failed before any auth network request |
+| 2026-06-06 | SP1 Apple audience deployment fix | Corrected the maintained backend Apple web Service ID/default alignment to `com.kounex.ingame.web` and documented Helm-side `INGAME_APPLE_CLIENT_IDS` injection for API releases | Keeps the roadmap aligned with the production Apple Sign-In contract so web builds and backend token audience validation stay in sync |
 | 2026-06-06 | SP1 ambient baseline split | Split the maintained ambient baseline by renderer so native shader starts at `0.0` while web/fallback remain at `0.8` | Keeps the roadmap aligned with the observed platform behavior after the native shader became properly visible and controllable |
 | 2026-06-06 | SP1 transition overlap follow-up | Adjusted focused transparent flows to delay incoming reveal while keeping the ambient shader loop periodic | Keeps the roadmap aligned with the second pass on the remaining auth brightness-kick artifact after the initial seam/transition cleanup |
 | 2026-06-06 | SP1 ambient loop and auth-transition cleanup | Made the native shader loop periodic at the cycle boundary and stopped fading incoming transparent focused-flow pages as whole-route alpha layers | Keeps the roadmap aligned with the fixes for the visible ambient seam and the auth brightness kick after focused-flow transitions |

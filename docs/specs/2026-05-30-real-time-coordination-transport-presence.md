@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination-transport-presence
-version: "1.0"
+version: "1.1"
 status: in-progress
-last_updated: "2026-06-04"
+last_updated: "2026-06-06"
 sub_project: 2
 ---
 
@@ -128,6 +128,7 @@ Example snapshot fragment:
 
 - all broadcast-worthy events must be published to Redis
 - each app replica must run a subscriber loop that consumes `group:{id}:events`
+- subscriber loops must use a dedicated blocking Redis pub/sub connection instead of the generic request-path command timeout so idle fan-out reads do not churn on healthy replicas
 - in-process broadcast may still be used for local delivery, but Redis publication is the source of cross-instance propagation
 
 ## WebSocket Commands (Phase 1)
@@ -152,3 +153,4 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
 | 2026-06-04 | Spec topology | Created a dedicated transport-and-presence spec by extracting the live transport, Redis, bootstrap, command, and phase-1 presence rules from the larger SP2 realtime spec | Keeps the most contract-sensitive realtime behavior focused and easier to update during phase-1 delivery |
+| 2026-06-06 | Multi-replica rule | Required replica subscriber loops to use a dedicated blocking Redis pub/sub connection instead of the generic command timeout | Prevents idle pub/sub reads from failing on healthy Redis replicas and breaking cross-instance websocket fan-out |

@@ -18,7 +18,7 @@ async def test_validate_apple_token_accepts_all_configured_audiences():
         ),
         patch(
             "app.auth.apple.settings.apple_client_ids",
-            ["ingame.kounex.com", "com.ingame.web"],
+            ["ingame.kounex.com", "com.kounex.ingame.web"],
         ),
         patch(
             "app.auth.apple.jose_jwt.decode",
@@ -30,5 +30,5 @@ async def test_validate_apple_token_accepts_all_configured_audiences():
     assert result == {"sub": "apple-user-1", "email": "apple@example.com"}
     assert decode.call_args.kwargs["audience"] == [
         "ingame.kounex.com",
-        "com.ingame.web",
+        "com.kounex.ingame.web",
     ]

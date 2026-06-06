@@ -143,6 +143,10 @@ class FakeRedisPool:
     def client(self):
         return _fake_redis
 
+    @property
+    def pubsub_client(self):
+        return _fake_redis
+
     async def initialize(self):
         pass
 

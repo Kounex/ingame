@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/kounex/ingame-api
-  tag: 0.5.1
+  tag: 0.5.2
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -36,6 +36,7 @@ resources:
 config:
   debug: "false"
   corsAllowOrigins: "https://app.in-game.app"
+  appleClientIds: "ingame.kounex.com,com.kounex.ingame.web"
   logLevel: "info"
   apiPrefix: "/api/v1"
   avatarStorageRegion: "auto"

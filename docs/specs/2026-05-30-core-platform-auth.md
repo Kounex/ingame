@@ -1,6 +1,6 @@
 ---
 spec: core-platform-auth
-version: "1.7"
+version: "1.9"
 status: complete
 last_updated: "2026-06-05"
 sub_project: 1
@@ -133,7 +133,10 @@ Additional constraints:
 - Production native builds must pass explicit host `--dart-define` values rather than relying on repo defaults; the maintained iOS release path uses a dedicated `scripts/release/ios_prod.sh` wrapper, defaulting to `flutter run` and switching to `flutter build ipa` only when `--build` is provided.
 - Apple web Sign-In uses `--dart-define=APPLE_SERVICE_ID=com.kounex.ingame.web` in the maintained CI/web-image build path.
 - The release web image build must bake the Apple service ID at build time (for example through `Dockerfile.web` build args in GitHub Actions); this is not a runtime container env because Flutter web reads it through `String.fromEnvironment`.
+- The web entrypoint must also load Apple's browser SDK script (`appleid.auth.js`) in `web/index.html`; without that script the Flutter web Apple button can fail immediately before any network auth request begins.
 - Backend Apple token verification must accept the configured list of Apple audiences (`INGAME_APPLE_CLIENT_IDS` or legacy `INGAME_APPLE_CLIENT_ID`) so native bundle IDs and the web service ID stay aligned with the shipped clients.
+- The maintained backend defaults and release deployment wiring must use the chosen web Service ID `com.kounex.ingame.web`, not the earlier placeholder `com.ingame.web`.
+- Release Helm/API deployments must inject `INGAME_APPLE_CLIENT_IDS` alongside the backend secret/config set; relying on an outdated fallback default is not sufficient once the maintained web Service ID changes.
 - Unsupported native platforms must not expose actionable Apple login or link affordances. Connected-account UI may still show an already-linked Apple identity so users can manage it.
 
 ## Auth Failure Contract
@@ -157,6 +160,8 @@ Flutter maps these codes to locale-aware user-facing messages instead of parsing
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-06 | Platform config | Documented that the Flutter web entrypoint must load Apple's `appleid.auth.js` browser SDK in addition to baking the Service ID define | Prevents the web Apple button from failing immediately in-browser before any auth network request starts |
+| 2026-06-06 | Platform config | Corrected the maintained backend default/web Service ID alignment to `com.kounex.ingame.web` and documented that Helm API releases must inject `INGAME_APPLE_CLIENT_IDS` explicitly | Prevents Apple Sign-In regressions where web builds and backend audience validation drift apart despite the chosen production Service ID |
 | 2026-06-06 | Platform config | Replaced the placeholder web Apple service ID with the maintained `com.kounex.ingame.web` identifier and documented that the web value must be baked into the CI-built Flutter web image instead of injected at container runtime | Keeps the written Apple web deployment contract aligned with the actual Flutter web build model and chosen Service ID |
 | 2026-06-05 | Flutter auth integration and platform config | Added the shared Apple availability gate, documented the web-configured `APPLE_SERVICE_ID` requirement, and switched backend Apple verification to a configured audience list instead of a single client ID | Fixes the production web Apple mismatch and keeps login/link UI aligned with the actual supported runtime contract |
 | 2026-06-04 | Spec topology | Created a dedicated auth spec by extracting auth and identity rules from the larger SP1 core-platform spec | Reduces spec size, merge conflicts, and update risk while keeping the auth contract focused |
