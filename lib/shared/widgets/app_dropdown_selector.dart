@@ -108,7 +108,7 @@ class AppDropdownSelector<T> extends ConsumerWidget {
     AppHaptics haptics,
   ) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       isDense: true,
       isExpanded: true,
       icon: const Icon(
@@ -182,10 +182,7 @@ class AppDropdownSelector<T> extends ConsumerWidget {
 }
 
 class _DropdownMenuItemRow extends StatelessWidget {
-  const _DropdownMenuItemRow({
-    required this.label,
-    required this.selected,
-  });
+  const _DropdownMenuItemRow({required this.label, required this.selected});
 
   final String label;
   final bool selected;
@@ -215,7 +212,9 @@ class _DropdownMenuItemRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+                color: selected
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
                 fontSize: 15,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),

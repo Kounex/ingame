@@ -373,15 +373,3 @@ class _PopoverPanel<T> extends StatelessWidget {
     return preferredLeft.clamp(minLeft, maxLeft);
   }
 }
-
-class _DefaultPopoverItem extends StatelessWidget {
-  const _DefaultPopoverItem({required this.label, required this.selected});
-
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppAnchoredPopoverMenuItem(label: label, selected: selected);
-  }
-}

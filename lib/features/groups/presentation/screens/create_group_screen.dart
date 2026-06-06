@@ -60,6 +60,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
           );
       if (mounted) {
         await ref.read(appHapticsProvider).success();
+        if (!mounted) return;
         context.pushReplacementNamed(
           RouteNames.groupDetail,
           pathParameters: {'id': group.id},

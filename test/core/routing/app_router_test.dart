@@ -477,6 +477,9 @@ void main() {
     await tester.ensureVisible(find.text('Logout'));
     await tester.tap(find.text('Logout'));
     await tester.pumpAndSettle();
+    expect(find.text('Log out?'), findsOneWidget);
+    await tester.tap(find.text('Logout').last);
+    await tester.pumpAndSettle();
 
     expect(router.routeInformationProvider.value.uri.toString(), '/login');
 

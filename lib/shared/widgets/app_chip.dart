@@ -8,8 +8,8 @@ enum _AppChipKind { inline, surface, accent }
 class AppChip extends StatelessWidget {
   const AppChip.inline({super.key, required this.label, this.icon})
     : _kind = _AppChipKind.inline,
-      _backgroundColor = null,
-      _borderColor = null,
+      backgroundColor = null,
+      borderColor = null,
       _accentColor = null,
       _textColor = AppColors.textSecondary,
       _iconColor = AppColors.textTertiary,
@@ -23,13 +23,11 @@ class AppChip extends StatelessWidget {
     required this.label,
     this.icon,
     bool compact = false,
-    Color backgroundColor = AppColors.glassSurfaceLight,
-    Color borderColor = AppColors.glassBorder,
+    this.backgroundColor = AppColors.glassSurfaceLight,
+    this.borderColor = AppColors.glassBorder,
     Color textColor = AppColors.textSecondary,
     Color? iconColor,
   }) : _kind = _AppChipKind.surface,
-       _backgroundColor = backgroundColor,
-       _borderColor = borderColor,
        _accentColor = null,
        _textColor = textColor,
        _iconColor = iconColor ?? textColor,
@@ -47,8 +45,8 @@ class AppChip extends StatelessWidget {
     this.icon,
     bool compact = false,
   }) : _kind = _AppChipKind.accent,
-       _backgroundColor = null,
-       _borderColor = null,
+       backgroundColor = null,
+       borderColor = null,
        _accentColor = color,
        _textColor = color,
        _iconColor = color,
@@ -68,8 +66,8 @@ class AppChip extends StatelessWidget {
   final String label;
   final IconData? icon;
   final _AppChipKind _kind;
-  final Color? _backgroundColor;
-  final Color? _borderColor;
+  final Color? backgroundColor;
+  final Color? borderColor;
   final Color? _accentColor;
   final Color _textColor;
   final Color _iconColor;
@@ -100,13 +98,13 @@ class AppChip extends StatelessWidget {
 
     if (_kind == _AppChipKind.inline) return child;
 
-    final backgroundColor = switch (_kind) {
-      _AppChipKind.surface => _backgroundColor!,
+    final resolvedBackgroundColor = switch (_kind) {
+      _AppChipKind.surface => backgroundColor!,
       _AppChipKind.accent => _accentColor!.withValues(alpha: 0.1),
       _AppChipKind.inline => null,
     };
-    final borderColor = switch (_kind) {
-      _AppChipKind.surface => _borderColor,
+    final resolvedBorderColor = switch (_kind) {
+      _AppChipKind.surface => borderColor,
       _AppChipKind.accent => _accentColor!.withValues(alpha: 0.25),
       _AppChipKind.inline => null,
     };
@@ -114,9 +112,11 @@ class AppChip extends StatelessWidget {
     return Container(
       padding: _padding,
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: resolvedBackgroundColor,
         borderRadius: _borderRadius,
-        border: borderColor == null ? null : Border.all(color: borderColor),
+        border: resolvedBorderColor == null
+            ? null
+            : Border.all(color: resolvedBorderColor),
       ),
       child: child,
     );
