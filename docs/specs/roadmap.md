@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.72"
+version: "1.73"
 status: active
 last_updated: "2026-06-06"
 ---
@@ -84,7 +84,7 @@ graph LR
 - Backend coverage across auth, users, groups, and realtime/WebSocket behavior
 
 **Spec set:**
-- [Overview](2026-05-30-core-platform-design.md) (v3.1)
+- [Overview](2026-05-30-core-platform-design.md) (v3.2)
 - [Auth](2026-05-30-core-platform-auth.md) (v1.7)
 - [Profiles](2026-05-30-core-platform-profiles.md) (v1.7)
 - [Groups](2026-05-30-core-platform-groups.md) (v1.4)
@@ -237,6 +237,7 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-06 | SP1 join-request hardening | Updated the groups spec pointer after hardening join-request creation and resolution so open groups reject requests and resolved requests cannot mutate historical membership state | Keeps the roadmap aligned with the maintained join-request contract after closing backend edge cases uncovered in the audit loop |
 | 2026-06-06 | SP1 private approval request scoping | Updated the groups spec pointer after moving private approval requests behind invite-code flows while keeping raw group-id requests discoverable-only | Keeps the roadmap aligned with the maintained private-group access contract after closing the leaked-UUID request loophole |
 | 2026-06-06 | SP1 pending-request preview state | Bumped the groups and implementation spec references after exposing backend-truth pending-request state in group previews and documenting the related stale-sheet/accessibility interaction rules | Keeps the roadmap aligned with the final audit-loop fixes so discover/invite CTA state survives refreshes and shared popovers remain accessible |
+| 2026-06-07 | SP1 overview contract sync | Bumped the SP1 overview spec reference after documenting the maintained `GroupResponse.has_pending_join_request` field in the overview contract summary too | Keeps the roadmap aligned with the contract-check source used during release verification so the overview and child specs describe the same group preview API |
 | 2026-06-06 | SP1 ambient baseline split | Split the maintained ambient baseline by renderer so native shader starts at `0.0` while web/fallback remain at `0.8` | Keeps the roadmap aligned with the observed platform behavior after the native shader became properly visible and controllable |
 | 2026-06-06 | SP1 transition overlap follow-up | Adjusted focused transparent flows to delay incoming reveal while keeping the ambient shader loop periodic | Keeps the roadmap aligned with the second pass on the remaining auth brightness-kick artifact after the initial seam/transition cleanup |
 | 2026-06-06 | SP1 ambient loop and auth-transition cleanup | Made the native shader loop periodic at the cycle boundary and stopped fading incoming transparent focused-flow pages as whole-route alpha layers | Keeps the roadmap aligned with the fixes for the visible ambient seam and the auth brightness kick after focused-flow transitions |

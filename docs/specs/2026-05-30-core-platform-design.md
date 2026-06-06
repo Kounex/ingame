@@ -1,8 +1,8 @@
 ---
 spec: core-platform
-version: "3.1"
+version: "3.2"
 status: complete
-last_updated: "2026-06-04"
+last_updated: "2026-06-07"
 sub_project: 1
 ---
 
@@ -129,6 +129,7 @@ See [Core Platform Groups](2026-05-30-core-platform-groups.md) for:
 - group, membership, and join-request models
 - RBAC
 - invites and discoverability
+- contract-sensitive group preview fields such as `member_count` and `has_pending_join_request`
 - group detail and settings behavior
 
 ### Implementation
@@ -152,6 +153,10 @@ SP1 remains spec-driven. Code changes that affect API shape, data models, naviga
 ### API Contract
 
 Backend Pydantic schemas remain the source of truth. Flutter models and repositories must match those response shapes. Stable business-rule error codes continue to be part of the contract.
+
+Contract-sensitive SP1 response details that child specs must keep in sync include:
+
+- `GroupResponse.has_pending_join_request` so discover and invite-preview surfaces render approval CTA state from backend truth instead of widget-local memory
 
 ### Localization
 
@@ -186,3 +191,4 @@ The SP1 app shell continues to use the glassmorphism design system and Cue-backe
 |------|---------|--------|--------|
 | 2026-06-04 | Spec topology | Converted the original oversized SP1 spec into a thin overview plus focused auth, profiles, groups, and implementation child specs | Keeps SP1 maintainable as the project grows while preserving one stable entry-point spec path |
 | 2026-06-04 | Naming normalization | Reframed the SP1 implementation-facing child spec from `UI Architecture` to `Implementation` | Aligns SP1 and SP2 naming with less ambiguity about what belongs in the implementation-oriented child spec |
+| 2026-06-07 | Groups and API contract | Added the backend-truth `GroupResponse.has_pending_join_request` preview field to the SP1 overview contract summary | Keeps the overview spec aligned with the maintained group preview API so contract validation reads the same join-request state now used by discover and invite flows |
