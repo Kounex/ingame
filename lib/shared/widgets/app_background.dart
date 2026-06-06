@@ -144,12 +144,10 @@ class AmbientMotionController extends ChangeNotifier {
   AmbientMotionController({
     double intensity = _nativeShaderAmbientIntensity,
     AmbientRenderMode initialRenderMode = AmbientRenderMode.loading,
-    bool diagnosticShaderModeEnabled = false,
-    bool scrimBypassedForDebug = false,
+    this._diagnosticShaderModeEnabled = false,
+    this._scrimBypassedForDebug = false,
   }) : _intensity = intensity.clamp(0.0, 1.0).toDouble(),
-       _renderMode = initialRenderMode,
-       _diagnosticShaderModeEnabled = diagnosticShaderModeEnabled,
-       _scrimBypassedForDebug = scrimBypassedForDebug;
+       _renderMode = initialRenderMode;
 
   double _intensity;
   AmbientRenderMode _renderMode;
@@ -923,7 +921,7 @@ class _AmbientShaderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final shader = program.fragmentShader();
-    final accent = AppColors.primary;
+    const accent = AppColors.primary;
     final glow = Color.lerp(
       AppColors.secondary,
       AppColors.secondaryDark,
