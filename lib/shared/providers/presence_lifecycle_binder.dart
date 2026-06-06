@@ -14,7 +14,8 @@ class PresenceLifecycleBinder extends ConsumerStatefulWidget {
       _PresenceLifecycleBinderState();
 }
 
-class _PresenceLifecycleBinderState extends ConsumerState<PresenceLifecycleBinder>
+class _PresenceLifecycleBinderState
+    extends ConsumerState<PresenceLifecycleBinder>
     with WidgetsBindingObserver {
   @override
   void initState() {
@@ -31,10 +32,8 @@ class _PresenceLifecycleBinderState extends ConsumerState<PresenceLifecycleBinde
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final authState = ref.read(authNotifierProvider).value;
-    final isAuthenticated = authState?.maybeWhen(
-          authenticated: (_) => true,
-          orElse: () => false,
-        ) ??
+    final isAuthenticated =
+        authState?.maybeWhen(authenticated: (_) => true, orElse: () => false) ??
         false;
     if (!isAuthenticated) return;
 
@@ -45,8 +44,10 @@ class _PresenceLifecycleBinderState extends ConsumerState<PresenceLifecycleBinde
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
         wsClient.sendPresenceLifecycle('away');
+        break;
       case AppLifecycleState.resumed:
         wsClient.sendPresenceLifecycle('active');
+        break;
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:
         break;

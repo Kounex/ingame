@@ -208,7 +208,15 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('timezone-selector-trigger')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('timezone-option-Europe/Berlin')));
+    final timezoneOption = find.byKey(
+      const ValueKey('timezone-option-Europe/Berlin'),
+    );
+    await tester.scrollUntilVisible(
+      timezoneOption,
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(timezoneOption);
     await tester.pumpAndSettle();
 
     await _tapVisibleButton(tester, 'Next');
@@ -257,6 +265,30 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(profileNotifier.updateCalls, 1);
   });
+
+  testWidgets(
+    'onboarding steam card is informational instead of navigational',
+    (tester) async {
+      await pumpOnboardingScreen(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Get Started'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Ready Player');
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'ready@test.com',
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      await _tapVisibleButton(tester, 'Next');
+
+      expect(find.text('Connect Steam'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+    },
+  );
 
   testWidgets(
     'onboarding saves selected preset slots for only the chosen day',

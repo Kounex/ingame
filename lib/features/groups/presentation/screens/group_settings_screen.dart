@@ -10,6 +10,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/widgets/app_background.dart';
+import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/avatar_with_status.dart';
@@ -17,6 +18,8 @@ import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/status_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/app_switch_row.dart';
+import '../../../../shared/services/app_haptics.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/membership_model.dart';
 import '../providers/group_detail_provider.dart';
@@ -74,13 +77,15 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       });
       ref.invalidate(groupDetailNotifierProvider(widget.groupId));
       ref.invalidate(groupsNotifierProvider);
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-          _hasChanges = false;
-        });
-        AppToast.success(context, context.l10n.groupSettingsUpdated);
-      }
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _hasChanges = false;
+      });
+      final successMessage = context.l10n.groupSettingsUpdated;
+      await ref.read(appHapticsProvider).success();
+      if (!mounted) return;
+      AppToast.success(context, successMessage);
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -90,46 +95,27 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   }
 
   Future<void> _removeMember(String userId, String displayName) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          context.l10n.groupSettingsRemoveMemberTitle,
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          context.l10n.groupSettingsRemoveMemberMessage(displayName),
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              context.l10n.commonRemove,
-              style: const TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.groupSettingsRemoveMemberTitle,
+      message: context.l10n.groupSettingsRemoveMemberMessage(displayName),
+      confirmLabel: context.l10n.commonRemove,
+      cancelLabel: context.l10n.commonCancel,
+      variant: AppConfirmationVariant.destructive,
     );
-
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       final repo = ref.read(groupsRepositoryProvider);
       await repo.removeMember(widget.groupId, userId);
       ref.read(groupDetailNotifierProvider(widget.groupId).notifier).refresh();
-      if (mounted) {
-        AppToast.success(
-          context,
-          context.l10n.groupSettingsMemberRemoved(displayName),
-        );
-      }
+      if (!mounted) return;
+      final successMessage = context.l10n.groupSettingsMemberRemoved(
+        displayName,
+      );
+      await ref.read(appHapticsProvider).destructiveConfirm();
+      if (!mounted) return;
+      AppToast.success(context, successMessage);
     } catch (e) {
       if (mounted) {
         AppToast.error(context, ApiError.userMessage(e, context.l10n));
@@ -142,9 +128,11 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       await ref
           .read(groupDetailNotifierProvider(widget.groupId).notifier)
           .resolveRequest(requestId, approved: true);
-      if (mounted) {
-        AppToast.success(context, context.l10n.groupSettingsRequestApproved);
-      }
+      if (!mounted) return;
+      final successMessage = context.l10n.groupSettingsRequestApproved;
+      await ref.read(appHapticsProvider).success();
+      if (!mounted) return;
+      AppToast.success(context, successMessage);
     } catch (e) {
       if (mounted) {
         AppToast.error(context, ApiError.userMessage(e, context.l10n));
@@ -153,43 +141,25 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   }
 
   Future<void> _denyRequest(String requestId, String displayName) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          context.l10n.groupSettingsDenyRequestTitle,
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          context.l10n.groupSettingsDenyRequestMessage(displayName),
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              context.l10n.commonDeny,
-              style: const TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.groupSettingsDenyRequestTitle,
+      message: context.l10n.groupSettingsDenyRequestMessage(displayName),
+      confirmLabel: context.l10n.commonDeny,
+      cancelLabel: context.l10n.commonCancel,
+      variant: AppConfirmationVariant.destructive,
     );
-
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await ref
           .read(groupDetailNotifierProvider(widget.groupId).notifier)
           .resolveRequest(requestId, approved: false);
-      if (mounted) {
-        AppToast.info(context, context.l10n.groupSettingsRequestDenied);
-      }
+      if (!mounted) return;
+      final infoMessage = context.l10n.groupSettingsRequestDenied;
+      await ref.read(appHapticsProvider).destructiveConfirm();
+      if (!mounted) return;
+      AppToast.info(context, infoMessage);
     } catch (e) {
       if (mounted) {
         AppToast.error(context, ApiError.userMessage(e, context.l10n));
@@ -198,41 +168,22 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   }
 
   Future<void> _deleteGroup() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          context.l10n.groupSettingsDeleteTitle,
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          context.l10n.groupSettingsDeleteMessage,
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              context.l10n.commonDelete,
-              style: const TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.groupSettingsDeleteTitle,
+      message: context.l10n.groupSettingsDeleteMessage,
+      confirmLabel: context.l10n.commonDelete,
+      cancelLabel: context.l10n.commonCancel,
+      variant: AppConfirmationVariant.destructive,
     );
-
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await ref.read(groupsNotifierProvider.notifier).delete(widget.groupId);
-      if (mounted) {
-        context.go('/');
-      }
+      if (!mounted) return;
+      await ref.read(appHapticsProvider).destructiveConfirm();
+      if (!mounted) return;
+      context.go('/');
     } catch (e) {
       if (mounted) {
         AppToast.error(context, ApiError.userMessage(e, context.l10n));
@@ -246,52 +197,32 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
     required String nextRole,
   }) async {
     final l10n = context.l10n;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          nextRole == 'admin'
-              ? l10n.groupSettingsPromoteTitle
-              : l10n.groupSettingsDemoteTitle,
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          nextRole == 'admin'
-              ? l10n.groupSettingsPromoteMessage(displayName)
-              : l10n.groupSettingsDemoteMessage(displayName),
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              nextRole == 'admin'
-                  ? l10n.groupSettingsPromoteAction
-                  : l10n.groupSettingsDemoteAction,
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: nextRole == 'admin'
+          ? l10n.groupSettingsPromoteTitle
+          : l10n.groupSettingsDemoteTitle,
+      message: nextRole == 'admin'
+          ? l10n.groupSettingsPromoteMessage(displayName)
+          : l10n.groupSettingsDemoteMessage(displayName),
+      confirmLabel: nextRole == 'admin'
+          ? l10n.groupSettingsPromoteAction
+          : l10n.groupSettingsDemoteAction,
+      cancelLabel: l10n.commonCancel,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await ref
           .read(groupDetailNotifierProvider(widget.groupId).notifier)
           .updateMemberRole(userId, nextRole);
-      if (mounted) {
-        AppToast.success(
-          context,
-          nextRole == 'admin'
-              ? l10n.groupSettingsPromoted(displayName)
-              : l10n.groupSettingsDemoted(displayName),
-        );
-      }
+      if (!mounted) return;
+      final successMessage = nextRole == 'admin'
+          ? l10n.groupSettingsPromoted(displayName)
+          : l10n.groupSettingsDemoted(displayName);
+      await ref.read(appHapticsProvider).destructiveConfirm();
+      if (!mounted) return;
+      AppToast.success(context, successMessage);
     } catch (e) {
       if (mounted) {
         AppToast.error(context, ApiError.userMessage(e, context.l10n));
@@ -300,42 +231,26 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   }
 
   Future<void> _transferOwnership(String userId, String displayName) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          context.l10n.groupSettingsTransferOwnershipTitle,
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          context.l10n.groupSettingsTransferOwnershipMessage(displayName),
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(context.l10n.groupSettingsTransferOwnershipAction),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.groupSettingsTransferOwnershipTitle,
+      message: context.l10n.groupSettingsTransferOwnershipMessage(displayName),
+      confirmLabel: context.l10n.groupSettingsTransferOwnershipAction,
+      cancelLabel: context.l10n.commonCancel,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await ref
           .read(groupDetailNotifierProvider(widget.groupId).notifier)
           .transferOwnership(userId);
-      if (mounted) {
-        AppToast.success(
-          context,
-          context.l10n.groupSettingsOwnershipTransferred(displayName),
-        );
-      }
+      if (!mounted) return;
+      final successMessage = context.l10n.groupSettingsOwnershipTransferred(
+        displayName,
+      );
+      await ref.read(appHapticsProvider).destructiveConfirm();
+      if (!mounted) return;
+      AppToast.success(context, successMessage);
     } catch (e) {
       if (mounted) {
         AppToast.error(context, ApiError.userMessage(e, context.l10n));
@@ -460,7 +375,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       ),
                       child: Column(
                         children: [
-                          _SettingsSwitch(
+                          AppSwitchRow(
                             icon: Icons.explore_outlined,
                             title: l10n.createGroupDiscoverableTitle,
                             subtitle: l10n.createGroupDiscoverableSubtitle,
@@ -469,6 +384,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                                 ? (v) {
                                     setState(() => _isDiscoverable = v);
                                     _markChanged();
+                                    ref.read(appHapticsProvider).selection();
                                   }
                                 : null,
                           ),
@@ -488,6 +404,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                               onChanged: (v) {
                                 setState(() => _joinMode = v);
                                 _markChanged();
+                                ref.read(appHapticsProvider).selection();
                               },
                             ),
                           ],
@@ -508,12 +425,12 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       child: Column(
                         children: [
                           for (var i = 0; i < detail.members.length; i++) ...[
-                            if (i > 0)
-                              const Divider(height: 1),
+                            if (i > 0) const Divider(height: 1),
                             _MemberSettingsRow(
                               groupId: widget.groupId,
                               member: detail.members[i],
-                              onRemove: detail.canRemoveMember(detail.members[i])
+                              onRemove:
+                                  detail.canRemoveMember(detail.members[i])
                                   ? () => _removeMember(
                                       detail.members[i].userId,
                                       detail.members[i].displayName,
@@ -534,7 +451,9 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                                     )
                                   : null,
                               onTransferOwnership:
-                                  detail.canTransferOwnershipTo(detail.members[i])
+                                  detail.canTransferOwnershipTo(
+                                    detail.members[i],
+                                  )
                                   ? () => _transferOwnership(
                                       detail.members[i].userId,
                                       detail.members[i].displayName,
@@ -567,12 +486,12 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                               i < detail.pendingRequests.length;
                               i++
                             ) ...[
-                              if (i > 0)
-                                const Divider(height: 1),
+                              if (i > 0) const Divider(height: 1),
                               _JoinRequestRow(
                                 request: detail.pendingRequests[i],
-                                onApprove: () =>
-                                    _approveRequest(detail.pendingRequests[i].id),
+                                onApprove: () => _approveRequest(
+                                  detail.pendingRequests[i].id,
+                                ),
                                 onDeny: () => _denyRequest(
                                   detail.pendingRequests[i].id,
                                   detail.pendingRequests[i].user.displayName,
@@ -644,63 +563,6 @@ class _SectionLabel extends StatelessWidget {
           fontWeight: FontWeight.w600,
           letterSpacing: 1.2,
         ),
-      ),
-    );
-  }
-}
-
-class _SettingsSwitch extends StatelessWidget {
-  const _SettingsSwitch({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    this.onChanged,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool value;
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.textTertiary),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeTrackColor: AppColors.primary,
-          ),
-        ],
       ),
     );
   }
@@ -876,16 +738,24 @@ class _MemberSettingsRow extends ConsumerWidget {
                 color: AppColors.textSecondary,
                 size: 20,
               ),
+              onOpened: () {
+                ref.read(appHapticsProvider).selection();
+              },
               onSelected: (action) {
+                ref.read(appHapticsProvider).selection();
                 switch (action) {
                   case _MemberAction.promote:
                     onPromote?.call();
+                    break;
                   case _MemberAction.demote:
                     onDemote?.call();
+                    break;
                   case _MemberAction.transferOwnership:
                     onTransferOwnership?.call();
+                    break;
                   case _MemberAction.remove:
                     onRemove?.call();
+                    break;
                 }
               },
               itemBuilder: (context) => [

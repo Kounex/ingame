@@ -17,9 +17,15 @@ class _FakeAuthNotifier extends AuthNotifier {
   _FakeAuthNotifier(this._initialState);
 
   final AuthState _initialState;
+  int logoutCalls = 0;
 
   @override
   Future<AuthState> build() async => _initialState;
+
+  @override
+  Future<void> logout() async {
+    logoutCalls++;
+  }
 }
 
 class _FakeProfileRepository extends ProfileRepository {
@@ -40,15 +46,17 @@ class _FakeProfileRepository extends ProfileRepository {
 }
 
 class _ProfileHarness extends ConsumerWidget {
-  const _ProfileHarness({required this.home});
+  const _ProfileHarness({required this.home, required this.locale});
 
   final Widget home;
+  final Locale locale;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(localeControllerProvider);
 
     return MaterialApp(
+      locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: home,
@@ -58,6 +66,13 @@ class _ProfileHarness extends ConsumerWidget {
 
 Finder _accountRow(String label) {
   return find.ancestor(of: find.text(label), matching: find.byType(InkWell));
+}
+
+Finder _dialogTextButton(String label) {
+  return find.descendant(
+    of: find.byType(AlertDialog),
+    matching: find.widgetWithText(TextButton, label),
+  );
 }
 
 Future<void> _scrollToAccountRow(WidgetTester tester, String label) async {
@@ -73,24 +88,25 @@ void main() {
   Future<void> pumpProfile(
     WidgetTester tester, {
     required _FakeProfileRepository repository,
+    _FakeAuthNotifier? authNotifier,
+    Locale locale = const Locale('en'),
   }) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
+    authNotifier ??= _FakeAuthNotifier(
+      const AuthState.authenticated(
+        User(id: 'auth-user', displayName: 'Tester', timezone: 'UTC'),
+      ),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           preferencesProvider.overrideWithValue(PreferencesService(prefs)),
           profileRepositoryProvider.overrideWithValue(repository),
-          authNotifierProvider.overrideWith(
-            () => _FakeAuthNotifier(
-              const AuthState.authenticated(
-                User(id: 'auth-user', displayName: 'Tester', timezone: 'UTC'),
-              ),
-            ),
-          ),
+          authNotifierProvider.overrideWith(() => authNotifier!),
         ],
-        child: const _ProfileHarness(home: ProfileScreen()),
+        child: _ProfileHarness(home: const ProfileScreen(), locale: locale),
       ),
     );
     await tester.pumpAndSettle();
@@ -180,7 +196,7 @@ void main() {
 
     await tester.tap(_accountRow('Steam'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Disconnect'));
+    await tester.tap(_dialogTextButton('Disconnect'));
     await tester.pumpAndSettle();
 
     expect(repository.unlinkSteamCalls, 1);
@@ -227,6 +243,36 @@ void main() {
     expect(find.text('Mon'), findsOneWidget);
   });
 
+  testWidgets('profile localizes fallback schedule ranges', (tester) async {
+    final repository = _FakeProfileRepository(
+      const User(
+        id: 'user-1',
+        displayName: 'Schedule User',
+        timezone: 'UTC',
+        preferredGamingHours: {
+          'monday': [
+            {'start': '18:00', 'end': '22:00'},
+          ],
+        },
+      ),
+    );
+
+    await pumpProfile(
+      tester,
+      repository: repository,
+      locale: const Locale('de'),
+    );
+    await tester.scrollUntilVisible(
+      find.text('18:00 – 22:00'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('18:00 – 22:00'), findsOneWidget);
+    expect(find.text('6 PM – 10 PM'), findsNothing);
+  });
+
   testWidgets(
     'last remaining login method shows explicit guidance instead of disconnect flow',
     (tester) async {
@@ -256,6 +302,42 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  testWidgets('logout requires confirmation before ending the session', (
+    tester,
+  ) async {
+    final repository = _FakeProfileRepository(
+      const User(id: 'user-1', displayName: 'Tester', timezone: 'UTC'),
+    );
+    final authNotifier = _FakeAuthNotifier(
+      const AuthState.authenticated(
+        User(id: 'auth-user', displayName: 'Tester', timezone: 'UTC'),
+      ),
+    );
+
+    await pumpProfile(
+      tester,
+      repository: repository,
+      authNotifier: authNotifier,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Logout'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Logout'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log out?'), findsOneWidget);
+    expect(authNotifier.logoutCalls, 0);
+
+    await tester.tap(_dialogTextButton('Logout'));
+    await tester.pumpAndSettle();
+
+    expect(authNotifier.logoutCalls, 1);
+  });
 
   testWidgets(
     'profile hides Apple row on unsupported native platforms',

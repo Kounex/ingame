@@ -11,8 +11,10 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/app_switch_row.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/services/app_haptics.dart';
 import '../providers/groups_provider.dart';
 
 class CreateGroupScreen extends ConsumerStatefulWidget {
@@ -46,7 +48,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
     setState(() => _isLoading = true);
 
     try {
-      final group = await ref.read(groupsNotifierProvider.notifier).create(
+      final group = await ref
+          .read(groupsNotifierProvider.notifier)
+          .create(
             name: _nameController.text.trim(),
             description: _descriptionController.text.trim().isEmpty
                 ? null
@@ -55,6 +59,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
             joinMode: _joinMode,
           );
       if (mounted) {
+        await ref.read(appHapticsProvider).success();
         context.pushReplacementNamed(
           RouteNames.groupDetail,
           pathParameters: {'id': group.id},
@@ -127,39 +132,14 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.createGroupDiscoverableTitle,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    l10n.createGroupDiscoverableSubtitle,
-                                    style: const TextStyle(
-                                      color: AppColors.textTertiary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: _isDiscoverable,
-                              onChanged: (v) =>
-                                  setState(() => _isDiscoverable = v),
-                              activeTrackColor: AppColors.primary,
-                            ),
-                          ],
+                        AppSwitchRow(
+                          title: l10n.createGroupDiscoverableTitle,
+                          subtitle: l10n.createGroupDiscoverableSubtitle,
+                          value: _isDiscoverable,
+                          onChanged: (v) {
+                            setState(() => _isDiscoverable = v);
+                            ref.read(appHapticsProvider).selection();
+                          },
                         ),
                         if (_isDiscoverable) ...[
                           const Divider(height: 24),
@@ -186,18 +166,24 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
                               ),
                             ],
                             selected: {_joinMode},
-                            onSelectionChanged: (v) =>
-                                setState(() => _joinMode = v.first),
+                            onSelectionChanged: (v) {
+                              setState(() => _joinMode = v.first);
+                              ref.read(appHapticsProvider).selection();
+                            },
                             style: ButtonStyle(
-                              backgroundColor:
-                                  WidgetStateProperty.resolveWith((states) {
+                              backgroundColor: WidgetStateProperty.resolveWith((
+                                states,
+                              ) {
                                 if (states.contains(WidgetState.selected)) {
-                                  return AppColors.primary.withValues(alpha: 0.2);
+                                  return AppColors.primary.withValues(
+                                    alpha: 0.2,
+                                  );
                                 }
                                 return AppColors.glassSurface;
                               }),
-                              foregroundColor:
-                                  WidgetStateProperty.resolveWith((states) {
+                              foregroundColor: WidgetStateProperty.resolveWith((
+                                states,
+                              ) {
                                 if (states.contains(WidgetState.selected)) {
                                   return AppColors.primary;
                                 }

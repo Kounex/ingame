@@ -1,7 +1,7 @@
 ---
 spec: real-time-coordination-transport-presence
-version: "1.1"
-status: in-progress
+version: "1.2"
+status: complete
 last_updated: "2026-06-06"
 sub_project: 2
 ---
@@ -154,3 +154,4 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 |------|---------|--------------|-----|
 | 2026-06-04 | Spec topology | Created a dedicated transport-and-presence spec by extracting the live transport, Redis, bootstrap, command, and phase-1 presence rules from the larger SP2 realtime spec | Keeps the most contract-sensitive realtime behavior focused and easier to update during phase-1 delivery |
 | 2026-06-06 | Multi-replica rule | Required replica subscriber loops to use a dedicated blocking Redis pub/sub connection instead of the generic command timeout | Prevents idle pub/sub reads from failing on healthy Redis replicas and breaking cross-instance websocket fan-out |
+| 2026-06-06 | Completion status sync | Marked the transport-and-presence child spec complete to match the shipped SP2 overview and roadmap state | Removes stale in-progress metadata now that the presence-first transport slice is part of the delivered realtime coordination set |

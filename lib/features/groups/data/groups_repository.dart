@@ -106,6 +106,10 @@ class GroupsRepository {
     await dio.post(ApiEndpoints.groupJoinRequests(groupId));
   }
 
+  Future<void> createJoinRequestByInviteCode(String code) async {
+    await dio.post(ApiEndpoints.joinRequestByCode(code));
+  }
+
   Future<List<JoinRequest>> listJoinRequests(String groupId) async {
     final response = await dio.get(ApiEndpoints.groupJoinRequests(groupId));
     final list = response.data as List<dynamic>;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:io';
 import 'package:intl/intl.dart' as intl;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
@@ -341,6 +342,16 @@ void main() {
     expect(find.text('Language'), findsOneWidget);
     expect(find.text('English'), findsOneWidget);
     expect(prefs.getString('locale_code'), 'en');
+  });
+
+  testWidgets('language switcher uses shared anchored popover widget', (
+    tester,
+  ) async {
+    final source = File(
+      'lib/shared/widgets/language_switcher.dart',
+    ).readAsStringSync();
+
+    expect(source, contains('AppAnchoredPopoverSelector<Locale>('));
   });
 
   testWidgets(

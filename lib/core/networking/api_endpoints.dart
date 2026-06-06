@@ -60,6 +60,7 @@ class ApiEndpoints {
   static String leaveGroup(String groupId) => '/groups/$groupId/leave';
   static String previewJoinByCode(String code) => '/groups/join/$code';
   static String joinByCode(String code) => '/groups/join/$code';
+  static String joinRequestByCode(String code) => '/groups/join/$code/requests';
   static const String discoverGroups = '/groups/discover';
 
   // Join Requests

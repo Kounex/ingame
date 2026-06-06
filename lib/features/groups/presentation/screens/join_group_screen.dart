@@ -10,8 +10,11 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_background.dart';
+import '../../../../shared/widgets/app_chip.dart';
+import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/services/app_haptics.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/group_model.dart';
 import '../providers/groups_provider.dart';
@@ -29,6 +32,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   Group? _groupPreview;
   bool _isLoadingPreview = true;
   bool _isJoining = false;
+  bool _requestSubmitted = false;
   AppFailure? _error;
 
   @override
@@ -191,9 +195,14 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: GlassButton(
-                    onPressed: _isJoining ? null : _joinGroup,
+                    onPressed:
+                        _isJoining ||
+                            _requestSubmitted ||
+                            (_groupPreview?.hasPendingJoinRequest ?? false)
+                        ? null
+                        : _joinGroup,
                     isLoading: _isJoining,
-                    child: Text(context.l10n.joinGroupButton),
+                    child: Text(_buttonLabel(context)),
                   ),
                 ),
                 const Spacer(flex: 2),
@@ -212,11 +221,27 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
     });
 
     try {
-      final group = await ref
-          .read(groupsNotifierProvider.notifier)
-          .joinByInviteCode(widget.inviteCode);
+      final preview = _groupPreview;
+      if (preview?.joinMode == 'approval') {
+        final repo = ref.read(groupsRepositoryProvider);
+        await repo.createJoinRequestByInviteCode(widget.inviteCode);
+        if (!mounted) return;
 
-      if (mounted) {
+        await ref.read(appHapticsProvider).success();
+        if (!mounted) return;
+        AppToast.info(context, context.l10n.groupDirectoryJoinRequestSent);
+        setState(() {
+          _isJoining = false;
+          _requestSubmitted = true;
+        });
+      } else {
+        final group = await ref
+            .read(groupsNotifierProvider.notifier)
+            .joinByInviteCode(widget.inviteCode);
+        if (!mounted) return;
+
+        await ref.read(appHapticsProvider).success();
+        if (!mounted) return;
         context.pushReplacementNamed(
           RouteNames.groupDetail,
           pathParameters: {'id': group.id},
@@ -249,44 +274,26 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
       });
     }
   }
+
+  String _buttonLabel(BuildContext context) {
+    if (_requestSubmitted || (_groupPreview?.hasPendingJoinRequest ?? false)) {
+      return context.l10n.joinGroupRequestSentButton;
+    }
+    if (_groupPreview?.joinMode == 'approval') {
+      return context.l10n.groupDirectoryRequestJoinAction;
+    }
+    return context.l10n.joinGroupButton;
+  }
 }
 
 class _InfoPill extends StatelessWidget {
-  const _InfoPill({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoPill({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.glassSurfaceLight,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: AppColors.textSecondary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+    return AppChip.surface(label: label, icon: icon, compact: true);
   }
 }

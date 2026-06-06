@@ -56,15 +56,36 @@ class _MutableGroupsRepository extends GroupsRepository {
   Future<Group> getGroup(String id) async => _group;
 
   @override
-  Future<List<GroupMember>> listMembers(String groupId) async => List.of(_members);
+  Future<List<GroupMember>> listMembers(String groupId) async =>
+      List.of(_members);
 
   @override
   Future<List<JoinRequest>> listJoinRequests(String groupId) async => const [];
 
   @override
-  Future<void> updateMemberRole(String groupId, String userId, String role) async {
+  Future<void> updateMemberRole(
+    String groupId,
+    String userId,
+    String role,
+  ) async {
     final index = _members.indexWhere((member) => member.userId == userId);
     _members[index] = _members[index].copyWith(role: role);
+  }
+}
+
+class _FailingJoinRequestsRepository extends _MutableGroupsRepository {
+  @override
+  Future<List<JoinRequest>> listJoinRequests(String groupId) async {
+    final request = RequestOptions(path: '/groups/$groupId/join-requests');
+    throw DioException(
+      requestOptions: request,
+      response: Response(
+        requestOptions: request,
+        statusCode: 500,
+        data: const {'detail': 'Server error'},
+      ),
+      type: DioExceptionType.badResponse,
+    );
   }
 }
 
@@ -159,8 +180,48 @@ void main() {
     expect(adminState.canRemoveMember(adminState.members[2]), isTrue);
   });
 
-  test('updateMemberRole refreshes in place without emitting loading', () async {
-    final repository = _MutableGroupsRepository();
+  test(
+    'updateMemberRole refreshes in place without emitting loading',
+    () async {
+      final repository = _MutableGroupsRepository();
+      final container = ProviderContainer(
+        overrides: [
+          authNotifierProvider.overrideWith(_FakeAuthNotifier.new),
+          groupsRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final states = <AsyncValue<GroupDetailState>>[];
+      final sub = container.listen(
+        groupDetailNotifierProvider('group-1'),
+        (previous, next) => states.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+
+      await container.read(groupDetailNotifierProvider('group-1').future);
+      states.clear();
+
+      await container
+          .read(groupDetailNotifierProvider('group-1').notifier)
+          .updateMemberRole('member-1', 'admin');
+
+      expect(states.where((state) => state.isLoading), isEmpty);
+      expect(
+        container
+            .read(groupDetailNotifierProvider('group-1'))
+            .value!
+            .members
+            .singleWhere((member) => member.userId == 'member-1')
+            .role,
+        'admin',
+      );
+    },
+  );
+
+  test('admin join-request loading surfaces non-permission failures', () async {
+    final repository = _FailingJoinRequestsRepository();
     final container = ProviderContainer(
       overrides: [
         authNotifierProvider.overrideWith(_FakeAuthNotifier.new),
@@ -169,30 +230,11 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final states = <AsyncValue<GroupDetailState>>[];
-    final sub = container.listen(
-      groupDetailNotifierProvider('group-1'),
-      (previous, next) => states.add(next),
-      fireImmediately: true,
-    );
-    addTearDown(sub.close);
+    container.read(groupDetailNotifierProvider('group-1'));
+    await Future<void>.delayed(Duration.zero);
 
-    await container.read(groupDetailNotifierProvider('group-1').future);
-    states.clear();
-
-    await container
-        .read(groupDetailNotifierProvider('group-1').notifier)
-        .updateMemberRole('member-1', 'admin');
-
-    expect(states.where((state) => state.isLoading), isEmpty);
-    expect(
-      container
-          .read(groupDetailNotifierProvider('group-1'))
-          .value!
-          .members
-          .singleWhere((member) => member.userId == 'member-1')
-          .role,
-      'admin',
-    );
+    final state = container.read(groupDetailNotifierProvider('group-1'));
+    expect(state.hasError, isTrue);
+    expect(state.error, isA<DioException>());
   });
 }

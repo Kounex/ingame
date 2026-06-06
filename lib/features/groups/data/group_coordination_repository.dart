@@ -5,7 +5,6 @@ import '../../../core/networking/api_client.dart';
 import '../../../core/networking/api_endpoints.dart';
 import '../domain/coordination_model.dart';
 
-
 class GroupCoordinationRepository {
   GroupCoordinationRepository({required this.dio});
 
@@ -16,8 +15,7 @@ class GroupCoordinationRepository {
     final list = response.data as List<dynamic>;
     return list
         .map(
-          (item) =>
-              ScheduledReadyWindow.fromJson(item as Map<String, dynamic>),
+          (item) => ScheduledReadyWindow.fromJson(item as Map<String, dynamic>),
         )
         .toList();
   }
@@ -106,6 +104,10 @@ class GroupCoordinationRepository {
     return GroupSession.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<void> deleteSession(String groupId, String sessionId) async {
+    await dio.delete(ApiEndpoints.groupSession(groupId, sessionId));
+  }
+
   Future<SessionRsvp> rsvpToSession(
     String groupId,
     String sessionId,
@@ -128,7 +130,6 @@ class GroupCoordinationRepository {
         .toList();
   }
 }
-
 
 final groupCoordinationRepositoryProvider =
     Provider<GroupCoordinationRepository>((ref) {

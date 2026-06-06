@@ -16,6 +16,7 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/services/app_haptics.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/group_model.dart';
 import '../providers/groups_provider.dart';
@@ -34,6 +35,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
   List<Group>? _groups;
   bool _isLoading = true;
   AppFailure? _error;
+  int _latestLoadRequestId = 0;
 
   @override
   void initState() {
@@ -55,7 +57,13 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
     });
   }
 
+  String? get _currentSearchQuery {
+    final trimmed = _searchController.text.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
   Future<void> _loadGroups({String? search}) async {
+    final requestId = ++_latestLoadRequestId;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -64,14 +72,14 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
     try {
       final repo = ref.read(groupsRepositoryProvider);
       final groups = await repo.discoverGroups(search: search);
-      if (mounted) {
+      if (mounted && requestId == _latestLoadRequestId) {
         setState(() {
           _groups = groups;
           _isLoading = false;
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && requestId == _latestLoadRequestId) {
         setState(() {
           _error = ApiError.toFailure(e);
           _isLoading = false;
@@ -86,22 +94,26 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
         await ref
             .read(groupsNotifierProvider.notifier)
             .joinByInviteCode(group.inviteCode);
-        if (mounted) {
-          AppToast.success(
-            context,
-            context.l10n.groupDirectoryJoinSuccess(group.name),
-          );
-          context.goNamed(
-            RouteNames.groupDetail,
-            pathParameters: {'id': group.id},
-          );
-        }
+        if (!mounted) return;
+        await ref.read(appHapticsProvider).success();
+        if (!mounted) return;
+        AppToast.success(
+          context,
+          context.l10n.groupDirectoryJoinSuccess(group.name),
+        );
+        context.goNamed(
+          RouteNames.groupDetail,
+          pathParameters: {'id': group.id},
+        );
       } else {
         final repo = ref.read(groupsRepositoryProvider);
         await repo.createJoinRequest(group.id);
-        if (mounted) {
-          AppToast.info(context, context.l10n.groupDirectoryJoinRequestSent);
-        }
+        if (!mounted) return;
+        await _loadGroups(search: _currentSearchQuery);
+        if (!mounted) return;
+        await ref.read(appHapticsProvider).success();
+        if (!mounted) return;
+        AppToast.info(context, context.l10n.groupDirectoryJoinRequestSent);
       }
     } catch (e) {
       if (mounted) {
@@ -196,6 +208,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
       itemCount: _groups!.length,
       itemBuilder: (context, index) {
         final group = _groups![index];
+        final requestSubmitted = group.hasPendingJoinRequest;
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: GlassCard(
@@ -252,12 +265,17 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GlassButton(
-                    onPressed: () => _joinGroup(group),
+                    key: ValueKey('group-directory-action-${group.id}'),
+                    onPressed: requestSubmitted
+                        ? null
+                        : () => _joinGroup(group),
                     variant: group.joinMode == 'open'
                         ? GlassButtonVariant.primary
                         : GlassButtonVariant.secondary,
                     child: Text(
-                      group.joinMode == 'open'
+                      requestSubmitted
+                          ? context.l10n.groupDirectoryRequestSentAction
+                          : group.joinMode == 'open'
                           ? context.l10n.groupDirectoryJoinAction
                           : context.l10n.groupDirectoryRequestJoinAction,
                     ),

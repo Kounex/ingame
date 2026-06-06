@@ -173,6 +173,20 @@ class GroupRepository:
         )
         return list(result.scalars().all())
 
+    async def has_pending_request(
+        self, group_id: uuid.UUID, user_id: uuid.UUID
+    ) -> bool:
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(JoinRequest)
+            .where(
+                JoinRequest.group_id == group_id,
+                JoinRequest.user_id == user_id,
+                JoinRequest.status == "pending",
+            )
+        )
+        return result.scalar_one() > 0
+
     async def resolve_join_request(
         self,
         request_id: uuid.UUID,

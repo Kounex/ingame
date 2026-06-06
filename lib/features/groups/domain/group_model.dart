@@ -15,6 +15,7 @@ abstract class Group with _$Group {
     String? avatarUrl,
     required String createdBy,
     required int memberCount,
+    @Default(false) bool hasPendingJoinRequest,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _Group;

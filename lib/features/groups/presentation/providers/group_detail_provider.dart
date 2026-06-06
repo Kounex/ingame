@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -75,7 +76,10 @@ class GroupDetailNotifier extends AsyncNotifier<GroupDetailState> {
     List<JoinRequest> pendingRequests = [];
     try {
       pendingRequests = await repo.listJoinRequests(_groupId);
-    } on Exception {
+    } on DioException catch (error) {
+      if (error.response?.statusCode != 403) {
+        rethrow;
+      }
       // Non-admin users will get 403 — silently ignore
     }
 

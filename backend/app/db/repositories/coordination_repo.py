@@ -91,6 +91,14 @@ class CoordinationRepository:
         await self.session.refresh(session)
         return session
 
+    async def delete_session(self, session_id: uuid.UUID) -> bool:
+        session = await self.get_session(session_id)
+        if session is None:
+            return False
+        await self.session.delete(session)
+        await self.session.flush()
+        return True
+
     async def list_rsvps_for_session(self, session_id: uuid.UUID) -> list[SessionRsvp]:
         result = await self.session.execute(
             select(SessionRsvp)

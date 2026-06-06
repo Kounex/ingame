@@ -1,6 +1,6 @@
 ---
 spec: core-platform-implementation
-version: "1.46"
+version: "1.60"
 status: complete
 last_updated: "2026-06-06"
 sub_project: 1
@@ -82,6 +82,8 @@ lib/
 - `EditableAvatarField` -- shared avatar editing surface for onboarding and profile edit
 - `WeeklyAvailabilityEditor` -- shared recurring-availability editor
 - `LanguageSwitcher` -- shared locale-switching surface
+- `AppAnchoredPopoverMenuItem` -- shared selected-row treatment for anchored selector menus
+- `AppDropdownSelector` -- shared wrapper for input-like dropdown fields that should keep the stock `DropdownButtonFormField` interaction model while matching the app's maintained menu styling
 - `InGameLogo` -- shared brand wordmark that pairs the canonical logo image asset with the gradient `InGame` text treatment
 - `AppToast` -- shared feedback/toast system
 - `SharedAnimatedBackground` -- one shared premium ambient background layer rendered behind routes
@@ -133,6 +135,12 @@ lib/
 - `GlassBottomNav`
 - `GlassButton`
 - `GlassInput`
+- `AppAnchoredPopoverSelector`
+- `AppAnchoredPopoverMenuItem`
+- `AppListRow`
+- `AppSwitchRow`
+- `AppChip`
+- `AppDropdownSelector`
 - `StatusIndicator`
 - `AvatarWithStatus`
 - `InGameLogo`
@@ -154,12 +162,22 @@ lib/
 - the root router should disable automatic route focus requests on push so initial web view focus changes do not ask Flutter focus traversal to inspect navigator theater layout before the route tree has settled
 - shared app bars may align to the same width preset as the page body on desktop/web so toolbar content and constrained page content stay visually connected
 - shell-route dialogs and bottom sheets use the root navigator so overlays render above persistent navigation
+- shared confirmation dialogs should be reserved for destructive, role-changing, session-ending, or socially meaningful actions that are easy to trigger accidentally; routine save/join/RSVP/edit actions stay single-step and use their existing button or form surface as the commitment point
+- repeated UI should be extracted by boundary, not by visual coincidence alone: design-system primitives belong in shared/core widget layers, repeated slot-based layouts belong in shared composites, and richer semantic controls such as readiness or RSVP stay domain-local unless a second true consumer emerges with matching behavior
+- live-detail overlays must react to authoritative state changes; if a session or other live-backed entity disappears while its sheet is open, the overlay should dismiss or move into an explicitly non-interactive removed state instead of preserving stale mutation controls
 - route-level backgrounds should prefer the shared `AppBackgroundSurface` scrim over bespoke opaque full-screen gradients so the ambient app background can remain visible behind content
 - the app root may host a single shared `AppBackgroundSurface` above the navigator so focused-flow route transitions reuse one stable scrim instead of animating separate per-screen background layers; nested route-level `AppBackgroundSurface` usage should collapse to a no-op when that shared root surface is already present
 - new user-facing strings must be localized through ARB files
 - popup menus follow the global glass theme
+- selector-style popovers should use the shared `AppAnchoredPopoverSelector` rather than ad-hoc `PopupMenuButton` implementations so compact and settings-row triggers still share one maintained popup behavior path
+- anchored selector popovers should cap their initial menu height to roughly one-third of the current viewport, keep scrolling inside the popover surface, show a scrollbar only when scrolling is needed, and prefer opening below or above the trigger based on available space before falling back to screen-edge clamping
+- anchored selector triggers must remain keyboard-focusable and support standard activation keys (`Enter` / `Space`) so shared popover controls stay accessible on web and desktop
+- input-like dropdown fields that open the stock `DropdownButtonFormField` route should explicitly use the same opaque dark surface and rounded menu radius family as popup selectors, keep the menu width aligned to the field instead of the stock inflated route width, suppress the stock gray hover/press/splash treatment, and render the currently selected option with the same blue-tinted highlighted row treatment and checkmark affordance inside the open list
+- weekly availability preset chips should use their semantic leading icon as the sole leading affordance even when selected, and should emit the shared subtle selection haptic on each toggle
 - app-wide `Divider` and `PopupMenuDivider` usage should resolve to an ultra-subtle cool-gray hairline separator so list rows, section splits, and menu groupings stay barely visible in the liquid-glass visual language
 - async field-availability feedback uses compact suffix status affordances where both loading and error glyphs share the same aligned wrapper, and surfaces localized inline error text through the input instead of relying on icon-only failure states
+- mobile tactile feedback should stay subtle and semantic through one shared helper: use light selection feedback for discrete toggles or choice changes, light success feedback for successful commits and refresh completion, and a slightly firmer pulse only after confirmed destructive or session-ending actions; web and desktop remain no-op
+- dropdown-style controls may use the same subtle selection haptic both when the menu opens and when an item is chosen, including popup selectors, popup action menus, and form dropdown fields
 
 ### Motion Rules
 
@@ -230,6 +248,20 @@ Outside the shell:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-06 | Interaction conventions | Clarified that weekly availability preset chips keep their semantic icon as the only leading affordance when selected and emit subtle selection haptics on toggle | Prevents selected preset chips from showing a conflicting overlapping checkmark over the existing icon and aligns the shared availability editor with the app-wide toggle haptics contract |
+| 2026-06-06 | Interaction conventions | Tightened the selector-popover rule so selector-style popovers should always route through `AppAnchoredPopoverSelector`, regardless of list length, while keeping custom trigger chrome in feature wrappers | Removes the last split between stock popup buttons and the shared anchored popover so selector popovers have one maintained implementation path |
+| 2026-06-06 | Core components and interaction conventions | Added `AppAnchoredPopoverSelector` as the maintained shared widget for long selector-style popovers, including scrollbar, internal scroll, and preferred above/below anchored opening before clamp fallback | Gives long lists like timezone a reusable anchored popover path that avoids the stock popup route's visible repositioning and hidden scrolling affordance |
+| 2026-06-06 | Interaction conventions | Added the maintained popup-selector sizing rule that long popup lists should open with an internal height cap of about one-third of the viewport and scroll within that surface | Prevents long selector popovers like timezone from opening at full height and then visibly shifting position just to fit on screen |
+| 2026-06-06 | Shared primitives, core components, and interaction conventions | Reverted the maintained language/timezone selector contract back to dedicated popup-style implementations instead of requiring them to share the stock `DropdownButtonFormField` wrapper path | Restores the previously approved compact/settings selector look while keeping the stock-field dropdown treatment available only where the input-like variation is actually desired |
+| 2026-06-06 | Shared primitives, core components, and interaction conventions | Added `AppDropdownSelector` as the maintained shared wrapper for selector-style and input-like dropdowns, and documented that compact/settings triggers should route through it when they rely on `DropdownButtonFormField` under the hood | Keeps timezone, language, and coordination status dropdowns on one shared stock-menu implementation while preserving the non-input selector look for compact/settings surfaces |
+| 2026-06-06 | Interaction conventions | Tightened the stock dropdown parity rule so input-like dropdown menus stay width-aligned to the field and suppress the default gray hover/press/splash treatment while keeping the selector-style selected row | Ensures stock `DropdownButtonFormField` menus feel like the same polished component family as timezone/language selectors instead of falling back to default Material route behavior |
+| 2026-06-06 | Interaction conventions | Documented that anchored popover triggers must stay keyboard-focusable and that live-backed detail sheets should dismiss stale controls when their backing entity disappears | Closes the remaining accessibility and stale-state gaps surfaced in the final audit verification pass |
+| 2026-06-06 | Interaction conventions | Refined the stock dropdown visual rule so input-like dropdown menus also match the selector-style selected-row treatment with blue tint and a checkmark inside the open list | Keeps the coordination status dropdown visually aligned with the timezone/language selector pattern instead of only matching the outer menu shell |
+| 2026-06-06 | Interaction conventions | Added the maintained visual rule that stock input-like dropdown menus must explicitly use the same opaque popup surface family as shared selectors | Prevents `DropdownButtonFormField` menus from opening with a transparent hard-to-read list over the translucent app background |
+| 2026-06-06 | Interaction conventions | Added a maintained haptic rule for dropdown-style controls: subtle selection feedback on open and on item choice for popup selectors, popup action menus, and form dropdowns | Aligns the shared interaction contract with the new app-wide dropdown haptic behavior |
+| 2026-06-06 | Shared primitives and core components | Added `AppAnchoredPopoverMenuItem` as the shared selected-row treatment for anchored selector menus and aligned language/timezone selectors to use it | Prevents selector-menu styling drift now that anchored popovers are the maintained menu path for compact and settings-style selectors |
+| 2026-06-06 | Core components and interaction conventions | Added `AppListRow`, `AppSwitchRow`, and `AppChip` to the maintained shared-widget layer and documented the primitive/composite/domain extraction threshold | Keeps repeated Flutter controls consistent while preventing over-abstraction of richer domain-specific UI like readiness and RSVP |
+| 2026-06-06 | Interaction conventions | Added the maintained confirmation-dialog threshold and shared mobile haptics contract for meaningful toggles, successful commits, refresh completion, and confirmed destructive/session-ending actions | Keeps cross-app feedback behavior intentional and consistent without adding blanket confirmation friction or noisy tactile feedback |
 | 2026-06-06 | Motion rules | Switched the maintained production ambient baseline from one shared value to a renderer-aware contract: native shader `0.0`, web/fallback `0.8` | Matches the observed runtime behavior where the native fragment shader remains visible at zero intensity while web/fallback still need the stronger baseline |
 | 2026-06-06 | Motion rules | Refined the focused transparent-flow handoff to use a delayed incoming reveal after the covered route starts fading, while keeping the shader loop contract explicitly periodic | Further reduces auth-screen dark-film overlap while preserving the seam-free ambient cycle contract |
 | 2026-06-06 | Motion rules | Made the shared shader loop contract explicitly periodic at cycle boundaries and clarified that focused transparent flows should not fade the incoming route as a whole | Fixes the visible ambient loop seam and removes post-transition brightness kicks on auth-style transparent pages |

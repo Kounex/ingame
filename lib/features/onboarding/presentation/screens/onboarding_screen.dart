@@ -21,6 +21,7 @@ import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../../../../shared/widgets/ingame_logo.dart';
 import '../../../../shared/widgets/weekly_availability_editor.dart';
+import '../../../../shared/services/app_haptics.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -252,6 +253,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       return;
     }
 
+    await ref.read(appHapticsProvider).success();
     ref.invalidate(authNotifierProvider);
   }
 
@@ -716,10 +718,6 @@ class _GamingPreferencesPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.textTertiary,
                   ),
                 ],
               ),

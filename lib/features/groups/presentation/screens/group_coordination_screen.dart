@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -7,11 +9,15 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_background.dart';
+import '../../../../shared/widgets/app_chip.dart';
+import '../../../../shared/widgets/app_confirmation_dialog.dart';
+import '../../../../shared/widgets/app_dropdown_selector.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/services/app_haptics.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/coordination_model.dart';
 import '../providers/group_detail_provider.dart';
@@ -27,18 +33,8 @@ class GroupCoordinationScreen extends ConsumerStatefulWidget {
       _GroupCoordinationScreenState();
 }
 
-class _GroupCoordinationScreenState extends ConsumerState<GroupCoordinationScreen> {
-  static const _calendarRangeDays = 7;
-
-  late DateTime _rangeStart;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    _rangeStart = DateTime(now.year, now.month, now.day);
-  }
-
+class _GroupCoordinationScreenState
+    extends ConsumerState<GroupCoordinationScreen> {
   @override
   Widget build(BuildContext context) {
     final coordinationAsync = ref.watch(
@@ -74,21 +70,48 @@ class _GroupCoordinationScreenState extends ConsumerState<GroupCoordinationScree
             ),
           ),
           data: (coordination) {
-            final currentUserId = ref.watch(authNotifierProvider).value?.maybeWhen(
-              authenticated: (user) => user.id,
-              orElse: () => null,
-            );
-            final currentUserRole = detailAsync.value?.currentUserRole;
+            final detailState = detailAsync.value;
+            if (detailAsync.hasError) {
+              return DesktopContentRegion(
+                width: DesktopContentWidth.reading,
+                child: ErrorDisplay(
+                  message: ApiError.userMessage(
+                    detailAsync.error!,
+                    context.l10n,
+                  ),
+                  onRetry: () => ref
+                      .read(
+                        groupDetailNotifierProvider(widget.groupId).notifier,
+                      )
+                      .refresh(),
+                ),
+              );
+            }
+            final currentUserId =
+                ref
+                    .watch(authNotifierProvider)
+                    .value
+                    ?.maybeWhen(
+                      authenticated: (user) => user.id,
+                      orElse: () => detailState?.currentUserId,
+                    ) ??
+                detailState?.currentUserId;
+            final currentUserRole = detailState?.currentUserRole;
             return DesktopContentRegion(
               width: DesktopContentWidth.reading,
               child: RefreshIndicator(
                 color: AppColors.primary,
                 backgroundColor: AppColors.backgroundLight,
-                onRefresh: () => ref
-                    .read(
-                      groupCoordinationNotifierProvider(widget.groupId).notifier,
-                    )
-                    .refresh(),
+                onRefresh: () async {
+                  await ref
+                      .read(
+                        groupCoordinationNotifierProvider(
+                          widget.groupId,
+                        ).notifier,
+                      )
+                      .refresh();
+                  await ref.read(appHapticsProvider).refreshComplete();
+                },
                 child: ListView(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   children: [
@@ -98,48 +121,35 @@ class _GroupCoordinationScreenState extends ConsumerState<GroupCoordinationScree
                       activityCount: coordination.activity.length,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    _CalendarSection(
+                    _UpcomingWindowsSection(
                       windows: coordination.windows,
-                      rangeStart: _rangeStart,
-                      rangeDays: _calendarRangeDays,
                       currentUserId: currentUserId,
                       currentUserRole: currentUserRole,
-                      onPreviousRange: () => setState(() {
-                        _rangeStart = _rangeStart.subtract(
-                          const Duration(days: _calendarRangeDays),
-                        );
-                      }),
-                      onNextRange: () => setState(() {
-                        _rangeStart = _rangeStart.add(
-                          const Duration(days: _calendarRangeDays),
-                        );
-                      }),
                       onAdd: () => _showWindowEditor(context, ref),
                       onEdit: (window) => _showWindowEditor(
                         context,
                         ref,
                         initialWindow: window,
                       ),
+                      onViewAll: (windows) =>
+                          _showUpcomingWindowsSheet(context, windows),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     _SessionsSection(
                       sessions: coordination.sessions,
+                      groupId: widget.groupId,
                       currentUserId: currentUserId,
                       currentUserRole: currentUserRole,
-                      pendingRsvpSessionIds:
-                          coordination.pendingRsvpSessionIds,
+                      pendingRsvpSessionIds: coordination.pendingRsvpSessionIds,
                       onAdd: () => _showSessionEditor(context, ref),
                       onEdit: (session) => _showSessionEditor(
                         context,
                         ref,
                         initialSession: session,
                       ),
-                      onRsvp: (sessionId, response) => ref
-                          .read(
-                            groupCoordinationNotifierProvider(widget.groupId)
-                                .notifier,
-                          )
-                          .rsvpToSession(sessionId, response),
+                      onDelete: (session) =>
+                          _confirmDeleteSession(context, ref, session),
+                      onRsvp: _handleSessionRsvp,
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     _ActivitySection(activity: coordination.activity),
@@ -185,14 +195,20 @@ class _GroupCoordinationScreenState extends ConsumerState<GroupCoordinationScree
                   endsAt: endsAt,
                 );
               }
+              await ref.read(appHapticsProvider).success();
             },
             onDelete: initialWindow == null
                 ? null
-                : () => ref
-                    .read(
-                      groupCoordinationNotifierProvider(widget.groupId).notifier,
-                    )
-                    .deleteScheduledReady(initialWindow.id),
+                : () async {
+                    await ref
+                        .read(
+                          groupCoordinationNotifierProvider(
+                            widget.groupId,
+                          ).notifier,
+                        )
+                        .deleteScheduledReady(initialWindow.id);
+                    await ref.read(appHapticsProvider).destructiveConfirm();
+                  },
           ),
         );
       },
@@ -236,11 +252,91 @@ class _GroupCoordinationScreenState extends ConsumerState<GroupCoordinationScree
                   status: status,
                 );
               }
+              final haptics = ref.read(appHapticsProvider);
+              if (status == 'cancelled') {
+                await haptics.destructiveConfirm();
+              } else {
+                await haptics.success();
+              }
             },
           ),
         );
       },
     );
+  }
+
+  Future<void> _confirmDeleteSession(
+    BuildContext context,
+    WidgetRef ref,
+    GroupSession session,
+  ) async {
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.groupCoordinationDeleteSessionConfirmTitle,
+      message: context.l10n.groupCoordinationDeleteSessionConfirmMessage,
+      confirmLabel: context.l10n.groupCoordinationDeleteSessionAction,
+      cancelLabel: context.l10n.commonCancel,
+      variant: AppConfirmationVariant.destructive,
+    );
+    if (!confirmed || !context.mounted) return;
+
+    try {
+      await ref
+          .read(groupCoordinationNotifierProvider(widget.groupId).notifier)
+          .deleteSession(session.id);
+      await ref.read(appHapticsProvider).destructiveConfirm();
+    } catch (error) {
+      if (!context.mounted) return;
+      final message = error is DioException && error.response?.statusCode == 405
+          ? context.l10n.errorServer
+          : ApiError.userMessage(error, context.l10n);
+      AppToast.error(context, message);
+    }
+  }
+
+  Future<void> _showUpcomingWindowsSheet(
+    BuildContext context,
+    List<ScheduledReadyWindow> windows,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final currentUserId = ref
+            .read(authNotifierProvider)
+            .value
+            ?.maybeWhen(authenticated: (user) => user.id, orElse: () => null);
+        final currentUserRole = ref
+            .read(groupDetailNotifierProvider(widget.groupId))
+            .value
+            ?.currentUserRole;
+        return FractionallySizedBox(
+          heightFactor: 0.82,
+          child: _UpcomingWindowsSheet(
+            windows: windows,
+            currentUserId: currentUserId,
+            currentUserRole: currentUserRole,
+            onEdit: (window) {
+              Navigator.of(sheetContext).pop();
+              _showWindowEditor(context, ref, initialWindow: window);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleSessionRsvp(String sessionId, String response) async {
+    try {
+      await ref
+          .read(groupCoordinationNotifierProvider(widget.groupId).notifier)
+          .rsvpToSession(sessionId, response);
+      await ref.read(appHapticsProvider).success();
+    } catch (error) {
+      if (!mounted) return;
+      AppToast.error(context, ApiError.userMessage(error, context.l10n));
+    }
   }
 }
 
@@ -288,11 +384,15 @@ class _SummaryCard extends StatelessWidget {
               ),
               _SummaryChip(
                 icon: Icons.sports_esports_outlined,
-                label: context.l10n.groupCoordinationSessionsCount(sessionCount),
+                label: context.l10n.groupCoordinationSessionsCount(
+                  sessionCount,
+                ),
               ),
               _SummaryChip(
                 icon: Icons.bolt_outlined,
-                label: context.l10n.groupCoordinationActivityCount(activityCount),
+                label: context.l10n.groupCoordinationActivityCount(
+                  activityCount,
+                ),
               ),
             ],
           ),
@@ -302,173 +402,328 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _CalendarSection extends StatelessWidget {
-  const _CalendarSection({
+class _UpcomingWindowsSection extends StatelessWidget {
+  const _UpcomingWindowsSection({
     required this.windows,
-    required this.rangeStart,
-    required this.rangeDays,
     required this.currentUserId,
     required this.currentUserRole,
-    required this.onPreviousRange,
-    required this.onNextRange,
     required this.onAdd,
     required this.onEdit,
+    required this.onViewAll,
   });
 
+  static const _previewLimit = 5;
+
   final List<ScheduledReadyWindow> windows;
-  final DateTime rangeStart;
-  final int rangeDays;
   final String? currentUserId;
   final String? currentUserRole;
-  final VoidCallback onPreviousRange;
-  final VoidCallback onNextRange;
   final VoidCallback onAdd;
   final ValueChanged<ScheduledReadyWindow> onEdit;
+  final ValueChanged<List<ScheduledReadyWindow>> onViewAll;
 
   @override
   Widget build(BuildContext context) {
-    final visibleWindows = _windowsInRange(windows);
+    final upcomingWindows = _upcomingWindows(windows);
+    final previewWindows = upcomingWindows.take(_previewLimit).toList();
+    final remainingCount = upcomingWindows.length - previewWindows.length;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionHeader(
-            title: context.l10n.groupCoordinationCalendarTitle,
+            title: context.l10n.groupCoordinationUpcomingWindowsTitle,
             actionLabel: context.l10n.groupCoordinationCalendarAdd,
             onAction: onAdd,
           ),
           const SizedBox(height: AppSpacing.sm),
-          _CalendarRangeHeader(
-            label: _formatRangeLabel(context),
-            onPrevious: onPreviousRange,
-            onNext: onNextRange,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          if (visibleWindows.isEmpty)
+          if (upcomingWindows.isEmpty)
             Text(
-              windows.isEmpty
-                  ? context.l10n.groupCoordinationCalendarEmpty
-                  : context.l10n.groupCoordinationCalendarEmptyRange,
+              context.l10n.groupCoordinationUpcomingWindowsEmpty,
               style: const TextStyle(color: AppColors.textSecondary),
             )
-          else
-            ..._groupWindowsByDay(context, visibleWindows),
+          else ...[
+            ..._buildReadyWindowAgenda(
+              context,
+              previewWindows,
+              currentUserId: currentUserId,
+              currentUserRole: currentUserRole,
+              onEdit: onEdit,
+            ),
+            if (remainingCount > 0) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => onViewAll(upcomingWindows),
+                  child: Text(
+                    context.l10n.groupCoordinationUpcomingWindowsViewAll(
+                      remainingCount,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
   }
+}
 
-  List<ScheduledReadyWindow> _windowsInRange(List<ScheduledReadyWindow> all) {
-    final end = rangeStart.add(Duration(days: rangeDays));
-    return all.where((window) {
-      final startsAt = window.startsAt.toLocal();
-      final endsAt = window.endsAt.toLocal();
-      return startsAt.isBefore(end) && endsAt.isAfter(rangeStart);
-    }).toList();
-  }
+class _UpcomingWindowsSheet extends StatelessWidget {
+  const _UpcomingWindowsSheet({
+    required this.windows,
+    required this.currentUserId,
+    required this.currentUserRole,
+    required this.onEdit,
+  });
 
-  List<Widget> _groupWindowsByDay(
-    BuildContext context,
-    List<ScheduledReadyWindow> windows,
-  ) {
-    final grouped = <DateTime, List<ScheduledReadyWindow>>{};
-    for (final window in windows) {
-      final date = DateTime(
-        window.startsAt.toLocal().year,
-        window.startsAt.toLocal().month,
-        window.startsAt.toLocal().day,
-      );
-      grouped.putIfAbsent(date, () => []).add(window);
-    }
-    final dates = grouped.keys.toList()..sort();
-    return [
-      for (final date in dates) ...[
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
-          child: Text(
-            _formatDayHeading(context, date),
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+  final List<ScheduledReadyWindow> windows;
+  final String? currentUserId;
+  final String? currentUserRole;
+  final ValueChanged<ScheduledReadyWindow> onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: GlassCard(
+        margin: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.groupCoordinationUpcomingWindowsSheetTitle,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ),
-        for (final window in grouped[date]!)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    window.displayName,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                  ),
+            const SizedBox(height: AppSpacing.md),
+            Expanded(
+              child: ListView(
+                children: _buildReadyWindowAgenda(
+                  context,
+                  windows,
+                  currentUserId: currentUserId,
+                  currentUserRole: currentUserRole,
+                  onEdit: onEdit,
                 ),
-                if (window.userId == currentUserId) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  _Pill(label: context.l10n.groupCoordinationOwnedByYou),
-                ],
-              ],
+              ),
             ),
-            subtitle: Text(
-              _formatTimeRange(context, window.startsAt, window.endsAt),
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            trailing: _canEditWindow(window)
-                ? IconButton(
-                    onPressed: () => onEdit(window),
-                    tooltip: context.l10n.groupCoordinationEditWindowTitle,
-                    icon: const Icon(
-                      Icons.edit_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                  )
-                : null,
-          ),
-      ],
-    ];
-  }
-
-  bool _canEditWindow(ScheduledReadyWindow window) {
-    if (window.userId == currentUserId) {
-      return true;
-    }
-    return currentUserRole == 'owner' || currentUserRole == 'admin';
-  }
-
-  String _formatRangeLabel(BuildContext context) {
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    if (rangeStart == todayStart) {
-      return context.l10n.groupCoordinationCalendarThisWeek;
-    }
-    final end = rangeStart.add(Duration(days: rangeDays - 1));
-    final material = MaterialLocalizations.of(context);
-    return context.l10n.groupCoordinationCalendarRangeLabel(
-      material.formatMediumDate(rangeStart),
-      material.formatMediumDate(end),
+          ],
+        ),
+      ),
     );
   }
+}
+
+List<ScheduledReadyWindow> _upcomingWindows(
+  List<ScheduledReadyWindow> windows,
+) {
+  final now = DateTime.now();
+  final upcoming = windows
+      .where((window) => window.endsAt.toLocal().isAfter(now))
+      .toList();
+  upcoming.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+  return upcoming;
+}
+
+List<Widget> _buildReadyWindowAgenda(
+  BuildContext context,
+  List<ScheduledReadyWindow> windows, {
+  required String? currentUserId,
+  required String? currentUserRole,
+  required ValueChanged<ScheduledReadyWindow> onEdit,
+}) {
+  final grouped = <DateTime, List<ScheduledReadyWindow>>{};
+  for (final window in windows) {
+    final date = DateTime(
+      window.startsAt.toLocal().year,
+      window.startsAt.toLocal().month,
+      window.startsAt.toLocal().day,
+    );
+    grouped.putIfAbsent(date, () => []).add(window);
+  }
+  final dates = grouped.keys.toList()..sort();
+  return [
+    for (var index = 0; index < dates.length; index++) ...[
+      if (index > 0)
+        Divider(
+          key: Key('agenda-day-divider-${_agendaDateKey(dates[index])}'),
+          height: AppSpacing.lg,
+          color: AppColors.glassBorder,
+        ),
+      _AgendaDayHeader(
+        key: Key('agenda-day-header-${_agendaDateKey(dates[index])}'),
+        date: dates[index],
+      ),
+      for (final window in grouped[dates[index]]!)
+        _ReadyWindowTile(
+          window: window,
+          currentUserId: currentUserId,
+          currentUserRole: currentUserRole,
+          onEdit: onEdit,
+        ),
+    ],
+  ];
+}
+
+String _agendaDateKey(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
+
+class _AgendaDayHeader extends StatelessWidget {
+  const _AgendaDayHeader({super.key, required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.calendar_today_outlined,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              _formatDayHeading(context, date),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadyWindowTile extends StatelessWidget {
+  const _ReadyWindowTile({
+    required this.window,
+    required this.currentUserId,
+    required this.currentUserRole,
+    required this.onEdit,
+  });
+
+  final ScheduledReadyWindow window;
+  final String? currentUserId;
+  final String? currentUserRole;
+  final ValueChanged<ScheduledReadyWindow> onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        window.displayName,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (window.userId == currentUserId) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      AppChip.surface(
+                        label: context.l10n.groupCoordinationOwnedByYou,
+                        compact: true,
+                        backgroundColor: AppColors.glassSurface,
+                        textColor: AppColors.textSecondary,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatTimeRange(context, window.startsAt, window.endsAt),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_canEditReadyWindow(window, currentUserId, currentUserRole))
+            IconButton(
+              onPressed: () => onEdit(window),
+              tooltip: context.l10n.groupCoordinationEditWindowTitle,
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+              padding: EdgeInsets.zero,
+              icon: const Icon(
+                Icons.edit_outlined,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+bool _canEditReadyWindow(
+  ScheduledReadyWindow window,
+  String? currentUserId,
+  String? currentUserRole,
+) {
+  if (window.userId == currentUserId) {
+    return true;
+  }
+  return currentUserRole == 'owner' || currentUserRole == 'admin';
 }
 
 class _SessionsSection extends StatelessWidget {
   const _SessionsSection({
     required this.sessions,
+    required this.groupId,
     required this.currentUserId,
     required this.currentUserRole,
     required this.pendingRsvpSessionIds,
     required this.onAdd,
     required this.onEdit,
+    required this.onDelete,
     required this.onRsvp,
   });
 
   final List<GroupSession> sessions;
+  final String groupId;
   final String? currentUserId;
   final String? currentUserRole;
   final Set<String> pendingRsvpSessionIds;
   final VoidCallback onAdd;
   final ValueChanged<GroupSession> onEdit;
+  final ValueChanged<GroupSession> onDelete;
   final Future<void> Function(String sessionId, String response) onRsvp;
 
   @override
@@ -497,8 +752,14 @@ class _SessionsSection extends StatelessWidget {
                   currentUserId: currentUserId,
                   currentUserRole: currentUserRole,
                   isUpdatingRsvp: pendingRsvpSessionIds.contains(session.id),
+                  onOpenDetails: () => _SessionDetailSheet.show(
+                    context,
+                    groupId: groupId,
+                    session: session,
+                    onRsvp: onRsvp,
+                  ),
                   onEdit: () => onEdit(session),
-                  onRsvp: onRsvp,
+                  onDelete: () => onDelete(session),
                 ),
               ),
         ],
@@ -507,147 +768,182 @@ class _SessionsSection extends StatelessWidget {
   }
 }
 
-class _SessionCard extends StatelessWidget {
+enum _SessionCardAction { edit, delete }
+
+class _SessionCard extends ConsumerWidget {
   const _SessionCard({
     required this.session,
     required this.currentUserId,
     required this.currentUserRole,
     required this.isUpdatingRsvp,
+    required this.onOpenDetails,
     required this.onEdit,
-    required this.onRsvp,
+    required this.onDelete,
   });
 
   final GroupSession session;
   final String? currentUserId;
   final String? currentUserRole;
   final bool isUpdatingRsvp;
+  final VoidCallback onOpenDetails;
   final VoidCallback onEdit;
-  final Future<void> Function(String sessionId, String response) onRsvp;
+  final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
-    SessionRsvp? currentRsvp;
-    for (final item in session.rsvps) {
-      if (item.userId == currentUserId) {
-        currentRsvp = item;
-        break;
-      }
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final counts = _countSessionRsvps(session.rsvps);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.glassSurfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      session.title ?? session.game ?? context.l10n.groupCoordinationUntitledSession,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (session.game != null && session.title != session.game)
-                      Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.xs),
-                        child: Text(
-                          session.game!,
-                          style: const TextStyle(color: AppColors.textSecondary),
+    return GestureDetector(
+      key: Key('session-card-${session.id}'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        ref.read(appHapticsProvider).selection();
+        onOpenDetails();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.glassSurfaceLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.glassBorder),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        session.title ??
+                            session.game ??
+                            context.l10n.groupCoordinationUntitledSession,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      _formatDateTime(context, session.startsAt),
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      context.l10n.groupCoordinationProposedBy(session.proposedByDisplayName),
-                      style: const TextStyle(color: AppColors.textTertiary),
-                    ),
-                  ],
-                ),
-              ),
-              if (_canEditSession())
-                IconButton(
-                  onPressed: onEdit,
-                  tooltip: context.l10n.groupCoordinationEditSessionTitle,
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                    color: AppColors.textSecondary,
+                      if (session.game != null && session.title != session.game)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.xs),
+                          child: Text(
+                            session.game!,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _formatDateTime(context, session.startsAt),
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        context.l10n.groupCoordinationProposedBy(
+                          session.proposedByDisplayName,
+                        ),
+                        style: const TextStyle(color: AppColors.textTertiary),
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-          if (session.notes != null && session.notes!.trim().isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              session.notes!,
-              style: const TextStyle(color: AppColors.textSecondary),
+                if (_canEditSession())
+                  PopupMenuButton<_SessionCardAction>(
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: AppColors.textSecondary,
+                    ),
+                    onOpened: () {
+                      ref.read(appHapticsProvider).selection();
+                    },
+                    onSelected: (action) {
+                      ref.read(appHapticsProvider).selection();
+                      if (action == _SessionCardAction.edit) {
+                        onEdit();
+                      } else {
+                        onDelete();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: _SessionCardAction.edit,
+                        child: Text(
+                          context.l10n.groupCoordinationEditSessionAction,
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: _SessionCardAction.delete,
+                        child: Text(
+                          context.l10n.groupCoordinationDeleteSessionAction,
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
             ),
-          ],
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _Pill(label: _statusLabel(context, session.status)),
-              ...session.rsvps.map(
-                (rsvp) => _Pill(
-                  label:
-                      '${rsvp.displayName}: ${_rsvpLabel(context, rsvp.response)}',
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _Pill(label: _statusLabel(context, session.status)),
+                _SessionRsvpCountChip(
+                  key: Key('session-rsvp-count-in-${session.id}'),
+                  icon: Icons.check_circle_outline,
+                  count: counts.inCount,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _RsvpButton(
-                label: context.l10n.groupCoordinationRsvpIn,
-                isSelected: currentRsvp?.response == 'in',
-                onPressed: currentUserId == null || isUpdatingRsvp
-                    ? null
-                    : () => onRsvp(session.id, 'in'),
-              ),
-              _RsvpButton(
-                label: context.l10n.groupCoordinationRsvpMaybe,
-                isSelected: currentRsvp?.response == 'maybe',
-                onPressed: currentUserId == null || isUpdatingRsvp
-                    ? null
-                    : () => onRsvp(session.id, 'maybe'),
-              ),
-              _RsvpButton(
-                label: context.l10n.groupCoordinationRsvpOut,
-                isSelected: currentRsvp?.response == 'out',
-                onPressed: currentUserId == null || isUpdatingRsvp
-                    ? null
-                    : () => onRsvp(session.id, 'out'),
-              ),
-            ],
-          ),
-          if (isUpdatingRsvp) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              context.l10n.groupCoordinationRsvpUpdating,
-              style: const TextStyle(color: AppColors.textTertiary),
+                _SessionRsvpCountChip(
+                  key: Key('session-rsvp-count-maybe-${session.id}'),
+                  icon: Icons.help_outline,
+                  count: counts.maybeCount,
+                ),
+                _SessionRsvpCountChip(
+                  key: Key('session-rsvp-count-out-${session.id}'),
+                  icon: Icons.cancel_outlined,
+                  count: counts.outCount,
+                ),
+              ],
             ),
+            if (session.notes != null && session.notes!.trim().isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                session.notes!,
+                key: Key('session-notes-preview-${session.id}'),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                const Icon(
+                  Icons.open_in_full_rounded,
+                  size: 16,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  context.l10n.commonViewDetails,
+                  style: const TextStyle(color: AppColors.textTertiary),
+                ),
+              ],
+            ),
+            if (isUpdatingRsvp) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                context.l10n.groupCoordinationRsvpUpdating,
+                style: const TextStyle(color: AppColors.textTertiary),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -657,6 +953,282 @@ class _SessionCard extends StatelessWidget {
       return true;
     }
     return currentUserRole == 'owner' || currentUserRole == 'admin';
+  }
+}
+
+class _SessionDetailSheet extends ConsumerWidget {
+  const _SessionDetailSheet({
+    required this.groupId,
+    required this.initialSession,
+    required this.onRsvp,
+  });
+
+  final String groupId;
+  final GroupSession initialSession;
+  final Future<void> Function(String sessionId, String response) onRsvp;
+
+  static Future<void> show(
+    BuildContext context, {
+    required String groupId,
+    required GroupSession session,
+    required Future<void> Function(String sessionId, String response) onRsvp,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return FractionallySizedBox(
+          heightFactor: 0.82,
+          child: _SessionDetailSheet(
+            groupId: groupId,
+            initialSession: session,
+            onRsvp: onRsvp,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coordination = ref.watch(groupCoordinationNotifierProvider(groupId));
+    final liveSession = _findSessionById(
+      coordination.value?.sessions ?? const [],
+      initialSession.id,
+    );
+    if (liveSession == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        Navigator.of(context).maybePop();
+      });
+      return const SizedBox.shrink();
+    }
+    final session = liveSession;
+    final currentUserId = ref
+        .watch(authNotifierProvider)
+        .value
+        ?.maybeWhen(authenticated: (user) => user.id, orElse: () => null);
+    final currentRsvp = _findCurrentRsvp(session.rsvps, currentUserId);
+    final isUpdating =
+        coordination.value?.pendingRsvpSessionIds.contains(session.id) ?? false;
+
+    final groupedResponses = {
+      'in': session.rsvps.where((item) => item.response == 'in').toList(),
+      'maybe': session.rsvps.where((item) => item.response == 'maybe').toList(),
+      'out': session.rsvps.where((item) => item.response == 'out').toList(),
+    };
+
+    return SafeArea(
+      top: false,
+      child: GlassCard(
+        key: Key('session-detail-sheet-${session.id}'),
+        margin: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        session.title ??
+                            session.game ??
+                            context.l10n.groupCoordinationUntitledSession,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (session.game != null && session.title != session.game)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.xs),
+                          child: Text(
+                            session.game!,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _formatDateTime(context, session.startsAt),
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        context.l10n.groupCoordinationProposedBy(
+                          session.proposedByDisplayName,
+                        ),
+                        style: const TextStyle(color: AppColors.textTertiary),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _Pill(label: _statusLabel(context, session.status)),
+                _SessionRsvpCountChip(
+                  icon: Icons.check_circle_outline,
+                  count: groupedResponses['in']!.length,
+                ),
+                _SessionRsvpCountChip(
+                  icon: Icons.help_outline,
+                  count: groupedResponses['maybe']!.length,
+                ),
+                _SessionRsvpCountChip(
+                  icon: Icons.cancel_outlined,
+                  count: groupedResponses['out']!.length,
+                ),
+              ],
+            ),
+            if (session.notes != null && session.notes!.trim().isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                context.l10n.groupCoordinationFieldNotes,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                session.notes!,
+                key: Key('session-notes-full-${session.id}'),
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              context.l10n.groupCoordinationYourResponseTitle,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _RsvpButton(
+                  label: context.l10n.groupCoordinationRsvpIn,
+                  isSelected: currentRsvp?.response == 'in',
+                  onPressed: currentUserId == null || isUpdating
+                      ? null
+                      : () => onRsvp(session.id, 'in'),
+                ),
+                _RsvpButton(
+                  label: context.l10n.groupCoordinationRsvpMaybe,
+                  isSelected: currentRsvp?.response == 'maybe',
+                  onPressed: currentUserId == null || isUpdating
+                      ? null
+                      : () => onRsvp(session.id, 'maybe'),
+                ),
+                _RsvpButton(
+                  label: context.l10n.groupCoordinationRsvpOut,
+                  isSelected: currentRsvp?.response == 'out',
+                  onPressed: currentUserId == null || isUpdating
+                      ? null
+                      : () => onRsvp(session.id, 'out'),
+                ),
+              ],
+            ),
+            if (isUpdating) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                context.l10n.groupCoordinationRsvpUpdating,
+                style: const TextStyle(color: AppColors.textTertiary),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              context.l10n.groupCoordinationResponsesTitle,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Expanded(
+              child: session.rsvps.isEmpty
+                  ? Text(
+                      context.l10n.groupCoordinationResponsesEmpty,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    )
+                  : ListView(
+                      children: [
+                        for (final entry in ['in', 'maybe', 'out']) ...[
+                          if (groupedResponses[entry]!.isNotEmpty)
+                            _SessionResponseSection(
+                              title: _rsvpLabel(context, entry),
+                              entries: groupedResponses[entry]!,
+                            ),
+                        ],
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SessionResponseSection extends StatelessWidget {
+  const _SessionResponseSection({required this.title, required this.entries});
+
+  final String title;
+  final List<SessionRsvp> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          for (final entry in entries)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                entry.displayName,
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                _timeAgo(context, entry.updatedAt),
+                style: const TextStyle(color: AppColors.textTertiary),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -743,46 +1315,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _CalendarRangeHeader extends StatelessWidget {
-  const _CalendarRangeHeader({
-    required this.label,
-    required this.onPrevious,
-    required this.onNext,
-  });
-
-  final String label;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onPrevious,
-          tooltip: context.l10n.groupCoordinationCalendarPreviousRange,
-          icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
-        ),
-        Expanded(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        IconButton(
-          onPressed: onNext,
-          tooltip: context.l10n.groupCoordinationCalendarNextRange,
-          icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-        ),
-      ],
-    );
-  }
-}
-
 class _SummaryChip extends StatelessWidget {
   const _SummaryChip({required this.icon, required this.label});
 
@@ -791,24 +1323,12 @@ class _SummaryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.glassSurfaceLight,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: AppColors.primary),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            label,
-            style: const TextStyle(color: AppColors.textPrimary),
-          ),
-        ],
-      ),
+    return AppChip.surface(
+      label: label,
+      icon: icon,
+      backgroundColor: AppColors.glassSurfaceLight,
+      textColor: AppColors.textPrimary,
+      iconColor: AppColors.primary,
     );
   }
 }
@@ -820,17 +1340,87 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.glassSurface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.glassBorder),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(color: AppColors.textSecondary),
-      ),
+    return AppChip.surface(
+      label: label,
+      backgroundColor: AppColors.glassSurface,
+    );
+  }
+}
+
+class _SessionRsvpCounts {
+  const _SessionRsvpCounts({
+    required this.inCount,
+    required this.maybeCount,
+    required this.outCount,
+  });
+
+  final int inCount;
+  final int maybeCount;
+  final int outCount;
+}
+
+_SessionRsvpCounts _countSessionRsvps(List<SessionRsvp> rsvps) {
+  var inCount = 0;
+  var maybeCount = 0;
+  var outCount = 0;
+  for (final rsvp in rsvps) {
+    switch (rsvp.response) {
+      case 'in':
+        inCount++;
+        break;
+      case 'maybe':
+        maybeCount++;
+        break;
+      case 'out':
+        outCount++;
+        break;
+    }
+  }
+  return _SessionRsvpCounts(
+    inCount: inCount,
+    maybeCount: maybeCount,
+    outCount: outCount,
+  );
+}
+
+GroupSession? _findSessionById(List<GroupSession> sessions, String sessionId) {
+  for (final session in sessions) {
+    if (session.id == sessionId) {
+      return session;
+    }
+  }
+  return null;
+}
+
+SessionRsvp? _findCurrentRsvp(List<SessionRsvp> rsvps, String? currentUserId) {
+  if (currentUserId == null) return null;
+  for (final rsvp in rsvps) {
+    if (rsvp.userId == currentUserId) {
+      return rsvp;
+    }
+  }
+  return null;
+}
+
+class _SessionRsvpCountChip extends StatelessWidget {
+  const _SessionRsvpCountChip({
+    super.key,
+    required this.icon,
+    required this.count,
+  });
+
+  final IconData icon;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppChip.surface(
+      label: count.toString(),
+      icon: icon,
+      compact: true,
+      backgroundColor: AppColors.glassSurface,
+      textColor: AppColors.textSecondary,
+      iconColor: AppColors.primary,
     );
   }
 }
@@ -885,9 +1475,11 @@ class _WindowEditorSheetState extends State<_WindowEditorSheet> {
   @override
   void initState() {
     super.initState();
-    _startsAt = widget.initialWindow?.startsAt.toLocal() ??
+    _startsAt =
+        widget.initialWindow?.startsAt.toLocal() ??
         DateTime.now().add(const Duration(hours: 2));
-    _endsAt = widget.initialWindow?.endsAt.toLocal() ??
+    _endsAt =
+        widget.initialWindow?.endsAt.toLocal() ??
         _startsAt.add(const Duration(hours: 2));
   }
 
@@ -934,6 +1526,19 @@ class _WindowEditorSheetState extends State<_WindowEditorSheet> {
                       onPressed: _isSaving
                           ? null
                           : () async {
+                              final confirmed = await showAppConfirmationDialog(
+                                context,
+                                title: context
+                                    .l10n
+                                    .groupCoordinationDeleteWindowConfirmTitle,
+                                message: context
+                                    .l10n
+                                    .groupCoordinationDeleteWindowConfirmMessage,
+                                confirmLabel: context.l10n.commonDelete,
+                                cancelLabel: context.l10n.commonCancel,
+                                variant: AppConfirmationVariant.destructive,
+                              );
+                              if (!confirmed || !context.mounted) return;
                               final navigator = Navigator.of(context);
                               final l10n = context.l10n;
                               setState(() => _isSaving = true);
@@ -954,7 +1559,8 @@ class _WindowEditorSheetState extends State<_WindowEditorSheet> {
                       child: Text(l10n.commonDelete),
                     ),
                   ),
-                if (widget.onDelete != null) const SizedBox(width: AppSpacing.sm),
+                if (widget.onDelete != null)
+                  const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: GlassButton(
                     onPressed: _isSaving || !_endsAt.isAfter(_startsAt)
@@ -994,10 +1600,7 @@ class _WindowEditorSheetState extends State<_WindowEditorSheet> {
 }
 
 class _SessionEditorSheet extends StatefulWidget {
-  const _SessionEditorSheet({
-    required this.onSave,
-    this.initialSession,
-  });
+  const _SessionEditorSheet({required this.onSave, this.initialSession});
 
   final Future<void> Function(
     String? title,
@@ -1024,10 +1627,15 @@ class _SessionEditorSheetState extends State<_SessionEditorSheet> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.initialSession?.title);
+    _titleController = TextEditingController(
+      text: widget.initialSession?.title,
+    );
     _gameController = TextEditingController(text: widget.initialSession?.game);
-    _notesController = TextEditingController(text: widget.initialSession?.notes);
-    _startsAt = widget.initialSession?.startsAt.toLocal() ??
+    _notesController = TextEditingController(
+      text: widget.initialSession?.notes,
+    );
+    _startsAt =
+        widget.initialSession?.startsAt.toLocal() ??
         DateTime.now().add(const Duration(days: 1, hours: 2));
     _status = widget.initialSession?.status ?? 'proposed';
   }
@@ -1085,26 +1693,39 @@ class _SessionEditorSheetState extends State<_SessionEditorSheet> {
             ),
             if (widget.initialSession != null) ...[
               const SizedBox(height: AppSpacing.md),
-              DropdownButtonFormField<String>(
-                initialValue: _status,
-                decoration: InputDecoration(
-                  labelText: l10n.groupCoordinationFieldStatus,
-                ),
-                items: [
-                  DropdownMenuItem(
-                    value: 'proposed',
-                    child: Text(l10n.groupCoordinationStatusProposed),
-                  ),
-                  DropdownMenuItem(
-                    value: 'confirmed',
-                    child: Text(l10n.groupCoordinationStatusConfirmed),
-                  ),
-                  DropdownMenuItem(
-                    value: 'cancelled',
-                    child: Text(l10n.groupCoordinationStatusCancelled),
-                  ),
-                ],
-                onChanged: (value) => setState(() => _status = value),
+              Builder(
+                builder: (context) {
+                  final statusOptions = <({String value, String label})>[
+                    (
+                      value: 'proposed',
+                      label: l10n.groupCoordinationStatusProposed,
+                    ),
+                    (
+                      value: 'confirmed',
+                      label: l10n.groupCoordinationStatusConfirmed,
+                    ),
+                    (
+                      value: 'cancelled',
+                      label: l10n.groupCoordinationStatusCancelled,
+                    ),
+                  ];
+
+                  return AppDropdownSelector<String>.field(
+                    value: _status ?? statusOptions.first.value,
+                    labelText: l10n.groupCoordinationFieldStatus,
+                    options: statusOptions
+                        .map(
+                          (option) => AppDropdownOption(
+                            value: option.value,
+                            label: option.label,
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() => _status = value);
+                    },
+                  );
+                },
               ),
             ],
             const SizedBox(height: AppSpacing.lg),
@@ -1112,6 +1733,27 @@ class _SessionEditorSheetState extends State<_SessionEditorSheet> {
               onPressed: _isSaving
                   ? null
                   : () async {
+                      final shouldConfirmCancellation =
+                          widget.initialSession != null &&
+                          widget.initialSession!.status != 'cancelled' &&
+                          _status == 'cancelled';
+                      if (shouldConfirmCancellation) {
+                        final confirmed = await showAppConfirmationDialog(
+                          context,
+                          title: context
+                              .l10n
+                              .groupCoordinationCancelSessionConfirmTitle,
+                          message: context
+                              .l10n
+                              .groupCoordinationCancelSessionConfirmMessage,
+                          confirmLabel: context
+                              .l10n
+                              .groupCoordinationCancelSessionConfirmAction,
+                          cancelLabel: context.l10n.commonCancel,
+                          variant: AppConfirmationVariant.destructive,
+                        );
+                        if (!confirmed || !context.mounted) return;
+                      }
                       final navigator = Navigator.of(context);
                       final l10n = context.l10n;
                       setState(() => _isSaving = true);
@@ -1186,6 +1828,7 @@ class _DateTimeField extends StatelessWidget {
           builder: _pickerThemeBuilder,
         );
         if (pickedTime == null) return;
+        if (!context.mounted) return;
         onChanged(
           DateTime(
             pickedDate.year,
@@ -1195,6 +1838,10 @@ class _DateTimeField extends StatelessWidget {
             pickedTime.minute,
           ),
         );
+        ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(appHapticsProvider).selection();
       },
       child: InputDecorator(
         decoration: InputDecoration(labelText: label),
@@ -1211,9 +1858,7 @@ Widget _pickerThemeBuilder(BuildContext context, Widget? child) {
   final theme = Theme.of(context);
   return Theme(
     data: theme.copyWith(
-      colorScheme: theme.colorScheme.copyWith(
-        onPrimary: AppColors.background,
-      ),
+      colorScheme: theme.colorScheme.copyWith(onPrimary: AppColors.background),
     ),
     child: child ?? const SizedBox.shrink(),
   );
@@ -1231,8 +1876,8 @@ String _formatDayHeading(BuildContext context, DateTime date) {
     DateTime.sunday => context.l10n.daySunShort,
     _ => '',
   };
-  final material = MaterialLocalizations.of(context);
-  return '$weekday, ${material.formatMediumDate(localDate)}';
+  final localeTag = Localizations.localeOf(context).toLanguageTag();
+  return '$weekday, ${DateFormat.MMMd(localeTag).format(localDate)}';
 }
 
 String _formatDateTime(BuildContext context, DateTime dateTime) {
@@ -1268,16 +1913,27 @@ String _rsvpLabel(BuildContext context, String response) {
 
 String _activityLabel(BuildContext context, GroupActivityEvent event) {
   return switch (event.type) {
-    'scheduled_ready_updated' => context.l10n
-        .groupCoordinationActivityScheduledReadyUpdated(event.actorDisplayName),
-    'scheduled_ready_deleted' => context.l10n
-        .groupCoordinationActivityScheduledReadyDeleted(event.actorDisplayName),
-    'session_proposed' => context.l10n
-        .groupCoordinationActivitySessionProposed(event.actorDisplayName),
-    'session_updated' => context.l10n
-        .groupCoordinationActivitySessionUpdated(event.actorDisplayName),
-    'session_rsvp_updated' => context.l10n
-        .groupCoordinationActivitySessionRsvpUpdated(event.actorDisplayName),
+    'scheduled_ready_updated' =>
+      context.l10n.groupCoordinationActivityScheduledReadyUpdated(
+        event.actorDisplayName,
+      ),
+    'scheduled_ready_deleted' =>
+      context.l10n.groupCoordinationActivityScheduledReadyDeleted(
+        event.actorDisplayName,
+      ),
+    'session_proposed' => context.l10n.groupCoordinationActivitySessionProposed(
+      event.actorDisplayName,
+    ),
+    'session_updated' => context.l10n.groupCoordinationActivitySessionUpdated(
+      event.actorDisplayName,
+    ),
+    'session_deleted' => context.l10n.groupCoordinationActivitySessionDeleted(
+      event.actorDisplayName,
+    ),
+    'session_rsvp_updated' =>
+      context.l10n.groupCoordinationActivitySessionRsvpUpdated(
+        event.actorDisplayName,
+      ),
     _ => event.message,
   };
 }

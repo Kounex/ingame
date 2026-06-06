@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +32,27 @@ class _RecordingProfileNotifier extends ProfileNotifier {
   }
 }
 
+class _DelayedProfileNotifier extends ProfileNotifier {
+  _DelayedProfileNotifier(this._profileCompleter);
+
+  final Completer<User?> _profileCompleter;
+  Map<String, dynamic>? lastUpdates;
+  int updateCalls = 0;
+
+  @override
+  Future<User?> build() => _profileCompleter.future;
+
+  @override
+  Future<void> updateProfile(Map<String, dynamic> updates) async {
+    updateCalls++;
+    lastUpdates = updates;
+  }
+}
+
 void main() {
   Future<void> pumpEditProfile(
     WidgetTester tester, {
-    required _RecordingProfileNotifier profileNotifier,
+    required ProfileNotifier profileNotifier,
   }) async {
     final router = GoRouter(
       routes: [
@@ -62,9 +81,10 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
     router.push('/edit');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
   }
 
   testWidgets('profile edit saves per-day preset slots', (tester) async {
@@ -112,5 +132,35 @@ void main() {
         {'start': '18:00', 'end': '00:00'},
       ],
     });
+  });
+
+  testWidgets('profile edit waits for profile hydration before showing save', (
+    tester,
+  ) async {
+    final completer = Completer<User?>();
+    final profileNotifier = _DelayedProfileNotifier(completer);
+
+    await pumpEditProfile(tester, profileNotifier: profileNotifier);
+
+    expect(
+      find.byKey(const Key('edit-profile-loading-indicator')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('edit-profile-save-button')), findsNothing);
+
+    completer.complete(
+      const User(
+        id: 'user-2',
+        displayName: 'Late Loader',
+        bio: 'Loaded after route entry',
+        timezone: 'Europe/Berlin',
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('edit-profile-save-button')), findsOneWidget);
+    expect(find.text('Late Loader'), findsWidgets);
+    expect(find.text('Loaded after route entry'), findsOneWidget);
   });
 }

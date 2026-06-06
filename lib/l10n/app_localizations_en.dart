@@ -156,6 +156,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClose => 'Close';
 
   @override
+  String get commonViewDetails => 'View details';
+
+  @override
   String get navigationGroups => 'Groups';
 
   @override
@@ -379,6 +382,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupDirectoryRequestJoinAction => 'Request to Join';
 
   @override
+  String get groupDirectoryRequestSentAction => 'Request Sent';
+
+  @override
   String get joinGroupTitle => 'Join Group';
 
   @override
@@ -405,6 +411,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get joinGroupButton => 'Join Group';
+
+  @override
+  String get joinGroupRequestSentButton => 'Request Sent';
 
   @override
   String get inviteCodeTitle => 'Invite Code';
@@ -464,6 +473,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLogout => 'Logout';
+
+  @override
+  String get profileLogoutConfirmTitle => 'Log out?';
+
+  @override
+  String get profileLogoutConfirmMessage => 'You\'ll need to sign in again to access your groups and profile.';
 
   @override
   String get profileSectionAccount => 'Account';
@@ -905,6 +920,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupDetailReadyToggleReconnectingHint => 'Reconnecting…';
 
   @override
+  String get groupDetailReadyConfirmTitle => 'Turn on ready status?';
+
+  @override
+  String get groupDetailReadyConfirmMessage => 'Your group will see that you\'re ready to play right now.';
+
+  @override
+  String get groupDetailReadyConfirmAction => 'Turn On';
+
+  @override
   String get groupDetailCoordinationTitle => 'Plan together';
 
   @override
@@ -952,6 +976,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupCoordinationCalendarEmptyRange => 'No ready windows in this range.';
 
   @override
+  String get groupCoordinationUpcomingWindowsTitle => 'Upcoming windows';
+
+  @override
+  String get groupCoordinationUpcomingWindowsEmpty => 'No upcoming ready windows.';
+
+  @override
+  String get groupCoordinationUpcomingWindowsSheetTitle => 'All upcoming windows';
+
+  @override
+  String groupCoordinationUpcomingWindowsViewAll(int count) {
+    return 'View all ($count more)';
+  }
+
+  @override
   String get groupCoordinationCalendarThisWeek => 'This Week';
 
   @override
@@ -987,10 +1025,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupCoordinationEditWindowTitle => 'Edit ready window';
 
   @override
+  String get groupCoordinationDeleteWindowConfirmTitle => 'Delete ready window?';
+
+  @override
+  String get groupCoordinationDeleteWindowConfirmMessage => 'This scheduled ready window will be removed for everyone in the group.';
+
+  @override
   String get groupCoordinationAddSessionTitle => 'Propose session';
 
   @override
   String get groupCoordinationEditSessionTitle => 'Edit session';
+
+  @override
+  String get groupCoordinationEditSessionAction => 'Edit Session';
+
+  @override
+  String get groupCoordinationDeleteSessionAction => 'Delete Session';
+
+  @override
+  String get groupCoordinationDeleteSessionConfirmTitle => 'Delete session?';
+
+  @override
+  String get groupCoordinationDeleteSessionConfirmMessage => 'This planned session will be removed for everyone in the group.';
 
   @override
   String get groupCoordinationStartsAt => 'Starts';
@@ -1020,6 +1076,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupCoordinationStatusCancelled => 'Cancelled';
 
   @override
+  String get groupCoordinationCancelSessionConfirmTitle => 'Cancel session?';
+
+  @override
+  String get groupCoordinationCancelSessionConfirmMessage => 'Everyone in the group will see that this session was cancelled.';
+
+  @override
+  String get groupCoordinationCancelSessionConfirmAction => 'Cancel Session';
+
+  @override
   String get groupCoordinationRsvpIn => 'In';
 
   @override
@@ -1030,6 +1095,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupCoordinationRsvpUpdating => 'Updating RSVP...';
+
+  @override
+  String get groupCoordinationYourResponseTitle => 'Your response';
+
+  @override
+  String get groupCoordinationResponsesTitle => 'Responses';
+
+  @override
+  String get groupCoordinationResponsesEmpty => 'No responses yet.';
 
   @override
   String get groupCoordinationOwnedByYou => 'You';
@@ -1060,6 +1134,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String groupCoordinationActivitySessionUpdated(String displayName) {
     return '$displayName updated a session';
+  }
+
+  @override
+  String groupCoordinationActivitySessionDeleted(String displayName) {
+    return '$displayName removed a session';
   }
 
   @override

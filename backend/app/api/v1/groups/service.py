@@ -81,7 +81,13 @@ async def list_discoverable_groups(
     results = []
     for g in groups:
         count = await repo.get_member_count(g.id)
-        results.append({**_group_to_dict(g), "member_count": count})
+        pending = await repo.has_pending_request(g.id, user_id)
+        results.append(
+            {
+                **_group_to_dict(g, has_pending_join_request=pending),
+                "member_count": count,
+            }
+        )
     return results
 
 
@@ -128,12 +134,18 @@ async def join_by_invite_code(db: AsyncSession, code: str, user: User):
             code=ErrorCode.GROUP_MEMBER_ALREADY_EXISTS,
         )
 
+    if group.join_mode == "approval":
+        raise ForbiddenError(
+            "This group requires approval before joining",
+            code=ErrorCode.JOIN_REQUEST_REQUIRED,
+        )
+
     await repo.add_member(group.id, user.id, role="member")
     member_count = await repo.get_member_count(group.id)
     return {**_group_to_dict(group), "member_count": member_count}
 
 
-async def preview_group_by_invite_code(db: AsyncSession, code: str):
+async def preview_group_by_invite_code(db: AsyncSession, code: str, user: User):
     repo = GroupRepository(db)
     group = await repo.get_by_invite_code(code)
     if group is None:
@@ -143,7 +155,11 @@ async def preview_group_by_invite_code(db: AsyncSession, code: str):
         )
 
     member_count = await repo.get_member_count(group.id)
-    return {**_group_to_dict(group), "member_count": member_count}
+    pending = await repo.has_pending_request(group.id, user.id)
+    return {
+        **_group_to_dict(group, has_pending_join_request=pending),
+        "member_count": member_count,
+    }
 
 
 async def add_member(
@@ -330,7 +346,7 @@ async def _ensure_member(
     return group
 
 
-def _group_to_dict(group) -> dict:
+def _group_to_dict(group, *, has_pending_join_request: bool = False) -> dict:
     return {
         "id": group.id,
         "name": group.name,
@@ -342,4 +358,5 @@ def _group_to_dict(group) -> dict:
         "created_by": group.created_by,
         "created_at": group.created_at,
         "updated_at": group.updated_at,
+        "has_pending_join_request": has_pending_join_request,
     }

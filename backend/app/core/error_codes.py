@@ -45,6 +45,9 @@ class ErrorCode(str, Enum):
     JOIN_REQUEST_NOT_FOUND = "join_request.not_found"
     JOIN_REQUEST_PENDING_ALREADY_EXISTS = "join_request.pending_already_exists"
     JOIN_REQUEST_ADMIN_OR_OWNER_REQUIRED = "join_request.admin_or_owner_required"
+    JOIN_REQUEST_REQUIRED = "join_request.required"
+    JOIN_REQUEST_NOT_REQUIRED = "join_request.not_required"
+    JOIN_REQUEST_ALREADY_RESOLVED = "join_request.already_resolved"
 
     COORDINATION_WINDOW_NOT_FOUND = "coordination.window_not_found"
     COORDINATION_WINDOW_EDIT_FORBIDDEN = "coordination.window_edit_forbidden"

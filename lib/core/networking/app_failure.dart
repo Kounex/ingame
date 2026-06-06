@@ -41,11 +41,13 @@ sealed class AppFailure {
       'user.steam_account_already_linked' ||
       'user.apple_account_already_linked' ||
       'group.member_already_exists' ||
-      'join_request.pending_already_exists' => l10n.errorAlreadyExists,
+      'join_request.pending_already_exists' ||
+      'join_request.already_resolved' => l10n.errorAlreadyExists,
       'group.delete_requires_owner' ||
       'group.owner_required' ||
       'group.admin_or_owner_required' ||
       'join_request.admin_or_owner_required' => l10n.errorNoPermission,
+      'join_request.required' => l10n.joinGroupApprovalRequired,
       'group.owner_cannot_leave' => l10n.groupOwnerCannotLeave,
       'group.invite_code_invalid' ||
       'group.not_found' ||
@@ -55,6 +57,9 @@ sealed class AppFailure {
       'auth.apple_token_invalid' ||
       'group.invalid_role_change' ||
       'group.transfer_invalid_target' ||
+      'coordination.window_time_invalid' ||
+      'coordination.session_time_invalid' ||
+      'join_request.not_required' ||
       'user.email_password_already_set' => l10n.errorCheckInput,
       'user.last_auth_method_required' => l10n.profileLastAuthMethodRequired,
       'user.avatar_upload_unavailable' => l10n.errorServer,

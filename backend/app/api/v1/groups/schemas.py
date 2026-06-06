@@ -16,6 +16,7 @@ class GroupResponse(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
     member_count: int = 0
+    has_pending_join_request: bool = False
 
     model_config = {"from_attributes": True}
 

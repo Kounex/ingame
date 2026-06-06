@@ -139,6 +139,18 @@ async def update_session(
     return response
 
 
+@router.delete("/{group_id}/sessions/{session_id}", status_code=204)
+async def delete_session(
+    group_id: uuid.UUID,
+    session_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    hooks = await service.delete_session(db, group_id, session_id, current_user)
+    await db.commit()
+    await service.publish_after_commit(hooks)
+
+
 @router.post("/{group_id}/sessions/{session_id}/rsvp", response_model=SessionRsvpResponse)
 async def rsvp_session(
     group_id: uuid.UUID,

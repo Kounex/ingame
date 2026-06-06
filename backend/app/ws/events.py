@@ -15,6 +15,7 @@ class EventType(str, Enum):
     SCHEDULED_READY_DELETED = "scheduled_ready_deleted"
     SESSION_PROPOSED = "session_proposed"
     SESSION_UPDATED = "session_updated"
+    SESSION_DELETED = "session_deleted"
     SESSION_RSVP_UPDATED = "session_rsvp_updated"
     ACTIVITY_RECORDED = "activity_recorded"
 
@@ -88,6 +89,11 @@ class SessionProposedEvent(BaseEvent):
 class SessionUpdatedEvent(BaseEvent):
     type: EventType = EventType.SESSION_UPDATED
     session: dict
+
+
+class SessionDeletedEvent(BaseEvent):
+    type: EventType = EventType.SESSION_DELETED
+    session_id: uuid.UUID
 
 
 class SessionRsvpUpdatedEvent(BaseEvent):

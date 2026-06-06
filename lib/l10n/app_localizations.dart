@@ -377,6 +377,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonClose;
 
+  /// No description provided for @commonViewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get commonViewDetails;
+
   /// No description provided for @navigationGroups.
   ///
   /// In en, this message translates to:
@@ -815,6 +821,12 @@ abstract class AppLocalizations {
   /// **'Request to Join'**
   String get groupDirectoryRequestJoinAction;
 
+  /// No description provided for @groupDirectoryRequestSentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Sent'**
+  String get groupDirectoryRequestSentAction;
+
   /// No description provided for @joinGroupTitle.
   ///
   /// In en, this message translates to:
@@ -862,6 +874,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Join Group'**
   String get joinGroupButton;
+
+  /// No description provided for @joinGroupRequestSentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Sent'**
+  String get joinGroupRequestSentButton;
 
   /// No description provided for @inviteCodeTitle.
   ///
@@ -976,6 +994,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logout'**
   String get profileLogout;
+
+  /// No description provided for @profileLogoutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out?'**
+  String get profileLogoutConfirmTitle;
+
+  /// No description provided for @profileLogoutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll need to sign in again to access your groups and profile.'**
+  String get profileLogoutConfirmMessage;
 
   /// No description provided for @profileSectionAccount.
   ///
@@ -1763,6 +1793,24 @@ abstract class AppLocalizations {
   /// **'Reconnecting…'**
   String get groupDetailReadyToggleReconnectingHint;
 
+  /// No description provided for @groupDetailReadyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on ready status?'**
+  String get groupDetailReadyConfirmTitle;
+
+  /// No description provided for @groupDetailReadyConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your group will see that you\'re ready to play right now.'**
+  String get groupDetailReadyConfirmMessage;
+
+  /// No description provided for @groupDetailReadyConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn On'**
+  String get groupDetailReadyConfirmAction;
+
   /// No description provided for @groupDetailCoordinationTitle.
   ///
   /// In en, this message translates to:
@@ -1841,6 +1889,30 @@ abstract class AppLocalizations {
   /// **'No ready windows in this range.'**
   String get groupCoordinationCalendarEmptyRange;
 
+  /// No description provided for @groupCoordinationUpcomingWindowsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming windows'**
+  String get groupCoordinationUpcomingWindowsTitle;
+
+  /// No description provided for @groupCoordinationUpcomingWindowsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming ready windows.'**
+  String get groupCoordinationUpcomingWindowsEmpty;
+
+  /// No description provided for @groupCoordinationUpcomingWindowsSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All upcoming windows'**
+  String get groupCoordinationUpcomingWindowsSheetTitle;
+
+  /// No description provided for @groupCoordinationUpcomingWindowsViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all ({count} more)'**
+  String groupCoordinationUpcomingWindowsViewAll(int count);
+
   /// No description provided for @groupCoordinationCalendarThisWeek.
   ///
   /// In en, this message translates to:
@@ -1907,6 +1979,18 @@ abstract class AppLocalizations {
   /// **'Edit ready window'**
   String get groupCoordinationEditWindowTitle;
 
+  /// No description provided for @groupCoordinationDeleteWindowConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ready window?'**
+  String get groupCoordinationDeleteWindowConfirmTitle;
+
+  /// No description provided for @groupCoordinationDeleteWindowConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This scheduled ready window will be removed for everyone in the group.'**
+  String get groupCoordinationDeleteWindowConfirmMessage;
+
   /// No description provided for @groupCoordinationAddSessionTitle.
   ///
   /// In en, this message translates to:
@@ -1918,6 +2002,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit session'**
   String get groupCoordinationEditSessionTitle;
+
+  /// No description provided for @groupCoordinationEditSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Session'**
+  String get groupCoordinationEditSessionAction;
+
+  /// No description provided for @groupCoordinationDeleteSessionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Session'**
+  String get groupCoordinationDeleteSessionAction;
+
+  /// No description provided for @groupCoordinationDeleteSessionConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete session?'**
+  String get groupCoordinationDeleteSessionConfirmTitle;
+
+  /// No description provided for @groupCoordinationDeleteSessionConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This planned session will be removed for everyone in the group.'**
+  String get groupCoordinationDeleteSessionConfirmMessage;
 
   /// No description provided for @groupCoordinationStartsAt.
   ///
@@ -1973,6 +2081,24 @@ abstract class AppLocalizations {
   /// **'Cancelled'**
   String get groupCoordinationStatusCancelled;
 
+  /// No description provided for @groupCoordinationCancelSessionConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel session?'**
+  String get groupCoordinationCancelSessionConfirmTitle;
+
+  /// No description provided for @groupCoordinationCancelSessionConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone in the group will see that this session was cancelled.'**
+  String get groupCoordinationCancelSessionConfirmMessage;
+
+  /// No description provided for @groupCoordinationCancelSessionConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Session'**
+  String get groupCoordinationCancelSessionConfirmAction;
+
   /// No description provided for @groupCoordinationRsvpIn.
   ///
   /// In en, this message translates to:
@@ -1996,6 +2122,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Updating RSVP...'**
   String get groupCoordinationRsvpUpdating;
+
+  /// No description provided for @groupCoordinationYourResponseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your response'**
+  String get groupCoordinationYourResponseTitle;
+
+  /// No description provided for @groupCoordinationResponsesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Responses'**
+  String get groupCoordinationResponsesTitle;
+
+  /// No description provided for @groupCoordinationResponsesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No responses yet.'**
+  String get groupCoordinationResponsesEmpty;
 
   /// No description provided for @groupCoordinationOwnedByYou.
   ///
@@ -2038,6 +2182,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{displayName} updated a session'**
   String groupCoordinationActivitySessionUpdated(String displayName);
+
+  /// No description provided for @groupCoordinationActivitySessionDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} removed a session'**
+  String groupCoordinationActivitySessionDeleted(String displayName);
 
   /// No description provided for @groupCoordinationActivitySessionRsvpUpdated.
   ///

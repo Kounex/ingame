@@ -251,6 +251,58 @@ async def test_owner_can_update_another_members_session(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_session_delete_removes_it_from_list_and_records_activity(client: AsyncClient):
+    group_id, owner_token, _ = await _create_group_with_member(client)
+    starts_at = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=2)
+    session = await _create_session(
+        client,
+        group_id=group_id,
+        token=owner_token,
+        starts_at=starts_at,
+    )
+
+    delete_resp = await client.delete(
+        f"/api/v1/groups/{group_id}/sessions/{session['id']}",
+        headers=_auth(owner_token),
+    )
+    assert delete_resp.status_code == 204
+
+    list_resp = await client.get(
+        f"/api/v1/groups/{group_id}/sessions",
+        headers=_auth(owner_token),
+    )
+    assert list_resp.status_code == 200
+    assert list_resp.json() == []
+
+    activity_resp = await client.get(
+        f"/api/v1/groups/{group_id}/activity",
+        headers=_auth(owner_token),
+    )
+    assert activity_resp.status_code == 200
+    activity_types = [item["type"] for item in activity_resp.json()]
+    assert "session_deleted" in activity_types
+
+
+@pytest.mark.asyncio
+async def test_member_cannot_delete_someone_elses_session(client: AsyncClient):
+    group_id, owner_token, member_token = await _create_group_with_member(client)
+    starts_at = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=2)
+    session = await _create_session(
+        client,
+        group_id=group_id,
+        token=owner_token,
+        starts_at=starts_at,
+    )
+
+    delete_resp = await client.delete(
+        f"/api/v1/groups/{group_id}/sessions/{session['id']}",
+        headers=_auth(member_token),
+    )
+
+    assert delete_resp.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_non_member_cannot_access_group_coordination(client: AsyncClient):
     group_id, owner_token, _ = await _create_group_with_member(client)
     outsider_token = await _register_and_get_token(

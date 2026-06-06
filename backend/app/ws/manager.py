@@ -19,6 +19,7 @@ from app.ws.events import (
     PresenceSnapshotEvent,
     ScheduledReadyDeletedEvent,
     ScheduledReadyUpdatedEvent,
+    SessionDeletedEvent,
     SessionProposedEvent,
     SessionRsvpUpdatedEvent,
     SessionUpdatedEvent,
@@ -171,6 +172,14 @@ class ConnectionManager:
     async def publish_session_updated(self, session: dict) -> None:
         group_id = session["group_id"]
         event = SessionUpdatedEvent(group_id=uuid.UUID(group_id), session=session)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_session_deleted(self, payload: dict) -> None:
+        group_id = payload["group_id"]
+        event = SessionDeletedEvent(
+            group_id=uuid.UUID(group_id),
+            session_id=uuid.UUID(payload["session_id"]),
+        )
         await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
 
     async def publish_session_rsvp_updated(self, group_id: str, rsvp: dict) -> None:

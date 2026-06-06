@@ -56,10 +56,10 @@ async def discover_groups(
 @router.get("/join/{code}", response_model=GroupResponse)
 async def preview_group_by_invite_code(
     code: str,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.preview_group_by_invite_code(db, code)
+    return await service.preview_group_by_invite_code(db, code, current_user)
 
 
 @router.get("/{group_id}", response_model=GroupResponse)

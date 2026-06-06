@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/glass_components.dart';
 import '../../core/theme/spacing.dart';
 import '../../core/utils/extensions.dart';
+import '../services/app_haptics.dart';
 
 const weeklyAvailabilityDayOrder = <String>[
   'monday',
@@ -212,7 +214,7 @@ IconData weeklyAvailabilityPresetIcon(String preset) {
   };
 }
 
-class WeeklyAvailabilityEditor extends StatefulWidget {
+class WeeklyAvailabilityEditor extends ConsumerStatefulWidget {
   const WeeklyAvailabilityEditor({
     super.key,
     this.initialHours,
@@ -225,11 +227,12 @@ class WeeklyAvailabilityEditor extends StatefulWidget {
   final bool showTitle;
 
   @override
-  State<WeeklyAvailabilityEditor> createState() =>
+  ConsumerState<WeeklyAvailabilityEditor> createState() =>
       _WeeklyAvailabilityEditorState();
 }
 
-class _WeeklyAvailabilityEditorState extends State<WeeklyAvailabilityEditor> {
+class _WeeklyAvailabilityEditorState
+    extends ConsumerState<WeeklyAvailabilityEditor> {
   late Map<String, Set<String>> _selectedByDay;
 
   @override
@@ -238,7 +241,7 @@ class _WeeklyAvailabilityEditorState extends State<WeeklyAvailabilityEditor> {
     _selectedByDay = decodeWeeklyAvailabilityHours(widget.initialHours);
   }
 
-  void _togglePreset(String day, String preset) {
+  Future<void> _togglePreset(String day, String preset) async {
     final next = <String, Set<String>>{
       for (final entry in _selectedByDay.entries)
         entry.key: Set<String>.from(entry.value),
@@ -268,6 +271,7 @@ class _WeeklyAvailabilityEditorState extends State<WeeklyAvailabilityEditor> {
       _selectedByDay = next;
     });
     widget.onChanged?.call(buildWeeklyAvailabilityHours(next));
+    await ref.read(appHapticsProvider).selection();
   }
 
   bool _isSelected(String day, String preset) {
@@ -334,6 +338,7 @@ class _WeeklyAvailabilityEditorState extends State<WeeklyAvailabilityEditor> {
                           key: Key('weekly-availability-chip-$day-$preset'),
                           selected: _isSelected(day, preset),
                           onSelected: (_) => _togglePreset(day, preset),
+                          showCheckmark: false,
                           avatar: Icon(
                             weeklyAvailabilityPresetIcon(preset),
                             size: 18,

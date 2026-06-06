@@ -52,7 +52,10 @@ class _DelayedAuthRepository extends AuthRepository {
   }
 
   @override
-  Future<bool> checkDisplayNameAvailable(String displayName) async => true;
+  Future<bool> checkDisplayNameAvailable(String displayName) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    return true;
+  }
 }
 
 Future<void> _pumpRegisterScreen(
@@ -164,4 +167,37 @@ void main() {
       lessThan(600),
     );
   });
+
+  testWidgets(
+    'register disables submit while availability checks are pending',
+    (tester) async {
+      await _pumpRegisterScreen(
+        tester,
+        authRepository: _DelayedAuthRepository(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'Ready Player');
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'ready@test.com',
+      );
+      await tester.enterText(find.byType(TextFormField).at(2), 'securepass123');
+      await tester.enterText(find.byType(TextFormField).at(3), 'securepass123');
+      await tester.pump();
+
+      final button = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Create Account'),
+      );
+      expect(button.onPressed, isNull);
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      final enabledButton = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Create Account'),
+      );
+      expect(enabledButton.onPressed, isNotNull);
+    },
+  );
 }

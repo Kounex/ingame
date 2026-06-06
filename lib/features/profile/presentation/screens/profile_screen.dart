@@ -14,12 +14,16 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/app_background.dart';
+import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/language_switcher.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../../../shared/widgets/weekly_availability_editor.dart';
+import '../../../../shared/widgets/app_chip.dart';
+import '../../../../shared/widgets/app_list_row.dart';
+import '../../../../shared/services/app_haptics.dart';
 
 import '../../../auth/data/oauth_launcher.dart';
 import '../../../auth/domain/user_model.dart';
@@ -125,9 +129,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.sm),
                     GlassButton(
                       variant: GlassButtonVariant.ghost,
-                      onPressed: () async {
-                        await ref.read(authNotifierProvider.notifier).logout();
-                      },
+                      onPressed: () => _confirmLogout(context, ref),
                       child: Text(
                         context.l10n.profileLogout,
                         style: const TextStyle(color: AppColors.error),
@@ -142,6 +144,21 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.profileLogoutConfirmTitle,
+      message: context.l10n.profileLogoutConfirmMessage,
+      confirmLabel: context.l10n.profileLogout,
+      cancelLabel: context.l10n.commonCancel,
+      variant: AppConfirmationVariant.destructive,
+    );
+    if (!confirmed) return;
+
+    await ref.read(authNotifierProvider.notifier).logout();
+    await ref.read(appHapticsProvider).destructiveConfirm();
   }
 }
 
@@ -252,14 +269,15 @@ class _GamingHoursCard extends StatelessWidget {
     return '$start-$end';
   }
 
-  String _readableTime(String t) {
-    if (t == '00:00') return '12 AM';
+  String _readableTime(BuildContext context, String t) {
     final parts = t.split(':');
     final hour = int.tryParse(parts[0]) ?? 0;
-    if (hour == 0) return '12 AM';
-    if (hour == 12) return '12 PM';
-    if (hour > 12) return '${hour - 12} PM';
-    return '$hour AM';
+    final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    return MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay(hour: hour, minute: minute),
+      alwaysUse24HourFormat:
+          MediaQuery.maybeOf(context)?.alwaysUse24HourFormat ?? false,
+    );
   }
 
   List<_ScheduleGroup> _buildGroups(BuildContext context) {
@@ -295,7 +313,7 @@ class _GamingHoursCard extends StatelessWidget {
               final name = _slotName(context, key);
               if (name != null) return name;
               final parts = key.split('-');
-              return '${_readableTime(parts[0])} – ${_readableTime(parts[1])}';
+              return '${_readableTime(context, parts[0])} – ${_readableTime(context, parts[1])}';
             }).toList();
       return _ScheduleGroup(
         days: e.value,
@@ -449,34 +467,7 @@ class _SlotChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm + 2,
-        vertical: AppSpacing.xs + 2,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 14, color: AppColors.primary),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+    return AppChip.accent(label: label, icon: icon, color: AppColors.primary);
   }
 }
 
@@ -572,6 +563,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             ),
           );
         }
+        await ref.read(appHapticsProvider).destructiveConfirm();
       } catch (e) {
         if (context.mounted) {
           AppToast.error(
@@ -592,6 +584,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileSteamLinkedSuccess);
         }
+        await ref.read(appHapticsProvider).success();
       } catch (e) {
         if (!context.mounted) return;
         final msg = OAuthLauncher.toFailure(e).userMessage(context.l10n);
@@ -623,6 +616,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
           context.l10n.profileEmailPasswordAddedSuccess,
         );
       }
+      await ref.read(appHapticsProvider).success();
     } catch (e) {
       if (context.mounted) {
         AppToast.error(
@@ -658,6 +652,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
             ),
           );
         }
+        await ref.read(appHapticsProvider).destructiveConfirm();
       } catch (e) {
         if (context.mounted) {
           AppToast.error(
@@ -692,6 +687,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileAppleLinkedSuccess);
         }
+        await ref.read(appHapticsProvider).success();
       } catch (e) {
         if (!context.mounted) return;
         AppToast.error(
@@ -976,45 +972,30 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.glassSurfaceLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 16, color: AppColors.textTertiary),
-          ),
-          const SizedBox(width: AppSpacing.sm + 4),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textTertiary,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
+    return AppListRow(
+      contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
+      gap: AppSpacing.sm + 4,
+      leading: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: AppColors.glassSurfaceLight,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 16, color: AppColors.textTertiary),
+      ),
+      title: Text(
+        label,
+        style: const TextStyle(color: AppColors.textTertiary, fontSize: 11),
+      ),
+      subtitle: Text(
+        value,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

@@ -11,10 +11,7 @@ void main() {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          expect(
-            options.path,
-            ApiEndpoints.groupScheduledReady('group-1'),
-          );
+          expect(options.path, ApiEndpoints.groupScheduledReady('group-1'));
           handler.resolve(Response(requestOptions: options, data: const []));
         },
       ),
@@ -73,7 +70,10 @@ void main() {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          expect(options.path, ApiEndpoints.groupSession('group-1', 'session-1'));
+          expect(
+            options.path,
+            ApiEndpoints.groupSession('group-1', 'session-1'),
+          );
           expect(options.data['notes'], 'Voice chat in Discord');
           expect(options.data['status'], 'confirmed');
           handler.resolve(
@@ -137,6 +137,26 @@ void main() {
     );
 
     await repository.rsvpToSession('group-1', 'session-1', 'maybe');
+  });
+
+  test('deleteSession uses the group session endpoint', () async {
+    final dio = Dio();
+    final repository = GroupCoordinationRepository(dio: dio);
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          expect(
+            options.path,
+            ApiEndpoints.groupSession('group-1', 'session-1'),
+          );
+          expect(options.method, 'DELETE');
+          handler.resolve(Response(requestOptions: options, statusCode: 204));
+        },
+      ),
+    );
+
+    await repository.deleteSession('group-1', 'session-1');
   });
 
   test('listActivity uses the activity endpoint', () async {

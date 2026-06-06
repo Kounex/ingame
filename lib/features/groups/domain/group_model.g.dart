@@ -16,6 +16,7 @@ _Group _$GroupFromJson(Map<String, dynamic> json) => _Group(
   avatarUrl: json['avatar_url'] as String?,
   createdBy: json['created_by'] as String,
   memberCount: (json['member_count'] as num).toInt(),
+  hasPendingJoinRequest: json['has_pending_join_request'] as bool? ?? false,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -34,6 +35,7 @@ Map<String, dynamic> _$GroupToJson(_Group instance) => <String, dynamic>{
   'avatar_url': instance.avatarUrl,
   'created_by': instance.createdBy,
   'member_count': instance.memberCount,
+  'has_pending_join_request': instance.hasPendingJoinRequest,
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
 };

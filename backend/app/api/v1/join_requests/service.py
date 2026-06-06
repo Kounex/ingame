@@ -15,14 +15,39 @@ async def create_request(db: AsyncSession, group_id: uuid.UUID, user: User):
     if group is None:
         raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
 
-    existing_membership = await repo.get_membership(group_id, user.id)
+    if not group.is_discoverable:
+        raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
+
+    return await _create_request_for_group(repo, group, user)
+
+
+async def create_request_by_invite_code(db: AsyncSession, code: str, user: User):
+    repo = GroupRepository(db)
+    group = await repo.get_by_invite_code(code)
+    if group is None:
+        raise NotFoundError(
+            "Invite code is invalid",
+            code=ErrorCode.GROUP_INVITE_CODE_INVALID,
+        )
+
+    return await _create_request_for_group(repo, group, user)
+
+
+async def _create_request_for_group(repo: GroupRepository, group, user: User):
+    if group.join_mode != "approval":
+        raise ConflictError(
+            "This group does not require join requests",
+            code=ErrorCode.JOIN_REQUEST_NOT_REQUIRED,
+        )
+
+    existing_membership = await repo.get_membership(group.id, user.id)
     if existing_membership:
         raise ConflictError(
             "Already a member of this group",
             code=ErrorCode.GROUP_MEMBER_ALREADY_EXISTS,
         )
 
-    pending = await repo.list_pending_requests(group_id)
+    pending = await repo.list_pending_requests(group.id)
     for req in pending:
         if req.user_id == user.id:
             raise ConflictError(
@@ -30,7 +55,7 @@ async def create_request(db: AsyncSession, group_id: uuid.UUID, user: User):
                 code=ErrorCode.JOIN_REQUEST_PENDING_ALREADY_EXISTS,
             )
 
-    join_request = await repo.create_join_request(group_id, user.id)
+    join_request = await repo.create_join_request(group.id, user.id)
 
     return {
         "id": join_request.id,
@@ -98,6 +123,21 @@ async def resolve_request(
         raise ForbiddenError(
             "Only admins/owners can resolve join requests",
             code=ErrorCode.JOIN_REQUEST_ADMIN_OR_OWNER_REQUIRED,
+        )
+
+    if join_request.status != "pending":
+        raise ConflictError(
+            "Join request has already been resolved",
+            code=ErrorCode.JOIN_REQUEST_ALREADY_RESOLVED,
+        )
+
+    requester_membership = await repo.get_membership(
+        join_request.group_id, join_request.user_id
+    )
+    if status == "approved" and requester_membership is not None:
+        raise ConflictError(
+            "Already a member of this group",
+            code=ErrorCode.GROUP_MEMBER_ALREADY_EXISTS,
         )
 
     resolved = await repo.resolve_join_request(request_id, status, user.id)

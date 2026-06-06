@@ -1,45 +1,43 @@
 ---
-description: Always evaluate whether new UI patterns should be extracted into reusable widgets
+description: Evaluate repeated UI patterns with primitive/composite/domain widget thresholds
 globs: ["lib/**/*.dart"]
 ---
 
 # Reusable Widget Check — MANDATORY
 
-Before writing or duplicating any UI pattern, ask: **"Will this pattern appear more than once?"**
+Before writing or duplicating UI, ask two questions:
 
-## When to Extract
+1. Does a similar shared widget already exist?
+2. Is this a reusable primitive, a shared layout shell, or a feature/domain control?
 
-Extract a reusable widget when ANY of these are true:
+## Use These Levels
 
-- The same widget tree (3+ widgets deep) appears in **2 or more places**
-- You're wrapping a Flutter primitive with project-specific defaults (e.g., `GestureDetector` + `MouseRegion` → `Tappable`)
-- A widget encapsulates a **brand element** (logo, color scheme, typography pattern)
-- A widget combines **behavior + styling** that would need to stay consistent (e.g., glass card, status indicator)
-- You're about to copy-paste and tweak — stop and extract instead
+- `lib/core/theme/` for design-system primitives: buttons, cards, inputs, chips, selector shells
+- `lib/shared/widgets/` for cross-feature composites: settings rows, list rows, confirmation helpers
+- `lib/features/<feature>/presentation/widgets/` for domain widgets that are reused inside one feature
 
-## Where to Put Reusable Widgets
+## Extract When
 
-- `lib/shared/widgets/` — cross-feature widgets (e.g., `Tappable`, `InGameLogo`, `StatusIndicator`)
-- `lib/core/theme/` — design system primitives (e.g., `GlassCard`, `GlassButton`, `GlassInput`)
-- `lib/features/<feature>/presentation/widgets/` — feature-scoped widgets reused within that feature only
+Extract a shared widget when ANY of these are true:
 
-## Checklist (run mentally before writing UI code)
+- the same widget tree or visual shell appears in 2+ places
+- you are wrapping a Flutter primitive with the same project defaults repeatedly
+- behavior + styling must stay consistent across screens
+- you are about to copy-paste and tweak instead of reuse
 
-1. Does a similar widget already exist in `shared/widgets/` or `core/theme/`? → **Use it**
-2. Am I repeating a pattern from another screen/widget? → **Extract it**
-3. Am I wrapping a Flutter primitive with the same config every time? → **Create a project wrapper**
-4. Does this widget represent a brand/design element? → **Make it reusable from the start**
+## Do Not Over-Abstract
 
-## Existing Reusable Widgets (check before creating new ones)
+Do NOT force one generic widget across controls that only share rough shape.
 
-- `Tappable` — pointer cursor + tap handler (replaces raw `GestureDetector`)
-- `InGameLogo` — brand logo with gradient, 3 sizes
-- `AppToast` — shared glass-styled success/error/info/warning feedback
-- `GlassCard`, `GlassButton`, `GlassInput` — design system primitives
-- `GlassAppBar`, `GlassBottomNav` — navigation components
-- `AdaptiveShell` — responsive layout shell
-- `StatusIndicator` — user status dot with pulse animation
-- `UserAvatar` — avatar with fallback initials
-- `AvatarPicker` — tappable avatar with camera overlay
-- `SocialLoginButtons` — platform-styled Steam/Apple buttons
-- `LoadingIndicator`, `ErrorDisplay` — feedback states
+- Extract a shared primitive only when visual style and interaction semantics both match.
+- Use slot-based shared shells for repeated row layouts instead of giant parameter-heavy widgets.
+- Keep feature-specific controls local when their behavior is meaningfully different.
+
+## Current Guidance From This Audit
+
+- Prefer existing shared widgets first: `GlassCard`, `GlassButton`, `GlassInput`, `GlassAppBar`, `AppToast`, `Tappable`, `StatusIndicator`, `UserAvatar`, confirmation helpers.
+- Treat simple settings/config toggles as a reusable switch-row pattern.
+- Do NOT merge richer semantic toggles like "Ready to play" into the same switch-row widget; keep those as domain widgets.
+- Repeated pills/chips/badges should become a small family of shared primitives, not one mega-widget.
+- Repeated icon-title-subtitle-trailing layouts should become a shared row shell.
+- Popup selector shells are worth extracting only when more than one screen clearly shares the same trigger + menu pattern.

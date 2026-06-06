@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.67"
+version: "1.72"
 status: active
 last_updated: "2026-06-06"
 ---
@@ -87,8 +87,8 @@ graph LR
 - [Overview](2026-05-30-core-platform-design.md) (v3.1)
 - [Auth](2026-05-30-core-platform-auth.md) (v1.7)
 - [Profiles](2026-05-30-core-platform-profiles.md) (v1.7)
-- [Groups](2026-05-30-core-platform-groups.md) (v1.0)
-- [Implementation](2026-05-30-core-platform-implementation.md) (v1.46)
+- [Groups](2026-05-30-core-platform-groups.md) (v1.4)
+- [Implementation](2026-05-30-core-platform-implementation.md) (v1.60)
 
 ---
 
@@ -101,7 +101,7 @@ graph LR
 - **Group-scoped ready** -- user-controlled ready toggle per group with 8-hour fallback expiry
 - **App-wide live member status** -- member surfaces consume one presence provider contract
 - **Scheduled ready windows** -- members can publish multiple future "ready to play" windows without creating a formal RSVP event
-- **Group calendar views** -- shared coordination surfaces show scheduled ready windows with browsable time ranges and establish the foundation for later recurring-availability comparison
+- **Group calendar views** -- shared coordination surfaces show scheduled ready windows through an upcoming-first preview plus full agenda browsing and establish the foundation for later recurring-availability comparison
 - **Session scheduling** -- propose a future time slot for a gaming session; group members RSVP (`in` / `maybe` / `out`)
 - **Activity feed** -- lightweight event stream in each group for scheduled-ready and session lifecycle changes
 
@@ -123,9 +123,9 @@ SP2 intentionally distinguishes two coordination models:
 
 **Spec set:**
 - [Overview](2026-05-30-real-time-coordination-design.md) (v2.2)
-- [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.0)
-- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.2)
-- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.3)
+- [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.2)
+- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.5)
+- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.7)
 
 ---
 
@@ -233,6 +233,10 @@ These patterns and practices apply across all sub-projects:
 |------|--------|--------|
 | 2026-06-06 | SP1 Apple web SDK wiring | Added the required Apple browser SDK script to the Flutter web entrypoint and documented that the web flow needs both the baked Service ID and Apple's JS client | Keeps the roadmap aligned with the verified browser-side Apple Sign-In requirement after confirming prod failed before any auth network request |
 | 2026-06-06 | SP1 Apple audience deployment fix | Corrected the maintained backend Apple web Service ID/default alignment to `com.kounex.ingame.web` and documented Helm-side `INGAME_APPLE_CLIENT_IDS` injection for API releases | Keeps the roadmap aligned with the production Apple Sign-In contract so web builds and backend token audience validation stay in sync |
+| 2026-06-06 | SP1 join-mode enforcement | Updated the groups and implementation spec pointers after tightening approval-group invite behavior so invite-link joins respect `join_mode` and create requests when approval is required | Keeps the roadmap aligned with the maintained invite/join contract instead of implying approval only matters in directory browsing |
+| 2026-06-06 | SP1 join-request hardening | Updated the groups spec pointer after hardening join-request creation and resolution so open groups reject requests and resolved requests cannot mutate historical membership state | Keeps the roadmap aligned with the maintained join-request contract after closing backend edge cases uncovered in the audit loop |
+| 2026-06-06 | SP1 private approval request scoping | Updated the groups spec pointer after moving private approval requests behind invite-code flows while keeping raw group-id requests discoverable-only | Keeps the roadmap aligned with the maintained private-group access contract after closing the leaked-UUID request loophole |
+| 2026-06-06 | SP1 pending-request preview state | Bumped the groups and implementation spec references after exposing backend-truth pending-request state in group previews and documenting the related stale-sheet/accessibility interaction rules | Keeps the roadmap aligned with the final audit-loop fixes so discover/invite CTA state survives refreshes and shared popovers remain accessible |
 | 2026-06-06 | SP1 ambient baseline split | Split the maintained ambient baseline by renderer so native shader starts at `0.0` while web/fallback remain at `0.8` | Keeps the roadmap aligned with the observed platform behavior after the native shader became properly visible and controllable |
 | 2026-06-06 | SP1 transition overlap follow-up | Adjusted focused transparent flows to delay incoming reveal while keeping the ambient shader loop periodic | Keeps the roadmap aligned with the second pass on the remaining auth brightness-kick artifact after the initial seam/transition cleanup |
 | 2026-06-06 | SP1 ambient loop and auth-transition cleanup | Made the native shader loop periodic at the cycle boundary and stopped fading incoming transparent focused-flow pages as whole-route alpha layers | Keeps the roadmap aligned with the fixes for the visible ambient seam and the auth brightness kick after focused-flow transitions |
@@ -295,3 +299,4 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-04 | SP1 desktop width baseline | Added the maintained desktop/web page-width archetype contract and aligned focused flows plus shell pages on constrained content canvases for ultrawide layouts | Keeps single-column content readable on large monitors without moving the persistent sidebar |
 | 2026-06-05 | SP2 completion and roadmap reorder | Marked SP2 complete, promoted Settings & Notifications to SP3 with a dedicated spec, and renumbered Game Matching to SP4 | Aligns the roadmap with the delivered coordination slice and the newly approved priority order for the next implementation phase |
 | 2026-06-05 | SP2 audit follow-through | Clarified that coordination fan-out is commit-gated and the shipped planning hub now uses richer range/notes/localization behavior with stronger regression coverage | Keeps the roadmap summary aligned with the corrected SP2 backend contract and the polished coordination UX now in the repo |
+| 2026-06-06 | SP2 spec metadata sync | Updated the shipped SP2 calendar wording and refreshed the child-spec version pointers after the maintained transport, coordination-models, and implementation docs advanced | Keeps the roadmap aligned with the current planning-hub UX and removes stale SP2 spec-set metadata |

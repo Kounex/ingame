@@ -40,8 +40,7 @@ class GroupCoordinationState {
   }
 }
 
-class GroupCoordinationNotifier
-    extends AsyncNotifier<GroupCoordinationState> {
+class GroupCoordinationNotifier extends AsyncNotifier<GroupCoordinationState> {
   GroupCoordinationNotifier(this._groupId);
 
   StreamSubscription<dynamic>? _subscription;
@@ -51,7 +50,10 @@ class GroupCoordinationNotifier
   Future<GroupCoordinationState> build() async {
     _subscription?.cancel();
     ref.onDispose(() => _subscription?.cancel());
-    _subscription = ref.read(websocketClientProvider).events.listen(_handleEvent);
+    _subscription = ref
+        .read(websocketClientProvider)
+        .events
+        .listen(_handleEvent);
     return _loadState();
   }
 
@@ -71,12 +73,11 @@ class GroupCoordinationNotifier
       await refresh();
       return;
     }
-    final window = await ref.read(groupCoordinationRepositoryProvider).createScheduledReady(
-      _groupId,
-      startsAt: startsAt,
-      endsAt: endsAt,
-    );
-    _setState(current.copyWith(windows: _upsertWindow(current.windows, window)));
+    final window = await ref
+        .read(groupCoordinationRepositoryProvider)
+        .createScheduledReady(_groupId, startsAt: startsAt, endsAt: endsAt);
+    final latest = state.value ?? current;
+    _setState(latest.copyWith(windows: _upsertWindow(latest.windows, window)));
   }
 
   Future<void> updateScheduledReady(
@@ -89,13 +90,16 @@ class GroupCoordinationNotifier
       await refresh();
       return;
     }
-    final window = await ref.read(groupCoordinationRepositoryProvider).updateScheduledReady(
-      _groupId,
-      windowId,
-      startsAt: startsAt,
-      endsAt: endsAt,
-    );
-    _setState(current.copyWith(windows: _upsertWindow(current.windows, window)));
+    final window = await ref
+        .read(groupCoordinationRepositoryProvider)
+        .updateScheduledReady(
+          _groupId,
+          windowId,
+          startsAt: startsAt,
+          endsAt: endsAt,
+        );
+    final latest = state.value ?? current;
+    _setState(latest.copyWith(windows: _upsertWindow(latest.windows, window)));
   }
 
   Future<void> deleteScheduledReady(String windowId) async {
@@ -104,13 +108,15 @@ class GroupCoordinationNotifier
       await refresh();
       return;
     }
-    await ref.read(groupCoordinationRepositoryProvider).deleteScheduledReady(
-      _groupId,
-      windowId,
-    );
+    await ref
+        .read(groupCoordinationRepositoryProvider)
+        .deleteScheduledReady(_groupId, windowId);
+    final latest = state.value ?? current;
     _setState(
-      current.copyWith(
-        windows: current.windows.where((window) => window.id != windowId).toList(),
+      latest.copyWith(
+        windows: latest.windows
+            .where((window) => window.id != windowId)
+            .toList(),
       ),
     );
   }
@@ -126,14 +132,19 @@ class GroupCoordinationNotifier
       await refresh();
       return;
     }
-    final session = await ref.read(groupCoordinationRepositoryProvider).createSession(
-      _groupId,
-      title: title,
-      game: game,
-      notes: notes,
-      startsAt: startsAt,
+    final session = await ref
+        .read(groupCoordinationRepositoryProvider)
+        .createSession(
+          _groupId,
+          title: title,
+          game: game,
+          notes: notes,
+          startsAt: startsAt,
+        );
+    final latest = state.value ?? current;
+    _setState(
+      latest.copyWith(sessions: _upsertSession(latest.sessions, session)),
     );
-    _setState(current.copyWith(sessions: _upsertSession(current.sessions, session)));
   }
 
   Future<void> updateSession(
@@ -149,16 +160,42 @@ class GroupCoordinationNotifier
       await refresh();
       return;
     }
-    final session = await ref.read(groupCoordinationRepositoryProvider).updateSession(
-      _groupId,
-      sessionId,
-      title: title,
-      game: game,
-      startsAt: startsAt,
-      notes: notes,
-      status: status,
+    final session = await ref
+        .read(groupCoordinationRepositoryProvider)
+        .updateSession(
+          _groupId,
+          sessionId,
+          title: title,
+          game: game,
+          startsAt: startsAt,
+          notes: notes,
+          status: status,
+        );
+    final latest = state.value ?? current;
+    _setState(
+      latest.copyWith(sessions: _upsertSession(latest.sessions, session)),
     );
-    _setState(current.copyWith(sessions: _upsertSession(current.sessions, session)));
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    final current = state.value;
+    if (current == null) {
+      await refresh();
+      return;
+    }
+    await ref
+        .read(groupCoordinationRepositoryProvider)
+        .deleteSession(_groupId, sessionId);
+    final latest = state.value ?? current;
+    _setState(
+      latest.copyWith(
+        sessions: latest.sessions
+            .where((session) => session.id != sessionId)
+            .toList(),
+        pendingRsvpSessionIds: {...latest.pendingRsvpSessionIds}
+          ..remove(sessionId),
+      ),
+    );
   }
 
   Future<void> rsvpToSession(String sessionId, String response) async {
@@ -173,27 +210,23 @@ class GroupCoordinationNotifier
       ),
     );
     try {
-      final rsvp = await ref.read(groupCoordinationRepositoryProvider).rsvpToSession(
-        _groupId,
-        sessionId,
-        response,
-      );
+      final rsvp = await ref
+          .read(groupCoordinationRepositoryProvider)
+          .rsvpToSession(_groupId, sessionId, response);
       final latest = state.value ?? current;
       _setState(
         latest.copyWith(
           sessions: _mergeRsvp(latest.sessions, rsvp),
-          pendingRsvpSessionIds: {
-            ...latest.pendingRsvpSessionIds,
-          }..remove(sessionId),
+          pendingRsvpSessionIds: {...latest.pendingRsvpSessionIds}
+            ..remove(sessionId),
         ),
       );
     } catch (_) {
       final latest = state.value ?? current;
       _setState(
         latest.copyWith(
-          pendingRsvpSessionIds: {
-            ...latest.pendingRsvpSessionIds,
-          }..remove(sessionId),
+          pendingRsvpSessionIds: {...latest.pendingRsvpSessionIds}
+            ..remove(sessionId),
         ),
       );
       rethrow;
@@ -204,9 +237,9 @@ class GroupCoordinationNotifier
     final repo = ref.read(groupCoordinationRepositoryProvider);
     final timeout = ref.read(groupCoordinationLoadTimeoutProvider);
     final results = await Future.wait<Object>([
-      _loadOrFallbackOnNotFound(() => repo.listScheduledReady(_groupId)),
-      _loadOrFallbackOnNotFound(() => repo.listSessions(_groupId)),
-      _loadOrFallbackOnNotFound(() => repo.listActivity(_groupId)),
+      repo.listScheduledReady(_groupId),
+      repo.listSessions(_groupId),
+      _loadActivityOrFallbackOnNotFound(),
     ]).timeout(timeout);
 
     final windows = results[0] as List<ScheduledReadyWindow>;
@@ -219,11 +252,11 @@ class GroupCoordinationNotifier
     );
   }
 
-  Future<List<T>> _loadOrFallbackOnNotFound<T>(
-    Future<List<T>> Function() load,
-  ) async {
+  Future<List<GroupActivityEvent>> _loadActivityOrFallbackOnNotFound() async {
     try {
-      return await load();
+      return await ref
+          .read(groupCoordinationRepositoryProvider)
+          .listActivity(_groupId);
     } on DioException catch (error) {
       if (error.response?.statusCode == 404) {
         return const [];
@@ -243,14 +276,23 @@ class GroupCoordinationNotifier
       case 'scheduled_ready_updated':
         final rawWindow = event['window'];
         if (rawWindow is! Map<String, dynamic>) return;
-        _setState(current.copyWith(windows: _upsertWindow(current.windows, ScheduledReadyWindow.fromJson(rawWindow))));
+        _setState(
+          current.copyWith(
+            windows: _upsertWindow(
+              current.windows,
+              ScheduledReadyWindow.fromJson(rawWindow),
+            ),
+          ),
+        );
         break;
       case 'scheduled_ready_deleted':
         final windowId = event['window_id'] as String?;
         if (windowId == null) return;
         _setState(
           current.copyWith(
-            windows: current.windows.where((window) => window.id != windowId).toList(),
+            windows: current.windows
+                .where((window) => window.id != windowId)
+                .toList(),
           ),
         );
         break;
@@ -267,15 +309,30 @@ class GroupCoordinationNotifier
           ),
         );
         break;
+      case 'session_deleted':
+        final sessionId = event['session_id'] as String?;
+        if (sessionId == null) return;
+        _setState(
+          current.copyWith(
+            sessions: current.sessions
+                .where((session) => session.id != sessionId)
+                .toList(),
+            pendingRsvpSessionIds: {...current.pendingRsvpSessionIds}
+              ..remove(sessionId),
+          ),
+        );
+        break;
       case 'session_rsvp_updated':
         final rawRsvp = event['rsvp'];
         if (rawRsvp is! Map<String, dynamic>) return;
         _setState(
           current.copyWith(
-            sessions: _mergeRsvp(current.sessions, SessionRsvp.fromJson(rawRsvp)),
-            pendingRsvpSessionIds: {
-              ...current.pendingRsvpSessionIds,
-            }..remove(rawRsvp['session_id'] as String? ?? ''),
+            sessions: _mergeRsvp(
+              current.sessions,
+              SessionRsvp.fromJson(rawRsvp),
+            ),
+            pendingRsvpSessionIds: {...current.pendingRsvpSessionIds}
+              ..remove(rawRsvp['session_id'] as String? ?? ''),
           ),
         );
         break;
@@ -301,10 +358,7 @@ class GroupCoordinationNotifier
     List<ScheduledReadyWindow> current,
     ScheduledReadyWindow window,
   ) {
-    final next = [
-      ...current.where((item) => item.id != window.id),
-      window,
-    ];
+    final next = [...current.where((item) => item.id != window.id), window];
     next.sort((a, b) => a.startsAt.compareTo(b.startsAt));
     return next;
   }
@@ -313,18 +367,12 @@ class GroupCoordinationNotifier
     List<GroupSession> current,
     GroupSession session,
   ) {
-    final next = [
-      ...current.where((item) => item.id != session.id),
-      session,
-    ];
+    final next = [...current.where((item) => item.id != session.id), session];
     next.sort((a, b) => a.startsAt.compareTo(b.startsAt));
     return next;
   }
 
-  List<GroupSession> _mergeRsvp(
-    List<GroupSession> current,
-    SessionRsvp rsvp,
-  ) {
+  List<GroupSession> _mergeRsvp(List<GroupSession> current, SessionRsvp rsvp) {
     return current.map((session) {
       if (session.id != rsvp.sessionId) return session;
       final nextRsvps = [
@@ -340,8 +388,9 @@ class GroupCoordinationNotifier
   }
 }
 
-final groupCoordinationNotifierProvider = AsyncNotifierProvider.family<
-  GroupCoordinationNotifier,
-  GroupCoordinationState,
-  String
->(GroupCoordinationNotifier.new);
+final groupCoordinationNotifierProvider =
+    AsyncNotifierProvider.family<
+      GroupCoordinationNotifier,
+      GroupCoordinationState,
+      String
+    >(GroupCoordinationNotifier.new);

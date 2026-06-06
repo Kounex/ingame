@@ -71,6 +71,7 @@
   "commonDeny": "Ablehnen",
   "commonShare": "Teilen",
   "commonClose": "Schließen",
+  "commonViewDetails": "Details ansehen",
   "navigationGroups": "Gruppen",
   "navigationHome": "Start",
   "navigationDiscover": "Entdecken",
@@ -158,6 +159,7 @@
   "groupDirectoryJoinRequestSent": "Beitrittsanfrage gesendet!",
   "groupDirectoryJoinAction": "Beitreten",
   "groupDirectoryRequestJoinAction": "Beitritt anfragen",
+  "groupDirectoryRequestSentAction": "Anfrage gesendet",
   "joinGroupTitle": "Gruppe beitreten",
   "joinGroupInvitedTitle": "Du wurdest eingeladen!",
   "joinGroupSubtitle": "Tippe unten, um dieser Gruppe beizutreten",
@@ -180,6 +182,7 @@
   "joinGroupOpenJoin": "Offener Beitritt",
   "joinGroupApprovalRequired": "Genehmigung erforderlich",
   "joinGroupButton": "Gruppe beitreten",
+  "joinGroupRequestSentButton": "Anfrage gesendet",
   "inviteCodeTitle": "Einladungscode",
   "inviteCopyLink": "Link kopieren",
   "inviteShareText": "Tritt meiner InGame-Gruppe über diesen Link bei: {inviteLink}\nEinladungscode: {inviteCode}",
@@ -209,6 +212,8 @@
   "profileLoadError": "Profil konnte nicht geladen werden",
   "profileEdit": "Profil bearbeiten",
   "profileLogout": "Abmelden",
+  "profileLogoutConfirmTitle": "Abmelden?",
+  "profileLogoutConfirmMessage": "Du musst dich erneut anmelden, um auf deine Gruppen und dein Profil zuzugreifen.",
   "profileSectionAccount": "Konto",
   "profileSectionConnectedAccounts": "Verknuepfte Konten",
   "profileSectionPreferences": "Einstellungen",
@@ -504,6 +509,9 @@
   "groupDetailReadyToggleHint": "Zeig deiner Gruppe, dass du zum Spielen verfügbar bist",
   "groupDetailReadyToggleOfflineHint": "Verbinde dich, um deinen Spielbereit-Status zu ändern",
   "groupDetailReadyToggleReconnectingHint": "Verbindung wird wiederhergestellt…",
+  "groupDetailReadyConfirmTitle": "Spielbereit einschalten?",
+  "groupDetailReadyConfirmMessage": "Deine Gruppe sieht dann, dass du gerade spielbereit bist.",
+  "groupDetailReadyConfirmAction": "Einschalten",
   "groupDetailCoordinationTitle": "Zusammen planen",
   "groupDetailCoordinationSubtitle": "Sieh Verfügbarkeitsfenster, Session-Zusagen und die letzten Gruppenaktivitäten.",
   "groupDetailCoordinationNextSession": "Als Nächstes: {title}",
@@ -545,6 +553,17 @@
   "groupCoordinationCalendarAdd": "Fenster hinzufügen",
   "groupCoordinationCalendarEmpty": "Noch keine geplanten Verfügbarkeitsfenster.",
   "groupCoordinationCalendarEmptyRange": "In diesem Zeitraum gibt es keine Bereitschaftsfenster.",
+  "groupCoordinationUpcomingWindowsTitle": "Bevorstehende Fenster",
+  "groupCoordinationUpcomingWindowsEmpty": "Keine bevorstehenden Bereitschaftsfenster.",
+  "groupCoordinationUpcomingWindowsSheetTitle": "Alle bevorstehenden Fenster",
+  "groupCoordinationUpcomingWindowsViewAll": "Alle anzeigen ({count} mehr)",
+  "@groupCoordinationUpcomingWindowsViewAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupCoordinationCalendarThisWeek": "Diese Woche",
   "groupCoordinationCalendarPreviousRange": "Vorheriger Zeitraum",
   "groupCoordinationCalendarNextRange": "Nächster Zeitraum",
@@ -566,8 +585,14 @@
   "groupCoordinationActivityEmpty": "Noch keine Aktivität.",
   "groupCoordinationAddWindowTitle": "Bereitschaftsfenster hinzufügen",
   "groupCoordinationEditWindowTitle": "Bereitschaftsfenster bearbeiten",
+  "groupCoordinationDeleteWindowConfirmTitle": "Bereitschaftsfenster löschen?",
+  "groupCoordinationDeleteWindowConfirmMessage": "Dieses geplante Bereitschaftsfenster wird für alle in der Gruppe entfernt.",
   "groupCoordinationAddSessionTitle": "Session vorschlagen",
   "groupCoordinationEditSessionTitle": "Session bearbeiten",
+  "groupCoordinationEditSessionAction": "Session bearbeiten",
+  "groupCoordinationDeleteSessionAction": "Session löschen",
+  "groupCoordinationDeleteSessionConfirmTitle": "Session löschen?",
+  "groupCoordinationDeleteSessionConfirmMessage": "Diese geplante Session wird für alle in der Gruppe entfernt.",
   "groupCoordinationStartsAt": "Beginn",
   "groupCoordinationEndsAt": "Ende",
   "groupCoordinationFieldTitle": "Titel",
@@ -577,10 +602,16 @@
   "groupCoordinationStatusProposed": "Vorgeschlagen",
   "groupCoordinationStatusConfirmed": "Bestätigt",
   "groupCoordinationStatusCancelled": "Abgesagt",
+  "groupCoordinationCancelSessionConfirmTitle": "Session absagen?",
+  "groupCoordinationCancelSessionConfirmMessage": "Alle in der Gruppe sehen dann, dass diese Session abgesagt wurde.",
+  "groupCoordinationCancelSessionConfirmAction": "Session absagen",
   "groupCoordinationRsvpIn": "Dabei",
   "groupCoordinationRsvpMaybe": "Vielleicht",
   "groupCoordinationRsvpOut": "Raus",
   "groupCoordinationRsvpUpdating": "RSVP wird aktualisiert...",
+  "groupCoordinationYourResponseTitle": "Deine Antwort",
+  "groupCoordinationResponsesTitle": "Antworten",
+  "groupCoordinationResponsesEmpty": "Noch keine Antworten.",
   "groupCoordinationOwnedByYou": "Du",
   "groupCoordinationUntitledSession": "Unbenannte Session",
   "groupCoordinationProposedBy": "Vorgeschlagen von {displayName}",
@@ -617,6 +648,14 @@
   },
   "groupCoordinationActivitySessionUpdated": "{displayName} hat eine Session aktualisiert",
   "@groupCoordinationActivitySessionUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionDeleted": "{displayName} hat eine Session entfernt",
+  "@groupCoordinationActivitySessionDeleted": {
     "placeholders": {
       "displayName": {
         "type": "String"

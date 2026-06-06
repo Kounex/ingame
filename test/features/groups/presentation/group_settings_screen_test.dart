@@ -12,6 +12,7 @@ import 'package:ingame/features/groups/presentation/providers/group_detail_provi
 import 'package:ingame/features/groups/presentation/screens/group_settings_screen.dart';
 import 'package:ingame/l10n/app_localizations.dart';
 import 'package:ingame/shared/providers/presence_provider.dart';
+import 'package:ingame/shared/services/app_haptics.dart';
 import 'package:ingame/shared/widgets/status_indicator.dart';
 
 class _FakeGroupDetailNotifier extends GroupDetailNotifier {
@@ -193,5 +194,49 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
 
     expect(find.text('Admin'), findsOneWidget);
+  });
+
+  testWidgets('member action menu triggers haptics on open and selection', (
+    tester,
+  ) async {
+    final notifier = _FakeGroupDetailNotifier(_detailState());
+    var selectionHaptics = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          groupDetailNotifierProvider('group-1').overrideWith(() => notifier),
+          groupMemberStatusProvider.overrideWith(
+            (ref, key) => UserStatus.online,
+          ),
+          appHapticsProvider.overrideWithValue(
+            AppHaptics(
+              isWeb: false,
+              platform: TargetPlatform.android,
+              selectionCallback: () async => selectionHaptics++,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: GroupSettingsScreen(groupId: 'group-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byIcon(Icons.more_horiz).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.more_horiz).last);
+    await tester.pumpAndSettle();
+
+    expect(selectionHaptics, 1);
+
+    await tester.tap(find.text('Promote'));
+    await tester.pumpAndSettle();
+
+    expect(selectionHaptics, 2);
   });
 }

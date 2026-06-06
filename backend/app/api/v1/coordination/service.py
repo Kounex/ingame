@@ -314,6 +314,48 @@ async def update_session(
     )
 
 
+async def delete_session(
+    db: AsyncSession,
+    group_id: uuid.UUID,
+    session_id: uuid.UUID,
+    user: User,
+) -> tuple[AfterCommitHook, ...]:
+    group_repo = GroupRepository(db)
+    await _ensure_member(group_repo, group_id, user.id)
+    repo = CoordinationRepository(db)
+    session = await repo.get_session(session_id)
+    if session is None or session.group_id != group_id:
+        raise NotFoundError(
+            "Session not found",
+            code=ErrorCode.COORDINATION_SESSION_NOT_FOUND,
+        )
+    await _ensure_session_editor(group_repo, session, user.id)
+    user_repo = UserRepository(db)
+    activity = await _record_activity(
+        repo,
+        actor=user,
+        group_id=group_id,
+        activity_type="session_deleted",
+        message=f"{user.display_name} removed a session",
+        session_id=session.id,
+    )
+    await repo.delete_session(session_id)
+    activity_response = await _activity_to_response(activity, user_repo)
+    return (
+        partial(
+            manager.publish_session_deleted,
+            {
+                "group_id": str(group_id),
+                "session_id": str(session_id),
+            },
+        ),
+        partial(
+            manager.publish_activity_recorded,
+            activity_response.model_dump(mode="json"),
+        ),
+    )
+
+
 async def upsert_rsvp(
     db: AsyncSession,
     group_id: uuid.UUID,

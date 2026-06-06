@@ -47,6 +47,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
 
   static const _debounceDuration = Duration(milliseconds: 600);
 
+  bool get _hasPendingAvailabilityChecks =>
+      _emailChecking || _displayNameChecking;
+
   void _clearAuthErrorIfNeeded() {
     ref.read(authNotifierProvider.notifier).clearError();
   }
@@ -152,7 +155,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   void _onRegister() {
     _hasAttemptedSubmit = true;
     final isFormValid = _formKey.currentState?.validate() ?? false;
-    if (_emailAvailabilityError != null ||
+    if (_hasPendingAvailabilityChecks ||
+        _emailAvailabilityError != null ||
         _displayNameAvailabilityError != null ||
         !isFormValid) {
       return;
@@ -358,7 +362,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                         ],
                         const SizedBox(height: AppSpacing.lg),
                         GlassButton(
-                          onPressed: loading ? null : _onRegister,
+                          onPressed: loading || _hasPendingAvailabilityChecks
+                              ? null
+                              : _onRegister,
                           variant: GlassButtonVariant.primary,
                           isLoading: loading,
                           child: Text(l10n.registerSubmit),

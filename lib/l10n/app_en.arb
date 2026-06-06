@@ -71,6 +71,7 @@
   "commonDeny": "Deny",
   "commonShare": "Share",
   "commonClose": "Close",
+  "commonViewDetails": "View details",
   "navigationGroups": "Groups",
   "navigationHome": "Home",
   "navigationDiscover": "Discover",
@@ -158,6 +159,7 @@
   "groupDirectoryJoinRequestSent": "Join request sent!",
   "groupDirectoryJoinAction": "Join",
   "groupDirectoryRequestJoinAction": "Request to Join",
+  "groupDirectoryRequestSentAction": "Request Sent",
   "joinGroupTitle": "Join Group",
   "joinGroupInvitedTitle": "You've been invited!",
   "joinGroupSubtitle": "Tap below to join this group",
@@ -180,6 +182,7 @@
   "joinGroupOpenJoin": "Open join",
   "joinGroupApprovalRequired": "Approval required",
   "joinGroupButton": "Join Group",
+  "joinGroupRequestSentButton": "Request Sent",
   "inviteCodeTitle": "Invite Code",
   "inviteCopyLink": "Copy Link",
   "inviteShareText": "Join my InGame group with this link: {inviteLink}\nInvite code: {inviteCode}",
@@ -209,6 +212,8 @@
   "profileLoadError": "Could not load profile",
   "profileEdit": "Edit Profile",
   "profileLogout": "Logout",
+  "profileLogoutConfirmTitle": "Log out?",
+  "profileLogoutConfirmMessage": "You'll need to sign in again to access your groups and profile.",
   "profileSectionAccount": "Account",
   "profileSectionConnectedAccounts": "Connected Accounts",
   "profileSectionPreferences": "Preferences",
@@ -504,6 +509,9 @@
   "groupDetailReadyToggleHint": "Let your group know you're available to game",
   "groupDetailReadyToggleOfflineHint": "Connect to change your ready status",
   "groupDetailReadyToggleReconnectingHint": "Reconnecting…",
+  "groupDetailReadyConfirmTitle": "Turn on ready status?",
+  "groupDetailReadyConfirmMessage": "Your group will see that you're ready to play right now.",
+  "groupDetailReadyConfirmAction": "Turn On",
   "groupDetailCoordinationTitle": "Plan together",
   "groupDetailCoordinationSubtitle": "See availability windows, session RSVPs, and recent group activity.",
   "groupDetailCoordinationNextSession": "Next up: {title}",
@@ -545,6 +553,17 @@
   "groupCoordinationCalendarAdd": "Add window",
   "groupCoordinationCalendarEmpty": "No scheduled ready windows yet.",
   "groupCoordinationCalendarEmptyRange": "No ready windows in this range.",
+  "groupCoordinationUpcomingWindowsTitle": "Upcoming windows",
+  "groupCoordinationUpcomingWindowsEmpty": "No upcoming ready windows.",
+  "groupCoordinationUpcomingWindowsSheetTitle": "All upcoming windows",
+  "groupCoordinationUpcomingWindowsViewAll": "View all ({count} more)",
+  "@groupCoordinationUpcomingWindowsViewAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupCoordinationCalendarThisWeek": "This Week",
   "groupCoordinationCalendarPreviousRange": "Previous range",
   "groupCoordinationCalendarNextRange": "Next range",
@@ -566,8 +585,14 @@
   "groupCoordinationActivityEmpty": "No activity yet.",
   "groupCoordinationAddWindowTitle": "Add ready window",
   "groupCoordinationEditWindowTitle": "Edit ready window",
+  "groupCoordinationDeleteWindowConfirmTitle": "Delete ready window?",
+  "groupCoordinationDeleteWindowConfirmMessage": "This scheduled ready window will be removed for everyone in the group.",
   "groupCoordinationAddSessionTitle": "Propose session",
   "groupCoordinationEditSessionTitle": "Edit session",
+  "groupCoordinationEditSessionAction": "Edit Session",
+  "groupCoordinationDeleteSessionAction": "Delete Session",
+  "groupCoordinationDeleteSessionConfirmTitle": "Delete session?",
+  "groupCoordinationDeleteSessionConfirmMessage": "This planned session will be removed for everyone in the group.",
   "groupCoordinationStartsAt": "Starts",
   "groupCoordinationEndsAt": "Ends",
   "groupCoordinationFieldTitle": "Title",
@@ -577,10 +602,16 @@
   "groupCoordinationStatusProposed": "Proposed",
   "groupCoordinationStatusConfirmed": "Confirmed",
   "groupCoordinationStatusCancelled": "Cancelled",
+  "groupCoordinationCancelSessionConfirmTitle": "Cancel session?",
+  "groupCoordinationCancelSessionConfirmMessage": "Everyone in the group will see that this session was cancelled.",
+  "groupCoordinationCancelSessionConfirmAction": "Cancel Session",
   "groupCoordinationRsvpIn": "In",
   "groupCoordinationRsvpMaybe": "Maybe",
   "groupCoordinationRsvpOut": "Out",
   "groupCoordinationRsvpUpdating": "Updating RSVP...",
+  "groupCoordinationYourResponseTitle": "Your response",
+  "groupCoordinationResponsesTitle": "Responses",
+  "groupCoordinationResponsesEmpty": "No responses yet.",
   "groupCoordinationOwnedByYou": "You",
   "groupCoordinationUntitledSession": "Untitled session",
   "groupCoordinationProposedBy": "Proposed by {displayName}",
@@ -617,6 +648,14 @@
   },
   "groupCoordinationActivitySessionUpdated": "{displayName} updated a session",
   "@groupCoordinationActivitySessionUpdated": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "groupCoordinationActivitySessionDeleted": "{displayName} removed a session",
+  "@groupCoordinationActivitySessionDeleted": {
     "placeholders": {
       "displayName": {
         "type": "String"

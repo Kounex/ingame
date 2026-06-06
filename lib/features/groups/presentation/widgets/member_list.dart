@@ -35,13 +35,14 @@ class MemberList extends StatelessWidget {
   Widget build(BuildContext context) {
     final sorted = _sortedMembers;
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: sorted.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) =>
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < sorted.length; index++) ...[
+          if (index > 0) const Divider(height: 1),
           _MemberTile(groupId: groupId, member: sorted[index]),
+        ],
+      ],
     );
   }
 }

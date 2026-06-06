@@ -103,6 +103,32 @@ async def test_join_by_invite_code(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_join_by_invite_code_requires_request_for_approval_group(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "approvalowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={"name": "Approval Invite Group", "join_mode": "approval"},
+    )
+    invite_code = create_resp.json()["invite_code"]
+    group_id = create_resp.json()["id"]
+
+    token_joiner = await _register_and_get_token(client, "approvaljoiner@test.com")
+    join_resp = await client.post(
+        f"/api/v1/groups/join/{invite_code}",
+        headers=_auth(token_joiner),
+    )
+    assert join_resp.status_code == 403
+    assert join_resp.json()["code"] == "join_request.required"
+
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members",
+        headers=_auth(token_owner),
+    )
+    assert len(members_resp.json()) == 1
+
+
+@pytest.mark.asyncio
 async def test_join_by_invite_code_already_member(client: AsyncClient):
     token = await _register_and_get_token(client)
     create_resp = await client.post(
@@ -216,6 +242,30 @@ async def test_discover_excludes_member_groups(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_discover_marks_pending_join_requests(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "pending-owner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={"name": "Approval Group", "is_discoverable": True, "join_mode": "approval"},
+    )
+    group_id = create_resp.json()["id"]
+
+    token_requester = await _register_and_get_token(client, "pending-user@test.com")
+    request_resp = await client.post(
+        f"/api/v1/groups/{group_id}/join-requests",
+        headers=_auth(token_requester),
+    )
+    assert request_resp.status_code == 201
+
+    response = await client.get("/api/v1/groups/discover", headers=_auth(token_requester))
+    assert response.status_code == 200
+
+    approval_group = next(group for group in response.json() if group["id"] == group_id)
+    assert approval_group["has_pending_join_request"] is True
+
+
+@pytest.mark.asyncio
 async def test_remove_member(client: AsyncClient):
     token_owner = await _register_and_get_token(client, "rmowner@test.com")
     create_resp = await client.post(
@@ -302,7 +352,11 @@ async def test_join_request_flow(client: AsyncClient):
     create_resp = await client.post(
         "/api/v1/groups",
         headers=_auth(token_owner),
-        json={"name": "Approval Group", "join_mode": "approval"},
+        json={
+            "name": "Approval Group",
+            "is_discoverable": True,
+            "join_mode": "approval",
+        },
     )
     group_id = create_resp.json()["id"]
 
@@ -341,12 +395,110 @@ async def test_join_request_flow(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_open_group_join_request_is_rejected(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "openjrowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={"name": "Open Group", "is_discoverable": True, "join_mode": "open"},
+    )
+    group_id = create_resp.json()["id"]
+
+    token_requester = await _register_and_get_token(client, "openjrrequester@test.com")
+    req_resp = await client.post(
+        f"/api/v1/groups/{group_id}/join-requests",
+        headers=_auth(token_requester),
+    )
+
+    assert req_resp.status_code == 409
+    assert req_resp.json()["code"] == "join_request.not_required"
+
+
+@pytest.mark.asyncio
+async def test_private_approval_group_requires_invite_for_join_request(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "privatejrowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={
+            "name": "Private Approval Group",
+            "is_discoverable": False,
+            "join_mode": "approval",
+        },
+    )
+    group_id = create_resp.json()["id"]
+    invite_code = create_resp.json()["invite_code"]
+
+    token_requester = await _register_and_get_token(
+        client, "privatejrrequester@test.com"
+    )
+    raw_req_resp = await client.post(
+        f"/api/v1/groups/{group_id}/join-requests",
+        headers=_auth(token_requester),
+    )
+    assert raw_req_resp.status_code == 404
+    assert raw_req_resp.json()["code"] == "group.not_found"
+
+    invite_req_resp = await client.post(
+        f"/api/v1/groups/join/{invite_code}/requests",
+        headers=_auth(token_requester),
+    )
+    assert invite_req_resp.status_code == 201
+    assert invite_req_resp.json()["status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_join_request_cannot_be_resolved_twice(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "resolveowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token_owner),
+        json={
+            "name": "Resolve Once Group",
+            "is_discoverable": True,
+            "join_mode": "approval",
+        },
+    )
+    group_id = create_resp.json()["id"]
+
+    token_requester = await _register_and_get_token(
+        client, "resolverequester@test.com"
+    )
+    req_resp = await client.post(
+        f"/api/v1/groups/{group_id}/join-requests",
+        headers=_auth(token_requester),
+    )
+    request_id = req_resp.json()["id"]
+
+    approve_resp = await client.patch(
+        f"/api/v1/join-requests/{request_id}",
+        headers=_auth(token_owner),
+        json={"status": "approved"},
+    )
+    assert approve_resp.status_code == 200
+
+    second_resp = await client.patch(
+        f"/api/v1/join-requests/{request_id}",
+        headers=_auth(token_owner),
+        json={"status": "denied"},
+    )
+    assert second_resp.status_code == 409
+    assert second_resp.json()["code"] == "join_request.already_resolved"
+
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members",
+        headers=_auth(token_owner),
+    )
+    assert len(members_resp.json()) == 2
+
+
+@pytest.mark.asyncio
 async def test_join_request_deny(client: AsyncClient):
     token_owner = await _register_and_get_token(client, "denyowner@test.com")
     create_resp = await client.post(
         "/api/v1/groups",
         headers=_auth(token_owner),
-        json={"name": "Deny Group", "join_mode": "approval"},
+        json={"name": "Deny Group", "is_discoverable": True, "join_mode": "approval"},
     )
     group_id = create_resp.json()["id"]
 

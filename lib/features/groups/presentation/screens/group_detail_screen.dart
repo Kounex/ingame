@@ -12,11 +12,15 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/providers/websocket_provider.dart';
 import '../../../../shared/widgets/app_background.dart';
+import '../../../../shared/widgets/app_chip.dart';
+import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/services/app_haptics.dart';
+import '../../domain/coordination_model.dart';
 import '../providers/group_coordination_provider.dart';
 import '../providers/group_detail_provider.dart';
 import '../providers/groups_provider.dart';
@@ -50,8 +54,13 @@ class GroupDetailScreen extends ConsumerWidget {
                       Icons.more_vert,
                       color: AppColors.textSecondary,
                     ),
-                    onSelected: (action) =>
-                        _onMenuAction(context, ref, action, detailAsync.value!),
+                    onOpened: () {
+                      ref.read(appHapticsProvider).selection();
+                    },
+                    onSelected: (action) {
+                      ref.read(appHapticsProvider).selection();
+                      _onMenuAction(context, ref, action, detailAsync.value!);
+                    },
                     itemBuilder: (_) => [
                       PopupMenuItem(
                         value: _GroupAction.invite,
@@ -103,91 +112,125 @@ class GroupDetailScreen extends ConsumerWidget {
             child: RefreshIndicator(
               color: AppColors.primary,
               backgroundColor: AppColors.backgroundLight,
-              onRefresh: () => ref
-                  .read(groupDetailNotifierProvider(groupId).notifier)
-                  .refresh(),
-              child: SingleChildScrollView(
+              onRefresh: () async {
+                await ref
+                    .read(groupDetailNotifierProvider(groupId).notifier)
+                    .refresh();
+                await ref.read(appHapticsProvider).refreshComplete();
+              },
+              child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (detail.group.description != null &&
-                        detail.group.description!.isNotEmpty)
-                      GlassCard(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.groupDetailSectionAbout,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              detail.group.description!,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.md),
-                    GlassCard(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Row(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _InfoChip(
-                            icon: Icons.people,
-                            label: l10n.joinGroupMembers(detail.members.length),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          _InfoChip(
-                            icon: detail.group.isDiscoverable
-                                ? Icons.public
-                                : Icons.lock,
-                            label: detail.group.isDiscoverable
-                                ? l10n.groupVisibilityPublic
-                                : l10n.groupVisibilityPrivate,
-                          ),
-                          if (detail.group.isDiscoverable) ...[
-                            const SizedBox(width: AppSpacing.md),
-                            _InfoChip(
-                              icon: detail.group.joinMode == 'open'
-                                  ? Icons.open_in_new
-                                  : Icons.approval,
-                              label: detail.group.joinMode == 'open'
-                                  ? l10n.groupJoinModeOpenLabel
-                                  : l10n.groupJoinModeApprovalLabel,
+                          if (detail.group.description != null &&
+                              detail.group.description!.isNotEmpty) ...[
+                            GlassCard(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.groupDetailSectionAbout,
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Text(
+                                    detail.group.description!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                            const SizedBox(height: AppSpacing.md),
                           ],
+                          GlassCard(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            child: Row(
+                              children: [
+                                _InfoChip(
+                                  icon: Icons.people,
+                                  label: l10n.joinGroupMembers(
+                                    detail.members.length,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                _InfoChip(
+                                  icon: detail.group.isDiscoverable
+                                      ? Icons.public
+                                      : Icons.lock,
+                                  label: detail.group.isDiscoverable
+                                      ? l10n.groupVisibilityPublic
+                                      : l10n.groupVisibilityPrivate,
+                                ),
+                                if (detail.group.isDiscoverable) ...[
+                                  const SizedBox(width: AppSpacing.md),
+                                  _InfoChip(
+                                    icon: detail.group.joinMode == 'open'
+                                        ? Icons.open_in_new
+                                        : Icons.approval,
+                                    label: detail.group.joinMode == 'open'
+                                        ? l10n.groupJoinModeOpenLabel
+                                        : l10n.groupJoinModeApprovalLabel,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          _ReadyToggleCard(groupId: groupId),
+                          const SizedBox(height: AppSpacing.lg),
+                          _CoordinationHubCard(groupId: groupId),
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _ReadyToggleCard(groupId: groupId),
-                    const SizedBox(height: AppSpacing.lg),
-                    _CoordinationHubCard(groupId: groupId),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      l10n.groupDetailSectionMembers,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                      0,
+                    ),
+                    sliver: SliverFillRemaining(
+                      hasScrollBody: false,
+                      fillOverscroll: true,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            l10n.groupDetailSectionMembers,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          MemberList(groupId: groupId, members: detail.members),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    MemberList(groupId: groupId, members: detail.members),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -205,13 +248,16 @@ class GroupDetailScreen extends ConsumerWidget {
     switch (action) {
       case _GroupAction.invite:
         _showInviteSheet(context, detail.group.inviteCode);
+        break;
       case _GroupAction.settings:
         context.goNamed(
           RouteNames.groupSettings,
           pathParameters: {'id': groupId},
         );
+        break;
       case _GroupAction.leave:
         _showLeaveDialog(context, ref, detail);
+        break;
     }
   }
 
@@ -289,6 +335,7 @@ class GroupDetailScreen extends ConsumerWidget {
                       await ref
                           .read(groupsNotifierProvider.notifier)
                           .leaveGroup(groupId);
+                      await ref.read(appHapticsProvider).destructiveConfirm();
                       if (context.mounted) context.pop();
                     } catch (error) {
                       if (context.mounted) {
@@ -410,16 +457,44 @@ class _ReadyToggleCard extends ConsumerWidget {
             value: isReady,
             activeThumbColor: AppColors.success,
             onChanged: isConnected
-                ? (ready) {
-                    ref
-                        .read(presenceNotifierProvider.notifier)
-                        .toggleReady(groupId: groupId, ready: ready);
-                  }
+                ? (ready) => _handleReadyToggle(
+                    context,
+                    ref,
+                    currentValue: isReady,
+                    nextValue: ready,
+                  )
                 : null,
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleReadyToggle(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool currentValue,
+    required bool nextValue,
+  }) async {
+    if (currentValue == nextValue) return;
+
+    if (nextValue) {
+      final confirmed = await showAppConfirmationDialog(
+        context,
+        title: context.l10n.groupDetailReadyConfirmTitle,
+        message: context.l10n.groupDetailReadyConfirmMessage,
+        confirmLabel: context.l10n.groupDetailReadyConfirmAction,
+        cancelLabel: context.l10n.commonCancel,
+      );
+      if (!confirmed) return;
+    }
+
+    final changed = ref
+        .read(presenceNotifierProvider.notifier)
+        .toggleReady(groupId: groupId, ready: nextValue);
+    if (!changed) return;
+
+    await ref.read(appHapticsProvider).selection();
   }
 }
 
@@ -431,11 +506,11 @@ class _CoordinationHubCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final coordinationAsync = ref.watch(groupCoordinationNotifierProvider(groupId));
+    final coordinationAsync = ref.watch(
+      groupCoordinationNotifierProvider(groupId),
+    );
     final coordination = coordinationAsync.value;
-    final nextSession = coordination?.sessions.isNotEmpty == true
-        ? coordination!.sessions.first
-        : null;
+    final nextSession = _findNextSession(coordination?.sessions);
 
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -489,7 +564,9 @@ class _CoordinationHubCard extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               l10n.groupDetailCoordinationNextSession(
-                nextSession.title ?? nextSession.game ?? l10n.groupCoordinationUntitledSession,
+                nextSession.title ??
+                    nextSession.game ??
+                    l10n.groupCoordinationUntitledSession,
               ),
               style: const TextStyle(
                 color: AppColors.textSecondary,
@@ -510,6 +587,22 @@ class _CoordinationHubCard extends ConsumerWidget {
       ),
     );
   }
+
+  GroupSession? _findNextSession(List<GroupSession>? sessions) {
+    if (sessions == null || sessions.isEmpty) {
+      return null;
+    }
+    final now = DateTime.now();
+    for (final session in sessions) {
+      if (session.status == 'cancelled') {
+        continue;
+      }
+      if (!session.startsAt.isBefore(now)) {
+        return session;
+      }
+    }
+    return null;
+  }
 }
 
 class _InfoChip extends StatelessWidget {
@@ -520,16 +613,6 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textTertiary),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        ),
-      ],
-    );
+    return AppChip.inline(label: label, icon: icon);
   }
 }

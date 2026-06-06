@@ -87,14 +87,19 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
     switch (action) {
       case _AvatarAction.photoLibrary:
         await _pickFromLibrary();
+        break;
       case _AvatarAction.uploadPhoto:
         await _pickUploadedFile();
+        break;
       case _AvatarAction.takePhoto:
         await _takePhoto();
+        break;
       case _AvatarAction.useUrl:
         await _showUrlDialog();
+        break;
       case _AvatarAction.remove:
         _removeAvatar();
+        break;
     }
   }
 
