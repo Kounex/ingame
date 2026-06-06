@@ -30,16 +30,24 @@ async def validate_apple_token(identity_token: str) -> dict:
     if not matching_key:
         raise ValueError("Apple public key not found for token")
 
-    try:
-        payload = jose_jwt.decode(
-            identity_token,
-            matching_key,
-            algorithms=["RS256"],
-            audience=settings.apple_client_ids,
-            issuer="https://appleid.apple.com",
-        )
-    except JWTError as e:
-        raise ValueError(f"Apple token verification failed: {e}") from e
+    payload = None
+    last_error: JWTError | None = None
+    for audience in settings.apple_client_ids:
+        try:
+            payload = jose_jwt.decode(
+                identity_token,
+                matching_key,
+                algorithms=["RS256"],
+                audience=audience,
+                issuer="https://appleid.apple.com",
+            )
+            break
+        except JWTError as e:
+            last_error = e
+
+    if payload is None:
+        message = last_error or "no configured Apple audience matched"
+        raise ValueError(f"Apple token verification failed: {message}")
 
     return {
         "sub": payload["sub"],
