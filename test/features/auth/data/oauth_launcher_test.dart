@@ -114,4 +114,56 @@ void main() {
       isNull,
     );
   });
+
+  test(
+    'apple sign-in is unavailable on web without a configured service ID',
+    () {
+      expect(
+        OAuthLauncher.appleSignInAvailableForPlatform(
+          isWeb: true,
+          platform: TargetPlatform.macOS,
+          webServiceId: '',
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  test('apple sign-in is available on web when a service ID is configured', () {
+    expect(
+      OAuthLauncher.appleSignInAvailableForPlatform(
+        isWeb: true,
+        platform: TargetPlatform.windows,
+        webServiceId: 'com.ingame.web',
+      ),
+      isTrue,
+    );
+  });
+
+  test('apple sign-in is available only on Apple native platforms', () {
+    expect(
+      OAuthLauncher.appleSignInAvailableForPlatform(
+        isWeb: false,
+        platform: TargetPlatform.iOS,
+        webServiceId: null,
+      ),
+      isTrue,
+    );
+    expect(
+      OAuthLauncher.appleSignInAvailableForPlatform(
+        isWeb: false,
+        platform: TargetPlatform.macOS,
+        webServiceId: null,
+      ),
+      isTrue,
+    );
+    expect(
+      OAuthLauncher.appleSignInAvailableForPlatform(
+        isWeb: false,
+        platform: TargetPlatform.android,
+        webServiceId: null,
+      ),
+      isFalse,
+    );
+  });
 }

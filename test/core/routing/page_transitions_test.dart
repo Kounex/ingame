@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +9,7 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  test('adaptiveRoutePage returns CupertinoPage on iOS', () {
+  test('adaptiveRoutePage returns CupertinoFadePage on iOS', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
     final page = adaptiveRoutePage(
@@ -18,7 +17,7 @@ void main() {
       child: const SizedBox.shrink(),
     );
 
-    expect(page, isA<CupertinoPage<void>>());
+    expect(page, isA<CupertinoFadePage<void>>());
   });
 
   test('adaptiveRoutePage returns MaterialPage on Android', () {
@@ -291,6 +290,47 @@ void main() {
     },
   );
 
+  test('focusedFlowRoutePage returns CupertinoFadePage on iOS', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+    final page =
+        focusedFlowRoutePage(
+              key: const ValueKey('focused-ios'),
+              child: const SizedBox.shrink(),
+            )
+            as CupertinoFadePage<void>;
+
+    expect(page.fadeIncoming, isFalse);
+  });
+
+  test('cupertino push opacity delays the incoming fade slightly', () {
+    expect(
+      cupertinoRoutePrimaryOpacity(
+        animationValue: 0.05,
+        status: AnimationStatus.forward,
+      ),
+      equals(0.0),
+    );
+    expect(
+      cupertinoRoutePrimaryOpacity(
+        animationValue: 0.25,
+        status: AnimationStatus.forward,
+      ),
+      greaterThan(0.0),
+    );
+  });
+
+  test('cupertino covered opacity quickly fades the covered route', () {
+    expect(
+      cupertinoCoveredRouteOpacity(secondaryAnimationValue: 0.0),
+      equals(1.0),
+    );
+    expect(
+      cupertinoCoveredRouteOpacity(secondaryAnimationValue: 0.2),
+      lessThan(0.5),
+    );
+  });
+
   test('focused flow transition uses the tuned longer page durations', () {
     final page =
         focusedFlowRoutePage(
@@ -343,7 +383,7 @@ void main() {
   );
 
   testWidgets(
-    'focused flow transition starts revealing the incoming route early',
+    'focused flow transition delays incoming route reveal to reduce overlap',
     (tester) async {
       const childKey = ValueKey('focused-incoming-child');
       final page =
@@ -385,18 +425,20 @@ void main() {
         MaterialApp(
           home: SizedBox.expand(
             child: Builder(
-              builder: (context) => page.transitionsBuilder(
-                context,
-                const AlwaysStoppedAnimation<double>(0.2),
-                const AlwaysStoppedAnimation<double>(0.0),
-                page.child,
-              ),
+              builder: (context) {
+                return page.transitionsBuilder(
+                  context,
+                  const AlwaysStoppedAnimation<double>(0.35),
+                  const AlwaysStoppedAnimation<double>(0.0),
+                  page.child,
+                );
+              },
             ),
           ),
         ),
       );
 
-      final earlyFade = tester.widget<FadeTransition>(
+      final delayedFade = tester.widget<FadeTransition>(
         find
             .ancestor(
               of: find.byKey(childKey),
@@ -406,7 +448,42 @@ void main() {
       );
 
       expect(preFade.opacity.value, equals(0.0));
-      expect(earlyFade.opacity.value, greaterThan(0.0));
+      expect(delayedFade.opacity.value, greaterThan(0.0));
+
+      final topLeft = tester.getTopLeft(find.byKey(childKey));
+      expect(topLeft.dx, greaterThanOrEqualTo(0.0));
     },
   );
+
+  testWidgets('CupertinoFadePage can push a visible destination route', (
+    tester,
+  ) async {
+    final navigatorKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        home: Builder(
+          builder: (context) => Center(
+            child: TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  const CupertinoFadePage<void>(
+                    key: ValueKey('detail'),
+                    child: Scaffold(body: Center(child: Text('Detail Page'))),
+                  ).createRoute(context),
+                );
+              },
+              child: const Text('Open Detail'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open Detail'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail Page'), findsOneWidget);
+  });
 }

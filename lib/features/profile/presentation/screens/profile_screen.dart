@@ -20,7 +20,6 @@ import '../../../../shared/widgets/language_switcher.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../../../shared/widgets/weekly_availability_editor.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../auth/data/oauth_launcher.dart';
 import '../../../auth/domain/user_model.dart';
@@ -204,8 +203,7 @@ class _AccountInfoCard extends StatelessWidget {
           _SectionHeader(title: context.l10n.profileSectionAccount),
           const SizedBox(height: AppSpacing.md),
           for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0)
-              const Divider(height: 1),
+            if (i > 0) const Divider(height: 1),
             _InfoRow(icon: rows[i].$1, label: rows[i].$2, value: rows[i].$3),
           ],
         ],
@@ -672,21 +670,27 @@ class _ConnectedAccountsCard extends ConsumerWidget {
         }
       }
     } else {
+      final AppleSignInResult? appleSignInResult;
       try {
-        final appleSignIn = await OAuthLauncher.launchAppleSignIn();
-        if (!context.mounted) return;
+        appleSignInResult = await OAuthLauncher.launchAppleSignIn();
+      } catch (e) {
+        if (!context.mounted || OAuthLauncher.isCancellationError(e)) return;
+        AppToast.error(
+          context,
+          OAuthLauncher.toFailure(e).userMessage(context.l10n),
+        );
+        return;
+      }
+
+      if (!context.mounted) return;
+
+      try {
         await ref
             .read(profileRepositoryProvider)
-            .linkApple(appleSignIn.identityToken);
+            .linkApple(appleSignInResult.identityToken);
         _refreshProviders(ref);
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileAppleLinkedSuccess);
-        }
-      } on SignInWithAppleAuthorizationException catch (e) {
-        if (e.code == AuthorizationErrorCode.canceled) return;
-        debugPrint('Apple link auth exception: code=${e.code} message=$e');
-        if (context.mounted) {
-          AppToast.error(context, context.l10n.profileAppleSignInFailed);
         }
       } catch (e) {
         if (!context.mounted) return;
@@ -704,6 +708,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final steamConnected = steamId != null;
     final appleConnected = appleId != null;
+    final showAppleRow = appleConnected || OAuthLauncher.appleSignInAvailable;
 
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -730,16 +735,18 @@ class _ConnectedAccountsCard extends ConsumerWidget {
                 : null,
             onTap: () => _handleSteamTap(context, ref),
           ),
-          const Divider(height: 1),
-          _AccountRow(
-            icon: Icons.apple,
-            label: context.l10n.profileConnectedAccountsApple,
-            connected: appleConnected,
-            statusText: appleConnected
-                ? context.l10n.profileConnectedTapToDisconnect
-                : null,
-            onTap: () => _handleAppleTap(context, ref),
-          ),
+          if (showAppleRow) ...[
+            const Divider(height: 1),
+            _AccountRow(
+              icon: Icons.apple,
+              label: context.l10n.profileConnectedAccountsApple,
+              connected: appleConnected,
+              statusText: appleConnected
+                  ? context.l10n.profileConnectedTapToDisconnect
+                  : null,
+              onTap: () => _handleAppleTap(context, ref),
+            ),
+          ],
         ],
       ),
     );

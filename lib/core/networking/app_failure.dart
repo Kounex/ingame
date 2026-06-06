@@ -3,6 +3,7 @@ import '../localization/locale_controller.dart';
 
 enum AppFailureMessageKey {
   authAppleSignInFailed,
+  authAppleUnavailable,
   authSignInCancelled,
   authErrorGeneric,
   registerEmailTaken,
@@ -82,6 +83,7 @@ sealed class AppFailure {
     final failure = this as LocalizedFailure;
     return switch (failure.key) {
       AppFailureMessageKey.authAppleSignInFailed => l10n.authAppleSignInFailed,
+      AppFailureMessageKey.authAppleUnavailable => l10n.authAppleUnavailable,
       AppFailureMessageKey.authSignInCancelled => l10n.authSignInCancelled,
       AppFailureMessageKey.authErrorGeneric => l10n.authErrorGeneric,
       AppFailureMessageKey.registerEmailTaken => l10n.registerEmailTaken,

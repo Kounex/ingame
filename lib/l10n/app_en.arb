@@ -202,6 +202,7 @@
   "errorRetryAction": "Retry",
   "authSignInCancelled": "Sign-in was cancelled.",
   "authAppleSignInFailed": "Apple sign-in failed. Please try again.",
+  "authAppleUnavailable": "Apple sign-in is not available in this build.",
   "authErrorGeneric": "Authentication failed. Please try again.",
   "authErrorDebugPrefix": "Authentication failed",
   "profileTitle": "Profile",

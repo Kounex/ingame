@@ -14,6 +14,7 @@ services:
     environment:
       INGAME_DATABASE_URL: postgresql+asyncpg://ingame:ingame@postgres:5432/ingame
       INGAME_REDIS_URL: redis://redis:6379
+      INGAME_APPLE_CLIENT_IDS: ingame.kounex.com,com.kounex.ingame.web
       INGAME_DEBUG: "true"
       INGAME_AVATAR_STORAGE_BUCKET: ingame-avatars
       INGAME_AVATAR_STORAGE_ENDPOINT_URL: http://minio:9000
@@ -35,6 +36,7 @@ services:
         INGAME_API_BASE_URL: http://localhost:8000/api/v1
         INGAME_WEB_APP_BASE_URL: http://localhost:8080
         INGAME_INVITE_BASE_URL: http://localhost:8080
+        APPLE_SERVICE_ID: com.kounex.ingame.web
     ports:
       - "8080:8080"
     depends_on:

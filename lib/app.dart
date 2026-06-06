@@ -61,9 +61,10 @@ class InGameApp extends ConsumerWidget {
             ],
           );
 
-          if (kDebugMode) {
-            layeredApp = AmbientMotionDebugLayer(child: layeredApp);
-          }
+          layeredApp = AmbientMotionLayer(
+            showDebugOverlay: kDebugMode,
+            child: layeredApp,
+          );
 
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: AppTheme.darkSystemUiOverlayStyle,

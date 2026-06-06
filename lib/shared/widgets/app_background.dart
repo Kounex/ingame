@@ -9,18 +9,197 @@ import '../../core/theme/app_theme.dart';
 import 'debug_overlay_card.dart';
 
 const _ambientBackgroundShaderAsset = 'shaders/ambient_background.frag';
+const _productionAmbientIntensity = 0.8;
+const _mobileShaderVisibilityBoost = 1.45;
+const _mobileShaderBlobRadiusScale = 0.72;
+const _mobileShaderBlobSoftnessScale = 0.58;
+const _mobileShaderMotionScale = 1.45;
+const _mobileShaderAccentStrength = 1.65;
+const _mobileShaderGlowStrength = 1.5;
+const _mobileShaderDistortionAmount = 0.075;
+const _diagnosticShaderVisibilityBoost = 3.4;
+const _diagnosticShaderBlobRadiusScale = 0.32;
+const _diagnosticShaderBlobSoftnessScale = 0.22;
+const _diagnosticShaderMotionScale = 2.2;
+const _diagnosticShaderAccentStrength = 2.4;
+const _diagnosticShaderGlowStrength = 2.1;
+const _diagnosticShaderDistortionAmount = 0.11;
+const _nativeShaderAmbientIntensity = 0.0;
+
+enum AmbientRenderMode { loading, shader, fallback }
+
+class AmbientShaderTuning {
+  const AmbientShaderTuning({
+    required this.visibilityBoost,
+    required this.blobRadiusScale,
+    required this.blobSoftnessScale,
+    required this.motionScale,
+    required this.accentStrength,
+    required this.glowStrength,
+    required this.distortionAmount,
+  });
+
+  final double visibilityBoost;
+  final double blobRadiusScale;
+  final double blobSoftnessScale;
+  final double motionScale;
+  final double accentStrength;
+  final double glowStrength;
+  final double distortionAmount;
+}
+
+@visibleForTesting
+List<double> normalizedShaderColorChannels(Color color) {
+  return [color.r, color.g, color.b];
+}
+
+@visibleForTesting
+double normalizedAmbientLoopProgress(double progress) {
+  final wrapped = progress % 1.0;
+  if (wrapped < 0) {
+    return wrapped + 1.0;
+  }
+  return wrapped;
+}
+
+@visibleForTesting
+double productionAmbientIntensityForRenderMode({
+  required bool isWeb,
+  required TargetPlatform platform,
+  required AmbientRenderMode renderMode,
+}) {
+  if (isWeb || renderMode == AmbientRenderMode.fallback) {
+    return _productionAmbientIntensity;
+  }
+
+  return switch (platform) {
+    TargetPlatform.iOS ||
+    TargetPlatform.android => _nativeShaderAmbientIntensity,
+    _ => _productionAmbientIntensity,
+  };
+}
+
+double shaderVisibilityBoostForPlatform({
+  required bool isWeb,
+  required TargetPlatform platform,
+}) {
+  return shaderTuningForPlatform(
+    isWeb: isWeb,
+    platform: platform,
+  ).visibilityBoost;
+}
+
+AmbientShaderTuning shaderTuningForPlatform({
+  required bool isWeb,
+  required TargetPlatform platform,
+  bool diagnosticModeEnabled = false,
+}) {
+  if (diagnosticModeEnabled) {
+    return const AmbientShaderTuning(
+      visibilityBoost: _diagnosticShaderVisibilityBoost,
+      blobRadiusScale: _diagnosticShaderBlobRadiusScale,
+      blobSoftnessScale: _diagnosticShaderBlobSoftnessScale,
+      motionScale: _diagnosticShaderMotionScale,
+      accentStrength: _diagnosticShaderAccentStrength,
+      glowStrength: _diagnosticShaderGlowStrength,
+      distortionAmount: _diagnosticShaderDistortionAmount,
+    );
+  }
+
+  if (isWeb) {
+    return const AmbientShaderTuning(
+      visibilityBoost: 1.0,
+      blobRadiusScale: 1.0,
+      blobSoftnessScale: 1.0,
+      motionScale: 1.0,
+      accentStrength: 1.0,
+      glowStrength: 1.0,
+      distortionAmount: 0.0,
+    );
+  }
+
+  return switch (platform) {
+    TargetPlatform.iOS || TargetPlatform.android => const AmbientShaderTuning(
+      visibilityBoost: _mobileShaderVisibilityBoost,
+      blobRadiusScale: _mobileShaderBlobRadiusScale,
+      blobSoftnessScale: _mobileShaderBlobSoftnessScale,
+      motionScale: _mobileShaderMotionScale,
+      accentStrength: _mobileShaderAccentStrength,
+      glowStrength: _mobileShaderGlowStrength,
+      distortionAmount: _mobileShaderDistortionAmount,
+    ),
+    _ => const AmbientShaderTuning(
+      visibilityBoost: 1.0,
+      blobRadiusScale: 1.0,
+      blobSoftnessScale: 1.0,
+      motionScale: 1.0,
+      accentStrength: 1.0,
+      glowStrength: 1.0,
+      distortionAmount: 0.0,
+    ),
+  };
+}
 
 class AmbientMotionController extends ChangeNotifier {
-  AmbientMotionController({double intensity = 0.8})
-    : _intensity = intensity.clamp(0.0, 1.0).toDouble();
+  AmbientMotionController({
+    double intensity = _nativeShaderAmbientIntensity,
+    AmbientRenderMode initialRenderMode = AmbientRenderMode.loading,
+    bool diagnosticShaderModeEnabled = false,
+    bool scrimBypassedForDebug = false,
+  }) : _intensity = intensity.clamp(0.0, 1.0).toDouble(),
+       _renderMode = initialRenderMode,
+       _diagnosticShaderModeEnabled = diagnosticShaderModeEnabled,
+       _scrimBypassedForDebug = scrimBypassedForDebug;
 
   double _intensity;
+  AmbientRenderMode _renderMode;
+  bool _diagnosticShaderModeEnabled;
+  bool _scrimBypassedForDebug;
+  bool _intensityManuallyOverridden = false;
 
   double get intensity => _intensity;
+  AmbientRenderMode get renderMode => _renderMode;
+  bool get diagnosticShaderModeEnabled => _diagnosticShaderModeEnabled;
+  bool get scrimBypassedForDebug => _scrimBypassedForDebug;
 
   void setIntensity(double value) {
     final next = value.clamp(0.0, 1.0).toDouble();
     if (next == _intensity) return;
+    _intensity = next;
+    _intensityManuallyOverridden = true;
+    notifyListeners();
+  }
+
+  void setRenderMode(AmbientRenderMode value) {
+    if (value == _renderMode) return;
+    _renderMode = value;
+    notifyListeners();
+  }
+
+  void setDiagnosticShaderModeEnabled(bool value) {
+    if (value == _diagnosticShaderModeEnabled) return;
+    _diagnosticShaderModeEnabled = value;
+    notifyListeners();
+  }
+
+  void setScrimBypassedForDebug(bool value) {
+    if (value == _scrimBypassedForDebug) return;
+    _scrimBypassedForDebug = value;
+    notifyListeners();
+  }
+
+  void syncProductionIntensityForRenderMode({
+    required bool isWeb,
+    required TargetPlatform platform,
+    required AmbientRenderMode renderMode,
+  }) {
+    if (_intensityManuallyOverridden) return;
+    final next = productionAmbientIntensityForRenderMode(
+      isWeb: isWeb,
+      platform: platform,
+      renderMode: renderMode,
+    );
+    if ((next - _intensity).abs() < 0.001) return;
     _intensity = next;
     notifyListeners();
   }
@@ -52,18 +231,34 @@ class _AmbientSurfaceScope extends InheritedWidget {
   bool updateShouldNotify(covariant _AmbientSurfaceScope oldWidget) => false;
 }
 
-class AmbientMotionDebugLayer extends StatefulWidget {
-  const AmbientMotionDebugLayer({super.key, required this.child});
+class AmbientMotionLayer extends StatefulWidget {
+  const AmbientMotionLayer({
+    super.key,
+    required this.child,
+    this.showDebugOverlay = false,
+    this.initialIntensity,
+  });
 
   final Widget child;
+  final bool showDebugOverlay;
+  final double? initialIntensity;
 
   @override
-  State<AmbientMotionDebugLayer> createState() =>
-      _AmbientMotionDebugLayerState();
+  State<AmbientMotionLayer> createState() => _AmbientMotionLayerState();
 }
 
-class _AmbientMotionDebugLayerState extends State<AmbientMotionDebugLayer> {
-  late final AmbientMotionController _controller = AmbientMotionController();
+class _AmbientMotionLayerState extends State<AmbientMotionLayer> {
+  late final AmbientMotionController _controller = AmbientMotionController(
+    intensity:
+        widget.initialIntensity ??
+        productionAmbientIntensityForRenderMode(
+          isWeb: kIsWeb,
+          platform: defaultTargetPlatform,
+          renderMode: kIsWeb
+              ? AmbientRenderMode.fallback
+              : AmbientRenderMode.loading,
+        ),
+  );
 
   @override
   void dispose() {
@@ -78,14 +273,26 @@ class _AmbientMotionDebugLayerState extends State<AmbientMotionDebugLayer> {
       child: Stack(
         children: [
           widget.child,
-          const Positioned(
-            top: 12,
-            right: 12,
-            child: SafeArea(child: AmbientMotionDebugPanel()),
-          ),
+          if (widget.showDebugOverlay)
+            const Positioned(
+              top: 12,
+              right: 12,
+              child: SafeArea(child: AmbientMotionDebugPanel()),
+            ),
         ],
       ),
     );
+  }
+}
+
+class AmbientMotionDebugLayer extends StatelessWidget {
+  const AmbientMotionDebugLayer({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AmbientMotionLayer(showDebugOverlay: true, child: child);
   }
 }
 
@@ -148,6 +355,10 @@ class _AmbientDebugOverlayState extends State<_AmbientDebugOverlay> {
       animation: controller,
       builder: (context, _) {
         final intensity = controller.intensity;
+        final renderMode = controller.renderMode;
+        final diagnosticShaderModeEnabled =
+            controller.diagnosticShaderModeEnabled;
+        final scrimBypassedForDebug = controller.scrimBypassedForDebug;
         return DebugOverlayCard(
           title: 'Debug',
           icon: Icons.bug_report_outlined,
@@ -288,35 +499,97 @@ class _AmbientDebugOverlayState extends State<_AmbientDebugOverlay> {
               isExpanded: _shaderExpanded,
               onToggle: () =>
                   setState(() => _shaderExpanded = !_shaderExpanded),
-              trailing: const DebugOverlayStatusBadge(
-                label: kIsWeb ? 'Fallback' : 'Auto',
-                highlighted: !kIsWeb,
+              trailing: DebugOverlayStatusBadge(
+                label: switch (renderMode) {
+                  AmbientRenderMode.loading => 'Loading',
+                  AmbientRenderMode.shader => 'Shader',
+                  AmbientRenderMode.fallback => 'Fallback',
+                },
+                highlighted: renderMode == AmbientRenderMode.shader,
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DebugOverlayInfoPanel(
                     children: [
                       _DebugInfoRow(
                         label: 'Renderer',
-                        value: kIsWeb
-                            ? 'Fallback orbs (web)'
-                            : 'Automatic shader',
+                        value: switch (renderMode) {
+                          AmbientRenderMode.loading => 'Loading shader asset',
+                          AmbientRenderMode.shader => 'Fragment shader',
+                          AmbientRenderMode.fallback =>
+                            kIsWeb ? 'Fallback orbs (web)' : 'Fallback orbs',
+                        },
                       ),
-                      SizedBox(height: 8),
-                      _DebugInfoRow(
+                      const SizedBox(height: 8),
+                      const _DebugInfoRow(
                         label: 'Asset',
                         value: _ambientBackgroundShaderAsset,
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Falls back to animated orbs automatically if shader loading fails.',
-                    style: TextStyle(
+                    switch (renderMode) {
+                      AmbientRenderMode.loading =>
+                        'Waiting for the shader asset to load.',
+                      AmbientRenderMode.shader =>
+                        diagnosticShaderModeEnabled
+                            ? 'Using the fragment shader renderer in diagnostic mode.'
+                            : 'Using the fragment shader renderer.',
+                      AmbientRenderMode.fallback =>
+                        'Using animated orbs because the shader is unavailable or disabled.',
+                    },
+                    style: const TextStyle(
                       color: AppColors.textTertiary,
                       fontSize: 11,
                       height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DebugOverlayMetricBlock(
+                    label: 'Diagnostic',
+                    value: diagnosticShaderModeEnabled ? 'On' : 'Off',
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _IntensityPresetChip(
+                          label: 'Normal',
+                          isSelected: !diagnosticShaderModeEnabled,
+                          onTap: () =>
+                              controller.setDiagnosticShaderModeEnabled(false),
+                        ),
+                        _IntensityPresetChip(
+                          label: 'Diagnostic',
+                          isSelected: diagnosticShaderModeEnabled,
+                          onTap: () =>
+                              controller.setDiagnosticShaderModeEnabled(true),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DebugOverlayMetricBlock(
+                    label: 'Scrim',
+                    value: scrimBypassedForDebug ? 'Bypassed' : 'Normal',
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _IntensityPresetChip(
+                          label: 'Normal',
+                          isSelected: !scrimBypassedForDebug,
+                          onTap: () =>
+                              controller.setScrimBypassedForDebug(false),
+                        ),
+                        _IntensityPresetChip(
+                          label: 'Bypass',
+                          isSelected: scrimBypassedForDebug,
+                          onTap: () =>
+                              controller.setScrimBypassedForDebug(true),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -472,12 +745,38 @@ class _SharedAnimatedBackgroundState extends State<SharedAnimatedBackground>
       setState(() {
         _program = program;
       });
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Ambient shader load failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       setState(() {
         _shaderLoadFailed = true;
       });
     }
+  }
+
+  AmbientRenderMode _currentRenderMode() {
+    if (widget.forceFallback || kIsWeb || _shaderLoadFailed) {
+      return AmbientRenderMode.fallback;
+    }
+    if (_program == null) {
+      return AmbientRenderMode.loading;
+    }
+    return AmbientRenderMode.shader;
+  }
+
+  void _publishRenderMode(AmbientRenderMode mode) {
+    final controller = AmbientMotionScope.maybeOf(context);
+    if (controller == null || controller.renderMode == mode) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      controller.setRenderMode(mode);
+      controller.syncProductionIntensityForRenderMode(
+        isWeb: kIsWeb,
+        platform: defaultTargetPlatform,
+        renderMode: mode,
+      );
+    });
   }
 
   void _syncAnimationState() {
@@ -525,13 +824,15 @@ class _SharedAnimatedBackgroundState extends State<SharedAnimatedBackground>
           animation: _controller,
           builder: (context, _) {
             final intensity =
-                AmbientMotionScope.maybeOf(context)?.intensity ?? 0.3;
+                AmbientMotionScope.maybeOf(context)?.intensity ??
+                _productionAmbientIntensity;
             final progress = _reduceMotion ? 0.0 : _controller.value;
             final useFallback =
                 widget.forceFallback ||
                 kIsWeb ||
                 _program == null ||
                 _shaderLoadFailed;
+            _publishRenderMode(_currentRenderMode());
 
             if (useFallback) {
               return _FallbackAmbientBackground(
@@ -546,6 +847,15 @@ class _SharedAnimatedBackgroundState extends State<SharedAnimatedBackground>
                   program: _program!,
                   progress: progress,
                   intensity: intensity,
+                  tuning: shaderTuningForPlatform(
+                    isWeb: kIsWeb,
+                    platform: defaultTargetPlatform,
+                    diagnosticModeEnabled:
+                        AmbientMotionScope.maybeOf(
+                          context,
+                        )?.diagnosticShaderModeEnabled ??
+                        false,
+                  ),
                 ),
               ),
             );
@@ -567,9 +877,17 @@ class AppBackgroundSurface extends StatelessWidget {
       return child;
     }
 
-    final intensity = AmbientMotionScope.maybeOf(context)?.intensity ?? 0.3;
-    final topAlpha = ui.lerpDouble(0.8, 0.34, intensity)!;
-    final bottomAlpha = ui.lerpDouble(0.88, 0.5, intensity)!;
+    final intensity =
+        AmbientMotionScope.maybeOf(context)?.intensity ??
+        _productionAmbientIntensity;
+    final scrimBypassedForDebug =
+        AmbientMotionScope.maybeOf(context)?.scrimBypassedForDebug ?? false;
+    final topAlpha = scrimBypassedForDebug
+        ? 0.0
+        : ui.lerpDouble(0.8, 0.34, intensity)!;
+    final bottomAlpha = scrimBypassedForDebug
+        ? 0.0
+        : ui.lerpDouble(0.88, 0.5, intensity)!;
 
     return _AmbientSurfaceScope(
       child: DecoratedBox(
@@ -594,42 +912,52 @@ class _AmbientShaderPainter extends CustomPainter {
     required this.program,
     required this.progress,
     required this.intensity,
+    required this.tuning,
   });
 
   final ui.FragmentProgram program;
   final double progress;
   final double intensity;
+  final AmbientShaderTuning tuning;
 
   @override
   void paint(Canvas canvas, Size size) {
     final shader = program.fragmentShader();
-    final accent = Color.lerp(AppColors.primary, AppColors.secondary, 0.55)!;
+    final accent = AppColors.primary;
     final glow = Color.lerp(
-      AppColors.backgroundLight,
-      AppColors.primary,
+      AppColors.secondary,
+      AppColors.secondaryDark,
       0.35,
     )!;
+    final baseA = normalizedShaderColorChannels(AppColors.background);
+    final baseB = normalizedShaderColorChannels(AppColors.backgroundLight);
+    final accentChannels = normalizedShaderColorChannels(accent);
+    final glowChannels = normalizedShaderColorChannels(glow);
 
     shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
-      ..setFloat(
-        2,
-        progress * _SharedAnimatedBackgroundState._cycleDuration.inSeconds,
-      )
-      ..setFloat(3, AppColors.background.r / 255)
-      ..setFloat(4, AppColors.background.g / 255)
-      ..setFloat(5, AppColors.background.b / 255)
-      ..setFloat(6, AppColors.backgroundLight.r / 255)
-      ..setFloat(7, AppColors.backgroundLight.g / 255)
-      ..setFloat(8, AppColors.backgroundLight.b / 255)
-      ..setFloat(9, accent.r / 255)
-      ..setFloat(10, accent.g / 255)
-      ..setFloat(11, accent.b / 255)
-      ..setFloat(12, glow.r / 255)
-      ..setFloat(13, glow.g / 255)
-      ..setFloat(14, glow.b / 255)
-      ..setFloat(15, intensity);
+      ..setFloat(2, normalizedAmbientLoopProgress(progress))
+      ..setFloat(3, baseA[0])
+      ..setFloat(4, baseA[1])
+      ..setFloat(5, baseA[2])
+      ..setFloat(6, baseB[0])
+      ..setFloat(7, baseB[1])
+      ..setFloat(8, baseB[2])
+      ..setFloat(9, accentChannels[0])
+      ..setFloat(10, accentChannels[1])
+      ..setFloat(11, accentChannels[2])
+      ..setFloat(12, glowChannels[0])
+      ..setFloat(13, glowChannels[1])
+      ..setFloat(14, glowChannels[2])
+      ..setFloat(15, intensity)
+      ..setFloat(16, tuning.visibilityBoost)
+      ..setFloat(17, tuning.blobRadiusScale)
+      ..setFloat(18, tuning.blobSoftnessScale)
+      ..setFloat(19, tuning.motionScale)
+      ..setFloat(20, tuning.accentStrength)
+      ..setFloat(21, tuning.glowStrength)
+      ..setFloat(22, tuning.distortionAmount);
 
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
@@ -638,7 +966,8 @@ class _AmbientShaderPainter extends CustomPainter {
   bool shouldRepaint(covariant _AmbientShaderPainter oldDelegate) {
     return oldDelegate.program != program ||
         oldDelegate.progress != progress ||
-        oldDelegate.intensity != intensity;
+        oldDelegate.intensity != intensity ||
+        oldDelegate.tuning != tuning;
   }
 }
 

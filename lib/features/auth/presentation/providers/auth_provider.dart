@@ -1,9 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../../core/auth/auth_session.dart';
-import '../../../../core/networking/app_failure.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../data/auth_repository.dart';
@@ -81,25 +78,25 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<void> appleLogin() async {
     state = const AsyncValue.data(AuthState.loading());
+    AppleSignInResult? appleSignInResult;
     try {
-      final appleSignIn = await OAuthLauncher.launchAppleSignIn();
-      final repo = ref.read(authRepositoryProvider);
-      final user = await repo.appleAuth(
-        appleSignIn.identityToken,
-        displayName: appleSignIn.displayName,
-      );
-      state = AsyncValue.data(AuthState.authenticated(user));
-    } on SignInWithAppleAuthorizationException catch (e) {
-      if (e.code == AuthorizationErrorCode.canceled) {
+      appleSignInResult = await OAuthLauncher.launchAppleSignIn();
+    } catch (e) {
+      if (OAuthLauncher.isCancellationError(e)) {
         state = const AsyncValue.data(AuthState.unauthenticated());
         return;
       }
-      debugPrint('Apple sign-in auth exception: code=${e.code} message=$e');
-      state = const AsyncValue.data(
-        AuthState.error(
-          LocalizedFailure(AppFailureMessageKey.authAppleSignInFailed),
-        ),
+      state = AsyncValue.data(AuthState.error(OAuthLauncher.toFailure(e)));
+      return;
+    }
+
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final user = await repo.appleAuth(
+        appleSignInResult.identityToken,
+        displayName: appleSignInResult.displayName,
       );
+      state = AsyncValue.data(AuthState.authenticated(user));
     } catch (e) {
       state = AsyncValue.data(AuthState.error(ApiError.toFailure(e)));
     }

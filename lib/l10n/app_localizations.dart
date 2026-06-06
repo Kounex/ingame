@@ -935,6 +935,12 @@ abstract class AppLocalizations {
   /// **'Apple sign-in failed. Please try again.'**
   String get authAppleSignInFailed;
 
+  /// No description provided for @authAppleUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple sign-in is not available in this build.'**
+  String get authAppleUnavailable;
+
   /// No description provided for @authErrorGeneric.
   ///
   /// In en, this message translates to:

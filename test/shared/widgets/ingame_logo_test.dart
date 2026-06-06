@@ -41,4 +41,12 @@ void main() {
     );
     expect(find.byIcon(Icons.sports_esports), findsNothing);
   });
+
+  testWidgets('logo does not apply an extra rounded clip around the asset', (
+    tester,
+  ) async {
+    await pumpLogo(tester, const Locale('en'));
+
+    expect(find.byType(ClipRRect), findsNothing);
+  });
 }

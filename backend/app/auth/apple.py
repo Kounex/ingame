@@ -35,7 +35,7 @@ async def validate_apple_token(identity_token: str) -> dict:
             identity_token,
             matching_key,
             algorithms=["RS256"],
-            audience=settings.apple_client_id,
+            audience=settings.apple_client_ids,
             issuer="https://appleid.apple.com",
         )
     except JWTError as e:

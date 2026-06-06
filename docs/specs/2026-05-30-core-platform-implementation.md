@@ -1,8 +1,8 @@
 ---
 spec: core-platform-implementation
-version: "1.36"
+version: "1.46"
 status: complete
-last_updated: "2026-06-05"
+last_updated: "2026-06-06"
 sub_project: 1
 ---
 
@@ -148,7 +148,9 @@ lib/
 - focused flows outside the shell center their constrained content in the viewport, while shell-contained pages center their constrained content inside the right-hand content pane without moving the left navigation rail
 - focused flows that render over the shared ambient background may use a dedicated transition distinct from generic shell/detail pushes; the current maintained contract is a focused-flow custom transition where the covered auth/onboarding/join route drops to near-zero opacity very early, while the incoming route begins fading in shortly after the handoff starts so shell/dashboard content becomes readable quickly, with the shared root `AppBackgroundSurface` above the navigator keeping the ambient background and scrim stable beneath navigation
 - logged-in web route transitions for shell/detail navigation should use a staggered fade-slide handoff where the covered route gets a visible head start moving/fading left, then overlaps with the incoming route for the back half of the transition so push/pop read like the same motion in reverse
+- iOS route pages should use a Cupertino-preserving custom page/route layer that keeps the interactive back swipe while adding an aggressive fade on top of the stock Cupertino transition so transparent app surfaces do not leave the covered route fully readable mid-handoff
 - shell branch root screens that need to animate as the covered route during logged-in web navigation must be declared with explicit `pageBuilder` pages rather than plain `builder` widgets, otherwise the outgoing shell screen cannot participate in the maintained handoff
+- shell branch switches remain indexed-stack swaps, so their handoff is intentionally immediate; the maintained custom page transitions apply to focused flows and pushed route pages rather than tab-branch changes
 - the root router should disable automatic route focus requests on push so initial web view focus changes do not ask Flutter focus traversal to inspect navigator theater layout before the route tree has settled
 - shared app bars may align to the same width preset as the page body on desktop/web so toolbar content and constrained page content stay visually connected
 - shell-route dialogs and bottom sheets use the root navigator so overlays render above persistent navigation
@@ -162,19 +164,25 @@ lib/
 ### Motion Rules
 
 - web may keep richer custom route transitions where appropriate
-- iOS/Android should preserve native navigation feel
+- iOS/Android should preserve native navigation feel, even when iOS overlays a stronger fade on top of the Cupertino route to keep transparent surfaces from ghosting previous content
 - Cue is used where it has clear value: card entry, toasts, social hover states, onboarding feedback, and status pulses
 - continuous shader motion should stay centralized in one shared ambient background layer and remain subtle, low-contrast, and premium rather than visually loud
 - web should prefer a robust animated orb fallback when runtime shader output is inconsistent or too faint in browser renderers; the fallback still needs clearly visible hue drift and spatial motion rather than reading as a brightness-only wash
 - browser ambient motion should use a legible cadence and travel distance so movement remains perceptible behind translucent surfaces instead of requiring users to stare for several seconds to notice drift
-- shared ambient loops must be seamless; browser fallback paths should use periodic motion curves that return to the same trajectory at cycle boundaries instead of snapping back to a new starting position
+- shared ambient loops must be seamless; both shader and browser fallback paths should use periodic motion inputs that return to the same visual state at cycle boundaries instead of snapping back to a new starting position
 - shader-driven accents may be added to a small number of hero or navigation surfaces, but dense lists, per-member presence rows, and blur-heavy repeated cards should stay on event-driven motion only
 - animated background systems must provide a graceful fallback and respect reduced-motion expectations
+- release builds must install the shared ambient motion scope too, with a renderer-aware production baseline: native fragment-shader paths default to ambient intensity `0.0`, while web and any fallback renderer default to `0.8` so browser/fallback backgrounds still read clearly on phone-sized screens without overdriving the native shader path
+- mobile-native shader rendering may apply an additional visibility boost plus tighter blob radius/softness, stronger chroma, and low-frequency shape distortion on top of the shared ambient intensity so iPhone/Android devices keep clearly readable cyan/purple accent spots with more organic silhouettes without changing the maintained web fallback look
+- debug/runtime diagnostics for the ambient background should report the actual current renderer mode (`loading`, `shader`, `fallback`) rather than assuming every non-web build is using the shader
 - debug builds may expose session-only motion controls, including global `timeDilation`, through a visible collapsible overlay instead of hidden startup overrides so transition capture and shader tuning stay inspectable during development; the maintained default slowdown is `1x`
+- debug builds may also expose a session-only ambient shader diagnostic mode plus a scrim bypass toggle so mobile-device investigations can temporarily force unmistakable neon blobs on a near-unmasked surface without changing release visuals
+- focused transparent flows such as login/register/onboarding should minimize overlapping translucent glass surfaces during navigation; the covered route may fade out quickly while the incoming route waits briefly before revealing with a delayed fade/slide handoff so auth-style transitions avoid the temporary dark-film/brightness-kick artifact at completion
 
 ### Brand Asset Contract
 
 - `assets/images/ingame-logo.png` is the canonical brand asset source for app icons, native splash imagery, and shared brand-mark usage in Flutter UI
+- `InGameLogo` should render that canonical logo asset as-is in Flutter UI without additional runtime corner clipping so the source artwork's own rounded shape and padding remain intact
 - native Android/iOS launch icons are generated from that asset via `flutter_launcher_icons`
 - native Android/iOS splash imagery is generated from that asset via `flutter_native_splash`
 - Flutter web favicon and manifest icons should resolve to derived outputs generated from the same source asset
@@ -222,6 +230,16 @@ Outside the shell:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-06 | Motion rules | Switched the maintained production ambient baseline from one shared value to a renderer-aware contract: native shader `0.0`, web/fallback `0.8` | Matches the observed runtime behavior where the native fragment shader remains visible at zero intensity while web/fallback still need the stronger baseline |
+| 2026-06-06 | Motion rules | Refined the focused transparent-flow handoff to use a delayed incoming reveal after the covered route starts fading, while keeping the shader loop contract explicitly periodic | Further reduces auth-screen dark-film overlap while preserving the seam-free ambient cycle contract |
+| 2026-06-06 | Motion rules | Made the shared shader loop contract explicitly periodic at cycle boundaries and clarified that focused transparent flows should not fade the incoming route as a whole | Fixes the visible ambient loop seam and removes post-transition brightness kicks on auth-style transparent pages |
+| 2026-06-06 | Motion rules | Strengthened the native-mobile shader chroma and switched the blob contract toward more organic distorted silhouettes while keeping the web fallback untouched | Keeps the restored native shader visibility feeling intentional and natural instead of pale or oddly geometric |
+| 2026-06-06 | Motion rules | Added a debug-only ambient shader diagnostic mode and scrim bypass toggle to the shared overlay contract | Makes on-device shader investigations conclusive by separating shader visibility from scrim/compositing without changing release behavior |
+| 2026-06-06 | Motion rules | Tightened the native-mobile shader blob profile with stronger motion and more localized highlights while keeping the web fallback untouched | Makes the ambient shader read as visible moving cyan/purple spots on phones instead of a vague overall darkening |
+| 2026-06-06 | Motion rules | Added a mobile-native-only shader visibility boost on top of the shared ambient intensity while leaving the web fallback path unchanged | Restores visible ambient shader presence on iPhone-sized screens without regressing the already-good web background rendering |
+| 2026-06-06 | Brand asset contract | Clarified that `InGameLogo` must render the canonical logo asset without extra runtime corner clipping | Prevents shared brand-mark usage from shaving off the source logo's rounded corners in reused Flutter UI placements |
+| 2026-06-06 | Motion rules | Raised the maintained production ambient baseline to `0.8` so release builds match the intended expressive shader/orb visibility target on smaller screens | Keeps the written visual contract aligned with the stronger production baseline used across web and mobile |
+| 2026-06-05 | Interaction conventions and motion rules | Documented the Cupertino-preserving iOS fade route, clarified that indexed-shell branch switches remain immediate while pushed pages animate, and added the production ambient baseline plus truthful renderer diagnostics contract | Aligns the written platform-motion contract with the production follow-up fixes for iOS overlap, ambient visibility, and the verified Windows web route matrix |
 | 2026-06-04 | Interaction conventions | Added the maintained desktop/web page-width archetype contract (`compact`, `form`, `reading`, `wide`, opt-in `full`) plus alignment rules for focused flows, shell content, and matching app bars | Prevents ultrawide web layouts from stretching single-column flows while keeping width decisions consistent and reusable |
 | 2026-06-04 | Interaction conventions | Refined compact async-validation affordances so both the trailing spinner and trailing error glyph use the same aligned compact wrapper instead of mismatched slot treatment, while still showing localized inline error text | Keeps the shared input contract aligned with the maintained register/onboarding validation UX |
 | 2026-06-04 | Spec topology | Reframed the former UI-architecture child spec as the SP1 implementation spec while preserving its content focus on Flutter structure, shared app contracts, design-system rules, navigation, localization, and testing expectations | Aligns SP1 naming with the SP2 overview plus implementation pattern without a broad content rewrite |

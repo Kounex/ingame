@@ -30,25 +30,16 @@ class InGameLogo extends StatelessWidget {
         InGameLogoSize.large => 42,
       };
 
-  double get _borderRadius => switch (size) {
-        InGameLogoSize.small => 6,
-        InGameLogoSize.medium => 8,
-        InGameLogoSize.large => 12,
-      };
-
   @override
   Widget build(BuildContext context) {
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(_borderRadius),
-          child: Image.asset(
-            ingameLogoAssetPath,
-            width: _iconContainerSize,
-            height: _iconContainerSize,
-            fit: BoxFit.cover,
-          ),
+        Image.asset(
+          ingameLogoAssetPath,
+          width: _iconContainerSize,
+          height: _iconContainerSize,
+          fit: BoxFit.cover,
         ),
         SizedBox(width: size == InGameLogoSize.large ? AppSpacing.md : AppSpacing.sm),
         ShaderMask(

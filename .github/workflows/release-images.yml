@@ -68,6 +68,7 @@ jobs:
             INGAME_API_BASE_URL=https://api.in-game.app/api/v1
             INGAME_WEB_APP_BASE_URL=https://app.in-game.app
             INGAME_INVITE_BASE_URL=https://in-game.app
+            APPLE_SERVICE_ID=com.kounex.ingame.web
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:sha-${{ github.sha }}
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-web:${{ steps.meta.outputs.version }}

@@ -202,6 +202,7 @@
   "errorRetryAction": "Erneut versuchen",
   "authSignInCancelled": "Anmeldung wurde abgebrochen.",
   "authAppleSignInFailed": "Apple-Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
+  "authAppleUnavailable": "Apple-Anmeldung ist in diesem Build nicht verfuegbar.",
   "authErrorGeneric": "Authentifizierung fehlgeschlagen. Bitte versuche es erneut.",
   "authErrorDebugPrefix": "Authentifizierung fehlgeschlagen",
   "profileTitle": "Profil",

@@ -1,10 +1,10 @@
 import 'package:cue/cue.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../data/oauth_launcher.dart';
 
 class SocialLoginButtons extends StatelessWidget {
   const SocialLoginButtons({
@@ -16,12 +16,6 @@ class SocialLoginButtons extends StatelessWidget {
   final VoidCallback? onSteamPressed;
   final VoidCallback? onApplePressed;
 
-  bool get _showAppleButton {
-    if (kIsWeb) return true;
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -29,7 +23,7 @@ class SocialLoginButtons extends StatelessWidget {
         const _SocialDivider(),
         const SizedBox(height: AppSpacing.lg),
         _SteamButton(onPressed: onSteamPressed),
-        if (_showAppleButton) ...[
+        if (OAuthLauncher.appleSignInAvailable) ...[
           const SizedBox(height: AppSpacing.sm),
           _AppleButton(onPressed: onApplePressed),
         ],

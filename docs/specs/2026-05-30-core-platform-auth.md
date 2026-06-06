@@ -1,8 +1,8 @@
 ---
 spec: core-platform-auth
-version: "1.5"
+version: "1.7"
 status: complete
-last_updated: "2026-06-04"
+last_updated: "2026-06-05"
 sub_project: 1
 ---
 
@@ -110,6 +110,8 @@ The shared `OAuthLauncher` utility (`lib/features/auth/data/oauth_launcher.dart`
 
 - `launchSteamAuth()` -- builds Steam OpenID URL, launches the browser, returns callback params
 - `launchAppleSignIn()` -- launches Apple Sign-In, returns an identity token; on web it uses `WebAuthenticationOptions`
+- Apple availability in Flutter is shared between auth surfaces and profile linking: native Apple platforms may launch the native flow, while web only exposes Apple when `APPLE_SERVICE_ID` is configured for that build
+- A missing Apple web service ID is treated as an unavailable local auth surface, not as a generic backend auth failure
 
 Connected-account rows on the profile screen trigger these flows directly, then refresh both the profile and auth providers after success.
 
@@ -129,7 +131,10 @@ Additional constraints:
 - Native Steam callback generation uses `INGAME_WEB_APP_BASE_URL`, while invite/deep-link surfaces use `INGAME_INVITE_BASE_URL`.
 - iOS associated domains remain required for invite links on `in-game.app`, but Steam auth no longer depends on a Universal Link association for `app.in-game.app`.
 - Production native builds must pass explicit host `--dart-define` values rather than relying on repo defaults; the maintained iOS release path uses a dedicated `scripts/release/ios_prod.sh` wrapper, defaulting to `flutter run` and switching to `flutter build ipa` only when `--build` is provided.
-- Apple web Sign-In uses `--dart-define=APPLE_SERVICE_ID=com.ingame.web`.
+- Apple web Sign-In uses `--dart-define=APPLE_SERVICE_ID=com.kounex.ingame.web` in the maintained CI/web-image build path.
+- The release web image build must bake the Apple service ID at build time (for example through `Dockerfile.web` build args in GitHub Actions); this is not a runtime container env because Flutter web reads it through `String.fromEnvironment`.
+- Backend Apple token verification must accept the configured list of Apple audiences (`INGAME_APPLE_CLIENT_IDS` or legacy `INGAME_APPLE_CLIENT_ID`) so native bundle IDs and the web service ID stay aligned with the shipped clients.
+- Unsupported native platforms must not expose actionable Apple login or link affordances. Connected-account UI may still show an already-linked Apple identity so users can manage it.
 
 ## Auth Failure Contract
 
@@ -152,6 +157,8 @@ Flutter maps these codes to locale-aware user-facing messages instead of parsing
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-06 | Platform config | Replaced the placeholder web Apple service ID with the maintained `com.kounex.ingame.web` identifier and documented that the web value must be baked into the CI-built Flutter web image instead of injected at container runtime | Keeps the written Apple web deployment contract aligned with the actual Flutter web build model and chosen Service ID |
+| 2026-06-05 | Flutter auth integration and platform config | Added the shared Apple availability gate, documented the web-configured `APPLE_SERVICE_ID` requirement, and switched backend Apple verification to a configured audience list instead of a single client ID | Fixes the production web Apple mismatch and keeps login/link UI aligned with the actual supported runtime contract |
 | 2026-06-04 | Spec topology | Created a dedicated auth spec by extracting auth and identity rules from the larger SP1 core-platform spec | Reduces spec size, merge conflicts, and update risk while keeping the auth contract focused |
 | 2026-06-04 | Failure contract alignment | Corrected the refresh-token revoke code, documented the Steam first-login `503` fallback, and narrowed the maintained callback table to iOS/Android/Web | Keeps the written auth contract aligned with the implemented backend/client behavior and current platform scope |
 | 2026-06-04 | Runtime host defaults | Clarified that Flutter runtime host defaults stay localhost for repo-independent development and that production native builds must pass explicit host defines | Prevents production domains from being hidden in the default repo config while keeping callback host behavior explicit |

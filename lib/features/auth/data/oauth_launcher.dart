@@ -3,6 +3,7 @@ import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../core/localization/locale_controller.dart';
+import '../../../core/networking/api_error.dart';
 import '../../../core/networking/app_failure.dart';
 import '../../../core/networking/api_endpoints.dart';
 
@@ -13,12 +14,18 @@ class AppleSignInResult {
   final String? displayName;
 }
 
+class AppleSignInUnavailableException implements Exception {
+  const AppleSignInUnavailableException();
+}
+
 class OAuthLauncher {
   OAuthLauncher._();
 
   static const _callbackScheme = 'ingame';
   static const _steamCallbackPath = '/auth/steam-callback.html';
   static const _nativeBridgeParam = 'ingame_native';
+  static const _appleCallbackPath = '/auth/apple-callback.html';
+  static const _appleWebServiceId = String.fromEnvironment('APPLE_SERVICE_ID');
 
   static String get _steamReturnTo {
     return steamReturnToForPlatform(
@@ -145,11 +152,40 @@ class OAuthLauncher {
     return parts.join(' ');
   }
 
+  @visibleForTesting
+  static String normalizedAppleWebServiceId(String? serviceId) {
+    return serviceId?.trim() ?? '';
+  }
+
+  @visibleForTesting
+  static bool appleSignInAvailableForPlatform({
+    required bool isWeb,
+    required TargetPlatform platform,
+    required String? webServiceId,
+  }) {
+    if (isWeb) {
+      return normalizedAppleWebServiceId(webServiceId).isNotEmpty;
+    }
+
+    return platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+  }
+
+  static bool get appleSignInAvailable => appleSignInAvailableForPlatform(
+    isWeb: kIsWeb,
+    platform: defaultTargetPlatform,
+    webServiceId: _appleWebServiceId,
+  );
+
   /// Launches Apple Sign-In and returns the identity token on success.
   /// On web, requires a configured service ID and redirect URI in Apple
   /// Developer Console. Uses native AuthenticationServices on iOS/macOS.
   /// Throws [SignInWithAppleAuthorizationException] on cancellation.
   static Future<AppleSignInResult> launchAppleSignIn() async {
+    final webServiceId = normalizedAppleWebServiceId(_appleWebServiceId);
+    if (!appleSignInAvailable) {
+      throw const AppleSignInUnavailableException();
+    }
+
     final credential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
@@ -157,13 +193,8 @@ class OAuthLauncher {
       ],
       webAuthenticationOptions: kIsWeb
           ? WebAuthenticationOptions(
-              clientId: const String.fromEnvironment(
-                'APPLE_SERVICE_ID',
-                defaultValue: 'com.ingame.web',
-              ),
-              redirectUri: Uri.parse(
-                '${Uri.base.origin}/auth/apple-callback.html',
-              ),
+              clientId: webServiceId,
+              redirectUri: Uri.parse('${Uri.base.origin}$_appleCallbackPath'),
             )
           : null,
     );
@@ -184,8 +215,15 @@ class OAuthLauncher {
   /// Returns a user-friendly error message for OAuth failures.
   /// In debug mode, includes the original error for easier diagnosis.
   static AppFailure toFailure(Object error) {
+    if (error is AppleSignInUnavailableException) {
+      return const LocalizedFailure(AppFailureMessageKey.authAppleUnavailable);
+    }
     if (isCancellationError(error)) {
       return const LocalizedFailure(AppFailureMessageKey.authSignInCancelled);
+    }
+    final apiFailure = ApiError.toFailure(error);
+    if (apiFailure is! UnknownFailure) {
+      return apiFailure;
     }
     return const LocalizedFailure(AppFailureMessageKey.authErrorGeneric);
   }

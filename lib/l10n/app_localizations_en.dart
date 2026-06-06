@@ -445,6 +445,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authAppleSignInFailed => 'Apple sign-in failed. Please try again.';
 
   @override
+  String get authAppleUnavailable => 'Apple sign-in is not available in this build.';
+
+  @override
   String get authErrorGeneric => 'Authentication failed. Please try again.';
 
   @override

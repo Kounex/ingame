@@ -445,6 +445,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authAppleSignInFailed => 'Apple-Anmeldung fehlgeschlagen. Bitte versuche es erneut.';
 
   @override
+  String get authAppleUnavailable => 'Apple-Anmeldung ist in diesem Build nicht verfuegbar.';
+
+  @override
   String get authErrorGeneric => 'Authentifizierung fehlgeschlagen. Bitte versuche es erneut.';
 
   @override

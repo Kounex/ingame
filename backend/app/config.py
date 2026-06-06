@@ -19,7 +19,13 @@ class Settings(BaseSettings):
     steam_api_key: str = ""
     apple_team_id: str = ""
     apple_key_id: str = ""
-    apple_client_id: str = "ingame.kounex.com"
+    apple_client_ids: Annotated[list[str], NoDecode] = Field(
+        default=["ingame.kounex.com", "com.example.ingame", "com.ingame.web"],
+        validation_alias=AliasChoices(
+            "INGAME_APPLE_CLIENT_IDS",
+            "INGAME_APPLE_CLIENT_ID",
+        ),
+    )
     avatar_storage_bucket: str = ""
     avatar_storage_region: str = "auto"
     avatar_storage_endpoint_url: str = ""
@@ -44,6 +50,19 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+
+        value = value.strip()
+        if not value:
+            return []
+        if value.startswith("["):
+            return json.loads(value)
+        return [item.strip() for item in value.split(",") if item.strip()]
+
+    @field_validator("apple_client_ids", mode="before")
+    @classmethod
+    def parse_apple_client_ids(cls, value: object) -> object:
         if not isinstance(value, str):
             return value
 

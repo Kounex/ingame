@@ -1,8 +1,8 @@
 ---
 spec: roadmap
-version: "1.54"
+version: "1.65"
 status: active
-last_updated: "2026-06-05"
+last_updated: "2026-06-06"
 ---
 
 # InGame -- Product Roadmap
@@ -78,16 +78,17 @@ graph LR
 - Reusable `InGameLogo` brand widget with the canonical logo image plus gradient wordmark styling
 - Platform-authentic social login buttons (Steam brand palette, Apple HIG)
 - Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus, and existing page transitions where retained
-- Platform-aware route pages so web keeps custom fade/slide while iOS/Android preserve native navigation gestures
+- Platform-aware route pages so web keeps custom fade/slide for focused and pushed detail routes, iOS keeps the interactive Cupertino back swipe while adding a stronger fade to reduce overlap, and indexed shell branch switches remain intentionally immediate
+- Shared animated ambient background plus an expressive production baseline motion scope so release builds keep the same premium background system visibly present outside debug-only tuning
 - Helm chart + Kustomize overlays for OpenShift deployment
 - Backend coverage across auth, users, groups, and realtime/WebSocket behavior
 
 **Spec set:**
 - [Overview](2026-05-30-core-platform-design.md) (v3.1)
-- [Auth](2026-05-30-core-platform-auth.md) (v1.3)
+- [Auth](2026-05-30-core-platform-auth.md) (v1.7)
 - [Profiles](2026-05-30-core-platform-profiles.md) (v1.7)
 - [Groups](2026-05-30-core-platform-groups.md) (v1.0)
-- [Implementation](2026-05-30-core-platform-implementation.md) (v1.36)
+- [Implementation](2026-05-30-core-platform-implementation.md) (v1.46)
 
 ---
 
@@ -230,6 +231,11 @@ These patterns and practices apply across all sub-projects:
 
 | Date | Change | Detail |
 |------|--------|--------|
+| 2026-06-06 | SP1 ambient baseline split | Split the maintained ambient baseline by renderer so native shader starts at `0.0` while web/fallback remain at `0.8` | Keeps the roadmap aligned with the observed platform behavior after the native shader became properly visible and controllable |
+| 2026-06-06 | SP1 transition overlap follow-up | Adjusted focused transparent flows to delay incoming reveal while keeping the ambient shader loop periodic | Keeps the roadmap aligned with the second pass on the remaining auth brightness-kick artifact after the initial seam/transition cleanup |
+| 2026-06-06 | SP1 ambient loop and auth-transition cleanup | Made the native shader loop periodic at the cycle boundary and stopped fading incoming transparent focused-flow pages as whole-route alpha layers | Keeps the roadmap aligned with the fixes for the visible ambient seam and the auth brightness kick after focused-flow transitions |
+| 2026-06-06 | SP1 native shader refinement | Strengthened the native ambient shader colors and moved blob shaping toward a more organic distorted profile while leaving the web fallback contract intact | Keeps the roadmap aligned with the follow-up visual tuning after the native shader visibility bug was fixed |
+| 2026-06-06 | SP1 ambient debug diagnostics | Added a debug-only shader diagnostic mode and scrim bypass control to the shared ambient overlay contract | Keeps the roadmap aligned with the on-device iOS shader investigation path without changing the release visual baseline |
 | 2026-05-30 | Initial roadmap created | 5 sub-projects defined; SP1 complete, SP2-SP5 planned |
 | 2026-05-30 | SP1 polish additions | Added: InGameLogo widget, platform-authentic social buttons, hybrid persistent navigation, email/password for social users, unlink lockout guard, intelligent gaming hours display |
 | 2026-05-30 | SP1 Cue migration pass | Shared motion surfaces now use Cue where it has clear ROI: app debug tooling, GlassCard entry, AppToast show/hide, social hover states, and onboarding selection/step transitions |
@@ -266,6 +272,12 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-05 | SP1 visible outgoing push motion | Bumped the SP1 implementation spec reference after refining logged-in web push timing so the covered page remains visibly sliding/fading out instead of appearing to vanish immediately | Keeps the roadmap aligned with the polished forward in-shell navigation handoff |
 | 2026-06-05 | SP1 slower covered-route push timing | Bumped the SP1 implementation spec reference after lengthening the covered-route push fade/slide window so forward in-shell pushes better match the perceived pacing of the reverse handoff | Keeps the roadmap aligned with the latest navigation timing refinement after the outgoing page still felt too fast |
 | 2026-06-05 | SP1 final transition contract sync | Bumped the SP1 implementation spec reference after aligning the logged-in web transition contract to the final head-start-then-overlap timing model and restoring the debug overlay's default slowdown to `1x` | Keeps the roadmap's implementation pointer aligned with the user-approved route feel and current debug tooling behavior |
+| 2026-06-05 | SP1 production follow-up polish | Bumped the SP1 auth and implementation spec references after aligning Apple web/native configuration, adding the Cupertino-preserving iOS fade route, clarifying that shell branch switches stay immediate, and documenting the stronger production ambient baseline | Keeps the roadmap aligned with the production follow-up fixes and the verified route/rendering contract across web and iOS |
+| 2026-06-06 | SP1 expressive ambient baseline | Bumped the SP1 implementation spec reference after raising the maintained production ambient intensity to the expressive `0.8` target for release builds | Keeps the roadmap aligned with the desired stronger shader/orb visibility on smaller screens |
+| 2026-06-06 | SP1 mobile shader visibility boost | Bumped the SP1 implementation spec reference after adding a native-mobile-only shader visibility boost while leaving the web fallback path unchanged | Keeps the roadmap aligned with the shader-legibility fix for iPhone/Android without regressing the already-good web ambient rendering |
+| 2026-06-06 | SP1 mobile shader blob tuning | Bumped the SP1 implementation spec reference after tightening native-mobile shader blob scale, softness, and motion while leaving the web fallback untouched | Keeps the roadmap aligned with the follow-up shader tuning needed so the iPhone path reads as visible moving accent spots rather than uniform darkening |
+| 2026-06-06 | SP1 Apple web build wiring | Bumped the SP1 auth spec reference after documenting the maintained Apple web Service ID (`com.kounex.ingame.web`) and the required CI build-time wiring for the Flutter web image | Keeps the roadmap aligned with the chosen Apple web identifier and the actual release-image build path |
+| 2026-06-06 | SP1 logo clipping contract | Bumped the SP1 implementation spec reference after clarifying that `InGameLogo` should render the canonical rounded logo asset without extra runtime clipping | Keeps the roadmap's shared-brand-widget contract aligned with the corner-cut fix in Flutter UI |
 | 2026-06-04 | SP1 recurring-availability UX | Aligned onboarding and profile editing on a shared per-day preset gaming-hours editor with multi-select days and an `All day` shortcut | Removes the remaining SP1 mismatch between onboarding's one-size-fits-all schedule capture and profile editing's richer recurring availability UX |
 | 2026-06-04 | SP1 spec split | Split the oversized SP1 core-platform spec into overview, auth, profiles, groups, and implementation-oriented child specs | Keeps future SP1 updates smaller, more reviewable, and less conflict-prone |
 | 2026-06-04 | SP1 avatar editor spike | Added the shared `Upload photo` square editor path while keeping native mobile library/camera crop flows in place | Validates a narrower migration path toward cross-platform avatar editing without forcing a full cropper replacement at once |

@@ -152,11 +152,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final repository = _FakeProfileRepository(
-      const User(
-        id: 'user-1',
-        displayName: 'Schedule User',
-        timezone: 'UTC',
-      ),
+      const User(id: 'user-1', displayName: 'Schedule User', timezone: 'UTC'),
     );
 
     await pumpProfile(tester, repository: repository);
@@ -259,5 +255,23 @@ void main() {
       await tester.pump(const Duration(seconds: 6));
       await tester.pumpAndSettle();
     },
+  );
+
+  testWidgets(
+    'profile hides Apple row on unsupported native platforms',
+    (tester) async {
+      final repository = _FakeProfileRepository(
+        const User(id: 'user-1', displayName: 'Android User', timezone: 'UTC'),
+      );
+
+      await pumpProfile(tester, repository: repository);
+      await _scrollToAccountRow(tester, 'Steam');
+
+      expect(find.text('Apple'), findsNothing);
+      expect(find.text('Steam'), findsOneWidget);
+    },
+    variant: const TargetPlatformVariant(<TargetPlatform>{
+      TargetPlatform.android,
+    }),
   );
 }
