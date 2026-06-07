@@ -1,7 +1,7 @@
 name: ingame
 description: Social gaming coordination app - find time to play with friends.
 publish_to: 'none'
-version: 0.5.4+21
+version: 0.6.0+22
 
 environment:
   sdk: ^3.12.0

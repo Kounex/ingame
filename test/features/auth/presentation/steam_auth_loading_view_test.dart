@@ -35,10 +35,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: const Scaffold(
+        home: Scaffold(
           body: SteamAuthLoadingView(
             onCancel: _noop,
             message: 'Connecting to Discord...',

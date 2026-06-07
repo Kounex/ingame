@@ -1159,7 +1159,7 @@ void main() {
             _windowFixture(
               id: 'window-1',
               displayName: 'Owner',
-              startsAt: DateTime.utc(2026, 6, 7, 18),
+              startsAt: DateTime.utc(2099, 6, 7, 18),
             ),
           ],
         ),

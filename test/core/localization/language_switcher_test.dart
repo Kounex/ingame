@@ -364,7 +364,7 @@ void main() {
     FlutterView? view;
     final errors = <FlutterErrorDetails>[];
     final previousOnError = FlutterError.onError;
-    FlutterError.onError = (details) => errors.add(details);
+    FlutterError.onError = errors.add;
     addTearDown(() {
       FlutterError.onError = previousOnError;
     });
@@ -415,7 +415,7 @@ void main() {
       FlutterView? view;
       final errors = <FlutterErrorDetails>[];
       final previousOnError = FlutterError.onError;
-      FlutterError.onError = (details) => errors.add(details);
+      FlutterError.onError = errors.add;
       addTearDown(() {
         FlutterError.onError = previousOnError;
       });
