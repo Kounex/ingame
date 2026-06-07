@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination-models
-version: "1.5"
+version: "1.6"
 status: complete
-last_updated: "2026-06-06"
+last_updated: "2026-06-07"
 sub_project: 2
 ---
 
@@ -173,6 +173,16 @@ Group activity is a lightweight chronological feed of coordination-relevant even
 Server events:
 - `activity_recorded`
 
+### Planner Surface Rules
+
+- the shipped planner no longer renders activity as an unbounded flat list at the bottom of the hub
+- the default activity surface is a compact journal card that separates `Recent` highlights from older `History`
+- `Recent` prioritizes the newest high-signal coordination changes in a short summary block sized for quick scanning
+- `History` remains chronological but is grouped by day-range buckets and revealed progressively so large groups do not spend the whole planner height on old events
+- lightweight client-side filters may narrow the visible journal to session, availability, RSVP, or current-user activity without changing the durable backend contract
+- low-signal RSVP churn may be visually aggregated when adjacent in time, but the underlying typed event history remains durable and ordered
+- member identity should stay visually scannable in both compact and expanded rows so multi-member activity does not collapse into anonymous prose
+
 ## Change Log
 
 | Date | Section | What changed | Why |
@@ -183,3 +193,4 @@ Server events:
 | 2026-06-06 | Session lifecycle and contracts | Added explicit session deletion semantics, the `DELETE /groups/{group_id}/sessions/{session_id}` REST route, the `session_deleted` websocket event, and the corresponding activity type | Distinguishes planner cleanup from status-based cancellation while keeping other group members in sync and preserving a feed trace that the session was removed |
 | 2026-06-06 | Scheduled-ready browsing UX | Replaced the old week-range planning-hub browsing description with an upcoming-first preview plus a full agenda sheet for the remaining windows | Removes the blind week-by-week search flow while keeping the full upcoming list available in a more scannable secondary surface |
 | 2026-06-06 | Coordination surface polish | Clarified that grouped ready-window days use emphasized headers and separators, and that session cards are compact summaries that open a richer RSVP/detail sheet | Keeps the shipped planner contract aligned with the latest scanability pass and the new separation between summary cards and detailed session interaction |
+| 2026-06-07 | Activity journal UX | Replaced the old flat activity-list expectation with a compact recent-highlights plus grouped-history journal model, including lightweight filters and visual aggregation guidance for RSVP churn | Keeps large-group planner history useful without letting durable coordination activity overwhelm the single-column hub |

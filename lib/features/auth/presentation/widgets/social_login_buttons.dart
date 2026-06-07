@@ -4,156 +4,126 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../shared/widgets/provider_visuals.dart';
 import '../../data/oauth_launcher.dart';
 
 class SocialLoginButtons extends StatelessWidget {
   const SocialLoginButtons({
     super.key,
     this.onSteamPressed,
+    this.onDiscordPressed,
     this.onApplePressed,
+    this.showDiscord,
+    this.showApple,
   });
 
   final VoidCallback? onSteamPressed;
+  final VoidCallback? onDiscordPressed;
   final VoidCallback? onApplePressed;
+  @visibleForTesting
+  final bool? showDiscord;
+  @visibleForTesting
+  final bool? showApple;
 
   @override
   Widget build(BuildContext context) {
+    final showDiscordButton =
+        showDiscord ?? OAuthLauncher.discordSignInAvailable;
+    final showAppleButton = showApple ?? OAuthLauncher.appleSignInAvailable;
+
     return Column(
       children: [
         const _SocialDivider(),
         const SizedBox(height: AppSpacing.lg),
-        _SteamButton(onPressed: onSteamPressed),
-        if (OAuthLauncher.appleSignInAvailable) ...[
+        _ProviderAuthButton(
+          provider: 'steam',
+          label: context.l10n.socialContinueWithSteam,
+          onPressed: onSteamPressed,
+        ),
+        if (showDiscordButton) ...[
           const SizedBox(height: AppSpacing.sm),
-          _AppleButton(onPressed: onApplePressed),
+          _ProviderAuthButton(
+            provider: 'discord',
+            label: context.l10n.socialContinueWithDiscord,
+            onPressed: onDiscordPressed,
+          ),
+        ],
+        if (showAppleButton) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _ProviderAuthButton(
+            provider: 'apple',
+            label: context.l10n.socialContinueWithApple,
+            onPressed: onApplePressed,
+          ),
         ],
       ],
     );
   }
 }
 
-class _SteamButton extends StatelessWidget {
-  const _SteamButton({this.onPressed});
-  final VoidCallback? onPressed;
+class _ProviderAuthButton extends StatelessWidget {
+  const _ProviderAuthButton({
+    required this.provider,
+    required this.label,
+    this.onPressed,
+  });
 
-  static const _steamNavy = Color(0xFF1B2838);
-  static const _steamBlue = Color(0xFF66C0F4);
-  static const _steamMid = Color(0xFF2A475E);
+  final String provider;
+  final String label;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
+    final spec = ProviderVisuals.forProvider(provider);
     return _HoverableSocialButton(
       onPressed: onPressed,
-      child: DecoratedBoxActor(
-        gradient: const .tween(
-          LinearGradient(colors: [_steamMid, _steamNavy]),
-          LinearGradient(colors: [Color(0xFF3A7EBF), _steamMid]),
-        ),
-        borderRadius: .fixed(BorderRadius.circular(12)),
-        border: .tween(
-          Border.all(color: _steamBlue.withValues(alpha: 0.3), width: 1.5),
-          Border.all(color: _steamBlue.withValues(alpha: 0.6), width: 1.5),
-        ),
-        boxShadow: .tween(
-          [BoxShadow(color: _steamBlue.withValues(alpha: 0.1), blurRadius: 6)],
-          [
-            BoxShadow(
-              color: _steamBlue.withValues(alpha: 0.25),
-              blurRadius: 12,
-            ),
-          ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [spec.authBackgroundStart, spec.authBackgroundEnd],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: spec.authBorderColor, width: 1.5),
+          boxShadow: spec.authShadowColor == null
+              ? null
+              : [BoxShadow(color: spec.authShadowColor!, blurRadius: 10)],
         ),
         child: SizedBox(
           width: double.infinity,
           height: 48,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              DecoratedBoxActor(
-                color: .tween(
-                  _steamBlue.withValues(alpha: 0.2),
-                  _steamBlue.withValues(alpha: 0.28),
-                ),
-                borderRadius: .fixed(BorderRadius.circular(6)),
-                child: const SizedBox(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
                   width: 28,
                   height: 28,
-                  child: Icon(
-                    Icons.sports_esports,
-                    size: 16,
-                    color: Color(0xFF66C0F4),
+                  child: Center(
+                    child: Icon(
+                      spec.icon,
+                      size: provider == 'apple' ? 20 : 18,
+                      color: spec.authIconColor,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Actor(
-                acts: [
-                  const .textStyle(
-                    from: TextStyle(
-                      color: Color(0xFFE1E8ED),
+                const SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: spec.authForegroundColor,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                     ),
-                    to: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
                   ),
-                ],
-                child: Text(l10n.socialContinueWithSteam),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AppleButton extends StatelessWidget {
-  const _AppleButton({this.onPressed});
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return _HoverableSocialButton(
-      onPressed: onPressed,
-      child: DecoratedBoxActor(
-        color: const .tween(Color(0xFFF5F5F7), Colors.white),
-        borderRadius: .fixed(BorderRadius.circular(12)),
-        border: .tween(
-          Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          Border.all(color: Colors.white.withValues(alpha: 0.9)),
-        ),
-        boxShadow: .tween(<BoxShadow>[], [
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.18),
-            blurRadius: 10,
-          ),
-        ]),
-        child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.apple, size: 22, color: Colors.black),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                l10n.socialContinueWithApple,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -169,14 +139,24 @@ class _HoverableSocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wrappedChild = GestureDetector(
-      onTap: onPressed,
-      behavior: HitTestBehavior.opaque,
-      child: child,
+    final wrappedChild = Semantics(
+      button: true,
+      enabled: onPressed != null,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          mouseCursor: onPressed != null
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.basic,
+          child: child,
+        ),
+      ),
     );
 
     if (onPressed == null) {
-      return MouseRegion(cursor: SystemMouseCursors.basic, child: wrappedChild);
+      return wrappedChild;
     }
 
     return Cue.onHover(

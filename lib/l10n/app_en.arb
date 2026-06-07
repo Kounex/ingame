@@ -11,6 +11,7 @@
   "loginRegister": "Register",
   "socialDividerOr": "or",
   "socialContinueWithSteam": "Continue with Steam",
+  "socialContinueWithDiscord": "Continue with Discord",
   "socialContinueWithApple": "Continue with Apple",
   "validatorFieldRequired": "{fieldName} is required",
   "@validatorFieldRequired": {
@@ -66,6 +67,7 @@
   "commonFinish": "Finish",
   "commonSave": "Save",
   "commonCancel": "Cancel",
+  "commonEdit": "Edit",
   "commonDelete": "Delete",
   "commonRemove": "Remove",
   "commonDeny": "Deny",
@@ -199,6 +201,7 @@
   "inviteLinkCopied": "Invite link copied to clipboard",
   "inviteDetailsCopied": "Invite details copied to clipboard",
   "steamAuthConnecting": "Connecting to Steam...",
+  "discordAuthConnecting": "Connecting to Discord...",
   "steamAuthTryAgain": "Try Again",
   "steamAuthBackToPrefix": "Back to",
   "steamAuthBackToLogin": "Back to Login",
@@ -216,6 +219,7 @@
   "profileLogoutConfirmMessage": "You'll need to sign in again to access your groups and profile.",
   "profileSectionAccount": "Account",
   "profileSectionConnectedAccounts": "Connected Accounts",
+  "profileSectionSocials": "Socials",
   "profileSectionPreferences": "Preferences",
   "profileEmailLabel": "Email",
   "profileTimezoneLabel": "Timezone",
@@ -224,9 +228,14 @@
   "profileUnknown": "Unknown",
   "profileConnected": "Connected",
   "profileNotConnected": "Not connected",
+  "profileSocialIdentityLinkInConnectedAccounts": "Link in Connected Accounts",
   "profileConnectedAccountsEmailPassword": "Email & Password",
   "profileConnectedAccountsSteam": "Steam",
+  "profileConnectedAccountsDiscord": "Discord",
   "profileConnectedAccountsApple": "Apple",
+  "profileConnectedAccountsXbox": "Xbox",
+  "profileConnectedAccountsPlayStation": "PlayStation",
+  "profileConnectedAccountsNintendo": "Nintendo",
   "profileConnectedTapToDisconnect": "Connected. Tap to disconnect.",
   "profileDisconnectTitle": "Disconnect {provider}?",
   "@profileDisconnectTitle": {
@@ -277,11 +286,32 @@
       }
     }
   },
+  "profileDiscordLinkedSuccess": "Discord account linked successfully",
+  "profileLinkDiscordFailed": "Failed to link Discord: {message}",
+  "@profileLinkDiscordFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "profileSetEmailPasswordTitle": "Add Email & Password",
-  "profileSetEmailPasswordDescription": "Add email login to your account so you can sign in without a social provider.",
+  "profileSetEmailPasswordDescription": "Add a password to the email already on your account so you can sign in without a social provider.",
   "profileEmailPasswordAddedSuccess": "Email & password added successfully",
-  "profileSetEmailFailed": "Failed to set email: {message}",
+  "profileSetEmailFailed": "Failed to add email & password: {message}",
   "@profileSetEmailFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileChangeEmailTitle": "Change Email",
+  "profileChangeEmailDescription": "Update the account email used for recovery and future email & password sign-in.",
+  "profileChangeEmailSuccess": "Email updated successfully",
+  "profileAddEmailFirst": "Set an account email first before adding a password.",
+  "profileChangeEmailFailed": "Failed to change email: {message}",
+  "@profileChangeEmailFailed": {
     "placeholders": {
       "message": {
         "type": "String"
@@ -293,6 +323,79 @@
   "profileLinkAppleFailed": "Failed to link Apple: {message}",
   "@profileLinkAppleFailed": {
     "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityAddTitle": "Add {provider}",
+  "@profileSocialIdentityAddTitle": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityEditTitle": "Edit {provider}",
+  "@profileSocialIdentityEditTitle": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityGamertagLabel": "Gamertag",
+  "profileSocialIdentityShareLinkLabel": "Profile share link",
+  "profileSocialIdentityFriendCodeLabel": "Friend code",
+  "profileSocialIdentityOnlineIdLabel": "Online ID",
+  "profileSocialIdentityNicknameLabel": "Nickname",
+  "profileSocialIdentityInvalidShareLink": "Enter a valid profile share link.",
+  "profileSocialIdentitySavedSuccess": "{provider} saved.",
+  "@profileSocialIdentitySavedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityCopiedSuccess": "{provider} copied.",
+  "@profileSocialIdentityCopiedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityOpenFailed": "Failed to open {provider} profile.",
+  "@profileSocialIdentityOpenFailed": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityCopyFailed": "Failed to copy {provider}.",
+  "@profileSocialIdentityCopyFailed": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityRemovedSuccess": "{provider} removed.",
+  "@profileSocialIdentityRemovedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentitySaveFailed": "Failed to save {provider}: {message}",
+  "@profileSocialIdentitySaveFailed": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
       "message": {
         "type": "String"
       }
@@ -583,6 +686,53 @@
   "groupCoordinationSessionsEmpty": "No sessions planned yet.",
   "groupCoordinationActivityTitle": "Activity",
   "groupCoordinationActivityEmpty": "No activity yet.",
+  "groupCoordinationActivityRecent": "Recent",
+  "groupCoordinationActivityHistory": "History",
+  "groupCoordinationActivityFilterAll": "All",
+  "groupCoordinationActivityFilterSessions": "Sessions",
+  "groupCoordinationActivityFilterAvailability": "Availability",
+  "groupCoordinationActivityFilterRsvps": "RSVPs",
+  "groupCoordinationActivityFilterMine": "Mine",
+  "groupCoordinationActivityBucketToday": "Today ({count})",
+  "@groupCoordinationActivityBucketToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityBucketYesterday": "Yesterday ({count})",
+  "@groupCoordinationActivityBucketYesterday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityBucketEarlierThisWeek": "Earlier this week ({count})",
+  "@groupCoordinationActivityBucketEarlierThisWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityBucketEarlier": "Earlier ({count})",
+  "@groupCoordinationActivityBucketEarlier": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityRsvpBurst": "{count} RSVP updates",
+  "@groupCoordinationActivityRsvpBurst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupCoordinationAddWindowTitle": "Add ready window",
   "groupCoordinationEditWindowTitle": "Edit ready window",
   "groupCoordinationDeleteWindowConfirmTitle": "Delete ready window?",

@@ -1,6 +1,6 @@
 ---
 spec: core-platform
-version: "3.2"
+version: "3.3"
 status: complete
 last_updated: "2026-06-07"
 sub_project: 1
@@ -37,6 +37,7 @@ This file is now the SP1 entry point. Detailed contracts live in focused child s
 SP1 is now split into one overview plus focused child specs:
 
 - [Core Platform Auth](2026-05-30-core-platform-auth.md) -- sign-in methods, token/session lifecycle, recovery email rules, provider linking, platform callback configuration
+- [Core Platform Social Identities](2026-06-07-core-platform-social-identities.md) -- provider capability matrix, normalized linked identities, refresh rules, and manual social-platform fallbacks
 - [Core Platform Profiles](2026-05-30-core-platform-profiles.md) -- user profile fields, avatar rules, onboarding profile setup, profile editing, recurring availability
 - [Core Platform Groups](2026-05-30-core-platform-groups.md) -- groups, memberships, invites, discoverability, join requests, RBAC
 - [Core Platform Implementation](2026-05-30-core-platform-implementation.md) -- Flutter structure, shared app boundaries, design system, navigation, localization, and testing conventions
@@ -122,6 +123,16 @@ See [Core Platform Profiles](2026-05-30-core-platform-profiles.md) for:
 - profile editing
 - recurring availability persistence
 
+### Social Identities
+
+See [Core Platform Social Identities](2026-06-07-core-platform-social-identities.md) for:
+
+- auth-provider versus social-identity boundaries
+- normalized linked provider identities
+- refreshable official provider metadata
+- manual provider fields for Xbox, PlayStation, and Nintendo
+- outbound social/profile actions
+
 ### Groups
 
 See [Core Platform Groups](2026-05-30-core-platform-groups.md) for:
@@ -192,3 +203,4 @@ The SP1 app shell continues to use the glassmorphism design system and Cue-backe
 | 2026-06-04 | Spec topology | Converted the original oversized SP1 spec into a thin overview plus focused auth, profiles, groups, and implementation child specs | Keeps SP1 maintainable as the project grows while preserving one stable entry-point spec path |
 | 2026-06-04 | Naming normalization | Reframed the SP1 implementation-facing child spec from `UI Architecture` to `Implementation` | Aligns SP1 and SP2 naming with less ambiguity about what belongs in the implementation-oriented child spec |
 | 2026-06-07 | Groups and API contract | Added the backend-truth `GroupResponse.has_pending_join_request` preview field to the SP1 overview contract summary | Keeps the overview spec aligned with the maintained group preview API so contract validation reads the same join-request state now used by discover and invite flows |
+| 2026-06-07 | Social identity child spec | Added a dedicated SP1 child spec for social identities and linked it from the overview | Creates a stable home for the new provider-capability and linked-identity contract without overloading the auth or profiles specs |

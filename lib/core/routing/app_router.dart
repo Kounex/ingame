@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/auth_session.dart';
 import '../../features/auth/domain/auth_state.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/auth/presentation/screens/discord_auth_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/steam_auth_screen.dart';
@@ -73,7 +74,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           state.matchedLocation == RoutePaths.login ||
           state.matchedLocation == RoutePaths.register ||
-          state.matchedLocation == RoutePaths.steamAuth;
+          state.matchedLocation == RoutePaths.steamAuth ||
+          state.matchedLocation == RoutePaths.discordAuth;
       final isOnboarding = state.matchedLocation == RoutePaths.onboarding;
       final redirectTarget = sanitizeRedirectTarget(
         state.uri.queryParameters['from'],
@@ -166,6 +168,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => focusedFlowRoutePage(
           key: state.pageKey,
           child: SteamAuthScreen(
+            redirectTo: sanitizeRedirectTarget(
+              state.uri.queryParameters['from'],
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.discordAuth,
+        name: RouteNames.discordAuth,
+        pageBuilder: (context, state) => focusedFlowRoutePage(
+          key: state.pageKey,
+          child: DiscordAuthScreen(
             redirectTo: sanitizeRedirectTarget(
               state.uri.queryParameters['from'],
             ),

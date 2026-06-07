@@ -172,6 +172,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   : {'from': widget.redirectTo!},
                             ).toString(),
                           ),
+                          onDiscordPressed: () => context.go(
+                            Uri(
+                              path: RoutePaths.discordAuth,
+                              queryParameters: widget.redirectTo == null
+                                  ? null
+                                  : {'from': widget.redirectTo!},
+                            ).toString(),
+                          ),
                           onApplePressed: () => ref
                               .read(authNotifierProvider.notifier)
                               .appleLogin(),

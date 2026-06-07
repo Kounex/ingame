@@ -217,4 +217,22 @@ void main() {
     expect(find.text('Deutsch'), findsOneWidget);
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
   });
+
+  testWidgets('shared popover menu item uses app-standard motion timing', (
+    tester,
+  ) async {
+    await pumpPopoverHarness(
+      tester,
+      child: const Center(
+        child: AppAnchoredPopoverMenuItem(label: 'English', selected: false),
+      ),
+    );
+
+    final animatedContainer = tester.widget<AnimatedContainer>(
+      find.byType(AnimatedContainer),
+    );
+
+    expect(animatedContainer.duration, const Duration(milliseconds: 220));
+    expect(animatedContainer.curve, Curves.easeOutCubic);
+  });
 }

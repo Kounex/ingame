@@ -76,6 +76,38 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
+  Future<void> discordLogin() async {
+    state = const AsyncValue.data(AuthState.loading());
+    DiscordAuthResult? discordAuthResult;
+    try {
+      discordAuthResult = await OAuthLauncher.launchDiscordAuth();
+    } catch (e) {
+      if (OAuthLauncher.isCancellationError(e)) {
+        state = const AsyncValue.data(AuthState.unauthenticated());
+        return;
+      }
+      state = AsyncValue.data(AuthState.error(OAuthLauncher.toFailure(e)));
+      return;
+    }
+
+    await completeDiscordLogin(discordAuthResult);
+  }
+
+  Future<void> completeDiscordLogin(DiscordAuthResult discordAuthResult) async {
+    state = const AsyncValue.data(AuthState.loading());
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final user = await repo.discordAuth(
+        code: discordAuthResult.code,
+        codeVerifier: discordAuthResult.codeVerifier,
+        redirectUri: discordAuthResult.redirectUri,
+      );
+      state = AsyncValue.data(AuthState.authenticated(user));
+    } catch (e) {
+      state = AsyncValue.data(AuthState.error(ApiError.toFailure(e)));
+    }
+  }
+
   Future<void> appleLogin() async {
     state = const AsyncValue.data(AuthState.loading());
     AppleSignInResult? appleSignInResult;

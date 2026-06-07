@@ -14,6 +14,7 @@ import '../../../../shared/providers/websocket_provider.dart';
 import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_chip.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
+import '../../../../shared/widgets/app_popup_menu_button.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
@@ -49,7 +50,7 @@ class GroupDetailScreen extends ConsumerWidget {
           ),
           actions: detailAsync.value != null
               ? [
-                  PopupMenuButton<_GroupAction>(
+                  AppPopupMenuButton<_GroupAction>(
                     icon: const Icon(
                       Icons.more_vert,
                       color: AppColors.textSecondary,
@@ -511,6 +512,7 @@ class _CoordinationHubCard extends ConsumerWidget {
     );
     final coordination = coordinationAsync.value;
     final nextSession = _findNextSession(coordination?.sessions);
+    final upcomingWindowCount = _countUpcomingWindows(coordination?.windows);
 
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -541,9 +543,7 @@ class _CoordinationHubCard extends ConsumerWidget {
               children: [
                 _InfoChip(
                   icon: Icons.calendar_month_outlined,
-                  label: l10n.groupCoordinationWindowsCount(
-                    coordination.windows.length,
-                  ),
+                  label: l10n.groupCoordinationWindowsCount(upcomingWindowCount),
                 ),
                 _InfoChip(
                   icon: Icons.sports_esports_outlined,
@@ -602,6 +602,14 @@ class _CoordinationHubCard extends ConsumerWidget {
       }
     }
     return null;
+  }
+
+  int _countUpcomingWindows(List<ScheduledReadyWindow>? windows) {
+    if (windows == null || windows.isEmpty) {
+      return 0;
+    }
+    final now = DateTime.now();
+    return windows.where((window) => window.endsAt.toLocal().isAfter(now)).length;
   }
 }
 

@@ -161,6 +161,12 @@ abstract class AppLocalizations {
   /// **'Continue with Steam'**
   String get socialContinueWithSteam;
 
+  /// No description provided for @socialContinueWithDiscord.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Discord'**
+  String get socialContinueWithDiscord;
+
   /// No description provided for @socialContinueWithApple.
   ///
   /// In en, this message translates to:
@@ -346,6 +352,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get commonCancel;
+
+  /// No description provided for @commonEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get commonEdit;
 
   /// No description provided for @commonDelete.
   ///
@@ -917,6 +929,12 @@ abstract class AppLocalizations {
   /// **'Connecting to Steam...'**
   String get steamAuthConnecting;
 
+  /// No description provided for @discordAuthConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to Discord...'**
+  String get discordAuthConnecting;
+
   /// No description provided for @steamAuthTryAgain.
   ///
   /// In en, this message translates to:
@@ -1019,6 +1037,12 @@ abstract class AppLocalizations {
   /// **'Connected Accounts'**
   String get profileSectionConnectedAccounts;
 
+  /// No description provided for @profileSectionSocials.
+  ///
+  /// In en, this message translates to:
+  /// **'Socials'**
+  String get profileSectionSocials;
+
   /// No description provided for @profileSectionPreferences.
   ///
   /// In en, this message translates to:
@@ -1067,6 +1091,12 @@ abstract class AppLocalizations {
   /// **'Not connected'**
   String get profileNotConnected;
 
+  /// No description provided for @profileSocialIdentityLinkInConnectedAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Link in Connected Accounts'**
+  String get profileSocialIdentityLinkInConnectedAccounts;
+
   /// No description provided for @profileConnectedAccountsEmailPassword.
   ///
   /// In en, this message translates to:
@@ -1079,11 +1109,35 @@ abstract class AppLocalizations {
   /// **'Steam'**
   String get profileConnectedAccountsSteam;
 
+  /// No description provided for @profileConnectedAccountsDiscord.
+  ///
+  /// In en, this message translates to:
+  /// **'Discord'**
+  String get profileConnectedAccountsDiscord;
+
   /// No description provided for @profileConnectedAccountsApple.
   ///
   /// In en, this message translates to:
   /// **'Apple'**
   String get profileConnectedAccountsApple;
+
+  /// No description provided for @profileConnectedAccountsXbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Xbox'**
+  String get profileConnectedAccountsXbox;
+
+  /// No description provided for @profileConnectedAccountsPlayStation.
+  ///
+  /// In en, this message translates to:
+  /// **'PlayStation'**
+  String get profileConnectedAccountsPlayStation;
+
+  /// No description provided for @profileConnectedAccountsNintendo.
+  ///
+  /// In en, this message translates to:
+  /// **'Nintendo'**
+  String get profileConnectedAccountsNintendo;
 
   /// No description provided for @profileConnectedTapToDisconnect.
   ///
@@ -1157,6 +1211,18 @@ abstract class AppLocalizations {
   /// **'Failed to link Steam: {message}'**
   String profileLinkSteamFailed(String message);
 
+  /// No description provided for @profileDiscordLinkedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Discord account linked successfully'**
+  String get profileDiscordLinkedSuccess;
+
+  /// No description provided for @profileLinkDiscordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to link Discord: {message}'**
+  String profileLinkDiscordFailed(String message);
+
   /// No description provided for @profileSetEmailPasswordTitle.
   ///
   /// In en, this message translates to:
@@ -1166,7 +1232,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSetEmailPasswordDescription.
   ///
   /// In en, this message translates to:
-  /// **'Add email login to your account so you can sign in without a social provider.'**
+  /// **'Add a password to the email already on your account so you can sign in without a social provider.'**
   String get profileSetEmailPasswordDescription;
 
   /// No description provided for @profileEmailPasswordAddedSuccess.
@@ -1178,8 +1244,38 @@ abstract class AppLocalizations {
   /// No description provided for @profileSetEmailFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to set email: {message}'**
+  /// **'Failed to add email & password: {message}'**
   String profileSetEmailFailed(String message);
+
+  /// No description provided for @profileChangeEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Email'**
+  String get profileChangeEmailTitle;
+
+  /// No description provided for @profileChangeEmailDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the account email used for recovery and future email & password sign-in.'**
+  String get profileChangeEmailDescription;
+
+  /// No description provided for @profileChangeEmailSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Email updated successfully'**
+  String get profileChangeEmailSuccess;
+
+  /// No description provided for @profileAddEmailFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Set an account email first before adding a password.'**
+  String get profileAddEmailFirst;
+
+  /// No description provided for @profileChangeEmailFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to change email: {message}'**
+  String profileChangeEmailFailed(String message);
 
   /// No description provided for @profileAppleLinkedSuccess.
   ///
@@ -1198,6 +1294,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to link Apple: {message}'**
   String profileLinkAppleFailed(String message);
+
+  /// No description provided for @profileSocialIdentityAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {provider}'**
+  String profileSocialIdentityAddTitle(String provider);
+
+  /// No description provided for @profileSocialIdentityEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {provider}'**
+  String profileSocialIdentityEditTitle(String provider);
+
+  /// No description provided for @profileSocialIdentityGamertagLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gamertag'**
+  String get profileSocialIdentityGamertagLabel;
+
+  /// No description provided for @profileSocialIdentityShareLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile share link'**
+  String get profileSocialIdentityShareLinkLabel;
+
+  /// No description provided for @profileSocialIdentityFriendCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend code'**
+  String get profileSocialIdentityFriendCodeLabel;
+
+  /// No description provided for @profileSocialIdentityOnlineIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Online ID'**
+  String get profileSocialIdentityOnlineIdLabel;
+
+  /// No description provided for @profileSocialIdentityNicknameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname'**
+  String get profileSocialIdentityNicknameLabel;
+
+  /// No description provided for @profileSocialIdentityInvalidShareLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid profile share link.'**
+  String get profileSocialIdentityInvalidShareLink;
+
+  /// No description provided for @profileSocialIdentitySavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} saved.'**
+  String profileSocialIdentitySavedSuccess(String provider);
+
+  /// No description provided for @profileSocialIdentityCopiedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} copied.'**
+  String profileSocialIdentityCopiedSuccess(String provider);
+
+  /// No description provided for @profileSocialIdentityOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open {provider} profile.'**
+  String profileSocialIdentityOpenFailed(String provider);
+
+  /// No description provided for @profileSocialIdentityCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy {provider}.'**
+  String profileSocialIdentityCopyFailed(String provider);
+
+  /// No description provided for @profileSocialIdentityRemovedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} removed.'**
+  String profileSocialIdentityRemovedSuccess(String provider);
+
+  /// No description provided for @profileSocialIdentitySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save {provider}: {message}'**
+  String profileSocialIdentitySaveFailed(String provider, String message);
 
   /// No description provided for @profileSectionGamingHours.
   ///
@@ -1966,6 +2146,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No activity yet.'**
   String get groupCoordinationActivityEmpty;
+
+  /// No description provided for @groupCoordinationActivityRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get groupCoordinationActivityRecent;
+
+  /// No description provided for @groupCoordinationActivityHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get groupCoordinationActivityHistory;
+
+  /// No description provided for @groupCoordinationActivityFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get groupCoordinationActivityFilterAll;
+
+  /// No description provided for @groupCoordinationActivityFilterSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get groupCoordinationActivityFilterSessions;
+
+  /// No description provided for @groupCoordinationActivityFilterAvailability.
+  ///
+  /// In en, this message translates to:
+  /// **'Availability'**
+  String get groupCoordinationActivityFilterAvailability;
+
+  /// No description provided for @groupCoordinationActivityFilterRsvps.
+  ///
+  /// In en, this message translates to:
+  /// **'RSVPs'**
+  String get groupCoordinationActivityFilterRsvps;
+
+  /// No description provided for @groupCoordinationActivityFilterMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get groupCoordinationActivityFilterMine;
+
+  /// No description provided for @groupCoordinationActivityBucketToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today ({count})'**
+  String groupCoordinationActivityBucketToday(int count);
+
+  /// No description provided for @groupCoordinationActivityBucketYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday ({count})'**
+  String groupCoordinationActivityBucketYesterday(int count);
+
+  /// No description provided for @groupCoordinationActivityBucketEarlierThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier this week ({count})'**
+  String groupCoordinationActivityBucketEarlierThisWeek(int count);
+
+  /// No description provided for @groupCoordinationActivityBucketEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier ({count})'**
+  String groupCoordinationActivityBucketEarlier(int count);
+
+  /// No description provided for @groupCoordinationActivityRsvpBurst.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} RSVP updates'**
+  String groupCoordinationActivityRsvpBurst(int count);
 
   /// No description provided for @groupCoordinationAddWindowTitle.
   ///

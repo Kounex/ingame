@@ -385,4 +385,103 @@ void main() {
     expect(find.textContaining('Old Session'), findsNothing);
     expect(find.textContaining('Cancelled Session'), findsNothing);
   });
+
+  testWidgets('coordination card counts only upcoming ready windows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authNotifierProvider.overrideWith(_FakeAuthNotifier.new),
+          websocketClientProvider.overrideWithValue(_FakeWebSocketClient()),
+          groupDetailNotifierProvider('group-1').overrideWith(
+            () => _FakeGroupDetailNotifier(
+              const GroupDetailState(
+                group: Group(
+                  id: 'group-1',
+                  name: 'Raid Night',
+                  inviteCode: 'ABC123',
+                  isDiscoverable: false,
+                  joinMode: 'open',
+                  createdBy: 'owner-1',
+                  memberCount: 2,
+                ),
+                members: [
+                  GroupMember(
+                    id: 'membership-owner',
+                    userId: 'owner-1',
+                    displayName: 'Owner',
+                    role: 'owner',
+                  ),
+                ],
+                currentUserId: 'owner-1',
+                currentUserRole: 'owner',
+              ),
+            ),
+          ),
+          groupCoordinationNotifierProvider('group-1').overrideWith(
+            () => _FakeCoordinationNotifier(
+              GroupCoordinationState(
+                windows: [
+                  ScheduledReadyWindow(
+                    id: 'window-past-1',
+                    groupId: 'group-1',
+                    userId: 'owner-1',
+                    displayName: 'Owner',
+                    startsAt: DateTime.utc(2020, 1, 1, 18),
+                    endsAt: DateTime.utc(2020, 1, 1, 20),
+                    source: 'manual',
+                    createdAt: DateTime.utc(2019, 12, 31, 10),
+                  ),
+                  ScheduledReadyWindow(
+                    id: 'window-past-2',
+                    groupId: 'group-1',
+                    userId: 'owner-1',
+                    displayName: 'Owner',
+                    startsAt: DateTime.utc(2020, 1, 2, 18),
+                    endsAt: DateTime.utc(2020, 1, 2, 20),
+                    source: 'manual',
+                    createdAt: DateTime.utc(2020, 1, 1, 10),
+                  ),
+                  ScheduledReadyWindow(
+                    id: 'window-future-1',
+                    groupId: 'group-1',
+                    userId: 'owner-1',
+                    displayName: 'Owner',
+                    startsAt: DateTime.utc(2099, 1, 3, 18),
+                    endsAt: DateTime.utc(2099, 1, 3, 20),
+                    source: 'manual',
+                    createdAt: DateTime.utc(2099, 1, 1, 10),
+                  ),
+                  ScheduledReadyWindow(
+                    id: 'window-future-2',
+                    groupId: 'group-1',
+                    userId: 'owner-1',
+                    displayName: 'Owner',
+                    startsAt: DateTime.utc(2099, 1, 4, 18),
+                    endsAt: DateTime.utc(2099, 1, 4, 20),
+                    source: 'manual',
+                    createdAt: DateTime.utc(2099, 1, 1, 10),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          groupMemberStatusProvider.overrideWith(
+            (ref, key) => UserStatus.online,
+          ),
+        ],
+        child: const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: GroupDetailScreen(groupId: 'group-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 windows'), findsOneWidget);
+    expect(find.text('4 windows'), findsNothing);
+  });
 }

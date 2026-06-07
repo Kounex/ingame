@@ -204,6 +204,26 @@ async def test_apple_auth_success(client: AsyncClient):
     assert data["user"]["apple_id"] == "apple-user-123"
     assert data["user"]["email"] == "apple@example.com"
     assert data["user"]["display_name"] == "René Kounex"
+    assert data["user"]["provider_identities"] == [
+        {
+            "provider": "apple",
+            "auth_mode": "official_oauth",
+            "external_id": "apple-user-123",
+            "username": None,
+            "display_name": None,
+            "email": "apple@example.com",
+            "avatar_url": None,
+            "profile_url": None,
+            "metadata": None,
+            "last_synced_at": None,
+            "supports_login": True,
+            "supports_refresh": False,
+            "supports_direct_profile_link": False,
+            "supports_manual_entry": False,
+            "supports_copy_only_action": False,
+            "is_social_identity": False,
+        }
+    ]
 
 
 @pytest.mark.asyncio
@@ -220,6 +240,162 @@ async def test_apple_auth_invalid_token_returns_validation_code(client: AsyncCli
 
     assert response.status_code == 422
     assert response.json()["code"] == "auth.apple_token_invalid"
+
+
+@pytest.mark.asyncio
+async def test_discord_auth_success(client: AsyncClient):
+    with (
+        patch(
+            "app.api.v1.auth.service.exchange_discord_code",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access",
+                "refresh_token": "discord-refresh",
+                "expires_in": 3600,
+            },
+        ),
+        patch(
+            "app.api.v1.auth.service.get_discord_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "external_id": "discord-user-123",
+                "username": "discord_user",
+                "display_name": "Discord Hero",
+                "email": "discord@example.com",
+                "avatar_url": "https://cdn.discord.test/avatar.png",
+                "profile_url": "https://discord.com/users/discord-user-123",
+            },
+        ),
+    ):
+        response = await client.post(
+            "/api/v1/auth/discord",
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["email"] == "discord@example.com"
+    assert data["user"]["avatar_url"] == "https://cdn.discord.test/avatar.png"
+    assert data["user"]["provider_identities"] == [
+        {
+            "provider": "discord",
+            "auth_mode": "official_oauth",
+            "external_id": "discord-user-123",
+            "username": "discord_user",
+            "display_name": "Discord Hero",
+            "email": "discord@example.com",
+            "avatar_url": "https://cdn.discord.test/avatar.png",
+            "profile_url": "https://discord.com/users/discord-user-123",
+            "metadata": None,
+            "last_synced_at": data["user"]["provider_identities"][0]["last_synced_at"],
+            "supports_login": True,
+            "supports_refresh": True,
+            "supports_direct_profile_link": True,
+            "supports_manual_entry": False,
+            "supports_copy_only_action": False,
+            "is_social_identity": True,
+        }
+    ]
+    assert data["user"]["provider_identities"][0]["last_synced_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_discord_auth_does_not_overwrite_existing_profile_avatar(client: AsyncClient):
+    with (
+        patch(
+            "app.api.v1.auth.service.exchange_discord_code",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access",
+                "refresh_token": "discord-refresh",
+                "expires_in": 3600,
+            },
+        ),
+        patch(
+            "app.api.v1.auth.service.get_discord_profile",
+            new_callable=AsyncMock,
+            side_effect=[
+                {
+                    "external_id": "discord-user-456",
+                    "username": "discord_user",
+                    "display_name": "Discord Hero",
+                    "email": "discord2@example.com",
+                    "avatar_url": "https://cdn.discord.test/original.png",
+                    "profile_url": "https://discord.com/users/discord-user-456",
+                },
+                {
+                    "external_id": "discord-user-456",
+                    "username": "discord_user",
+                    "display_name": "Discord Hero",
+                    "email": "discord2@example.com",
+                    "avatar_url": "https://cdn.discord.test/new.png",
+                    "profile_url": "https://discord.com/users/discord-user-456",
+                },
+            ],
+        ),
+    ):
+        first_response = await client.post(
+            "/api/v1/auth/discord",
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+        token = first_response.json()["access_token"]
+        patched = await client.patch(
+            "/api/v1/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"avatar_url": "https://cdn.example.com/custom-avatar.webp"},
+        )
+        assert patched.status_code == 200
+
+        second_response = await client.post(
+            "/api/v1/auth/discord",
+            json={
+                "code": "discord-auth-code-2",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert second_response.json()["user"]["avatar_url"] == (
+        "https://cdn.example.com/custom-avatar.webp"
+    )
+    assert second_response.json()["user"]["provider_identities"][0]["avatar_url"] == (
+        "https://cdn.discord.test/new.png"
+    )
+
+
+@pytest.mark.asyncio
+async def test_discord_auth_without_backend_client_id_returns_service_unavailable(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr("app.config.settings.discord_client_id", "")
+
+    with patch(
+        "app.api.v1.auth.service.exchange_discord_code",
+        new_callable=AsyncMock,
+    ) as exchange_mock:
+        response = await client.post(
+            "/api/v1/auth/discord",
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "http://localhost:8090/auth/discord-callback.html",
+            },
+        )
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "auth.discord_unavailable"
+    exchange_mock.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -252,6 +428,88 @@ async def test_steam_auth_success(client: AsyncClient):
     data = response.json()
     assert data["user"]["steam_id"] == "76561198000000001"
     assert data["user"]["display_name"] == "Steam User"
+    assert data["user"]["avatar_url"] == "https://steamcdn.test/avatar.jpg"
+    assert len(data["user"]["provider_identities"]) == 1
+    assert data["user"]["provider_identities"][0] == {
+        "provider": "steam",
+        "auth_mode": "official_openid",
+        "external_id": "76561198000000001",
+        "username": None,
+        "display_name": "Steam User",
+        "email": None,
+        "avatar_url": "https://steamcdn.test/avatar.jpg",
+        "profile_url": None,
+        "metadata": None,
+        "last_synced_at": data["user"]["provider_identities"][0]["last_synced_at"],
+        "supports_login": True,
+        "supports_refresh": True,
+        "supports_direct_profile_link": True,
+        "supports_manual_entry": False,
+        "supports_copy_only_action": False,
+        "is_social_identity": True,
+    }
+    assert data["user"]["provider_identities"][0]["last_synced_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_steam_auth_does_not_overwrite_existing_profile_avatar(client: AsyncClient):
+    with (
+        patch(
+            "app.api.v1.auth.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000008",
+        ),
+        patch(
+            "app.api.v1.auth.service.get_steam_profile",
+            new_callable=AsyncMock,
+            side_effect=[
+                {
+                    "display_name": "Steam User",
+                    "avatar_url": "https://steamcdn.test/original.jpg",
+                    "profile_url": "https://steamcommunity.com/profiles/76561198000000008",
+                },
+                {
+                    "display_name": "Steam User",
+                    "avatar_url": "https://steamcdn.test/new.jpg",
+                    "profile_url": "https://steamcommunity.com/profiles/76561198000000008",
+                },
+            ],
+        ),
+    ):
+        first_response = await client.post(
+            "/api/v1/auth/steam",
+            json={
+                "openid_params": {
+                    "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000008"
+                }
+            },
+        )
+
+        token = first_response.json()["access_token"]
+        patched = await client.patch(
+            "/api/v1/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"avatar_url": "https://cdn.example.com/custom-avatar.webp"},
+        )
+        assert patched.status_code == 200
+
+        second_response = await client.post(
+            "/api/v1/auth/steam",
+            json={
+                "openid_params": {
+                    "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000008"
+                }
+            },
+        )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert second_response.json()["user"]["avatar_url"] == (
+        "https://cdn.example.com/custom-avatar.webp"
+    )
+    assert second_response.json()["user"]["provider_identities"][0]["avatar_url"] == (
+        "https://steamcdn.test/new.jpg"
+    )
 
 
 @pytest.mark.asyncio
@@ -308,10 +566,21 @@ async def test_steam_auth_after_unlink_requires_relink_from_profile(client: Asyn
         "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000007"
     }
 
-    with patch(
-        "app.api.v1.users.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000007",
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000007",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Relink",
+                "avatar_url": "https://steamcdn.test/relink.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000007",
+            },
+        ),
     ):
         await client.post(
             "/api/v1/users/me/link-steam",
@@ -388,6 +657,92 @@ async def test_apple_auth_after_unlink_requires_relink_from_profile(client: Asyn
 
 
 @pytest.mark.asyncio
+async def test_discord_auth_after_unlink_requires_relink_from_profile(client: AsyncClient):
+    register = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "discord-relink@example.com",
+            "password": "securepass123",
+            "display_name": "Discord Relink",
+        },
+    )
+    token = register.json()["access_token"]
+
+    with (
+        patch(
+            "app.api.v1.users.service.exchange_discord_code",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access",
+                "refresh_token": "discord-refresh",
+                "expires_in": 3600,
+            },
+        ),
+        patch(
+            "app.api.v1.users.service.get_discord_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "external_id": "discord-relink-123",
+                "username": "discord_relink",
+                "display_name": "Discord Relink",
+                "email": "discord-relink@example.com",
+                "avatar_url": "https://cdn.discord.test/avatar.png",
+                "profile_url": "https://discord.com/users/discord-relink-123",
+            },
+        ),
+    ):
+        await client.post(
+            "/api/v1/users/me/link-discord",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+    await client.delete(
+        "/api/v1/users/me/link-discord",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    with (
+        patch(
+            "app.api.v1.auth.service.exchange_discord_code",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access",
+                "refresh_token": "discord-refresh",
+                "expires_in": 3600,
+            },
+        ),
+        patch(
+            "app.api.v1.auth.service.get_discord_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "external_id": "discord-relink-123",
+                "username": "discord_relink",
+                "display_name": "Discord Relink",
+                "email": "discord-relink@example.com",
+                "avatar_url": "https://cdn.discord.test/avatar.png",
+                "profile_url": "https://discord.com/users/discord-relink-123",
+            },
+        ),
+    ):
+        response = await client.post(
+            "/api/v1/auth/discord",
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "auth.discord_relink_required"
+
+
+@pytest.mark.asyncio
 async def test_refresh_token_remains_usable_after_unlink(client: AsyncClient):
     register = await client.post(
         "/api/v1/auth/register",
@@ -403,10 +758,21 @@ async def test_refresh_token_remains_usable_after_unlink(client: AsyncClient):
         "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000009"
     }
 
-    with patch(
-        "app.api.v1.users.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000009",
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000009",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Refresh After Unlink",
+                "avatar_url": "https://steamcdn.test/unlink-refresh.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000009",
+            },
+        ),
     ):
         await client.post(
             "/api/v1/users/me/link-steam",

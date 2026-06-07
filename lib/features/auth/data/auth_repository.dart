@@ -102,6 +102,26 @@ class AuthRepository {
     );
     return User.fromJson(response.data['user'] as Map<String, dynamic>);
   }
+
+  Future<User> discordAuth({
+    required String code,
+    required String codeVerifier,
+    required String redirectUri,
+  }) async {
+    final response = await dio.post(
+      ApiEndpoints.discordAuth,
+      data: {
+        'code': code,
+        'code_verifier': codeVerifier,
+        'redirect_uri': redirectUri,
+      },
+    );
+    await storage.saveTokens(
+      accessToken: response.data['access_token'] as String,
+      refreshToken: response.data['refresh_token'] as String,
+    );
+    return User.fromJson(response.data['user'] as Map<String, dynamic>);
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

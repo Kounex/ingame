@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 30
 
     steam_api_key: str = ""
+    discord_client_id: str = ""
     apple_team_id: str = ""
     apple_key_id: str = ""
     apple_client_ids: Annotated[list[str], NoDecode] = Field(

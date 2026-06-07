@@ -1,0 +1,15 @@
+---
+description: Keep visual companion localhost servers alive in Cursor
+alwaysApply: true
+---
+
+# Visual Companion Runtime
+
+- When using the browser-based visual companion or any similar local helper server from Cursor, do not rely on scripts that daemonize themselves with `nohup` or similar detached child-process behavior.
+- In this environment, start those servers in `--foreground` mode and let the Cursor `Shell` tool own the background process with `block_until_ms: 0`.
+- After starting, do a one-shot smoke check before sharing the URL:
+  - wait for a stable startup line such as `server-started`
+  - read the terminal output file to capture the URL
+  - verify a local `GET` to the URL succeeds (for example via `python3` or `curl`; avoid `HEAD`-only checks if the helper does not implement `HEAD`)
+- Only give the user a localhost visual-companion URL after that smoke check passes.
+- If a visual-companion URL previously failed with `ERR_CONNECTION_REFUSED`, assume the helper process died after startup and retry with the foreground-plus-Cursor-managed-background pattern first.

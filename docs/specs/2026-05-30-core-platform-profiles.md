@@ -1,8 +1,8 @@
 ---
 spec: core-platform-profiles
-version: "1.7"
+version: "1.16"
 status: complete
-last_updated: "2026-06-04"
+last_updated: "2026-06-07"
 sub_project: 1
 ---
 
@@ -18,6 +18,7 @@ This spec covers the SP1 user-profile contract:
 - onboarding profile setup
 - profile editing
 - recurring availability editing and display
+- profile rendering for linked social identities
 
 ## User Profile Data Model
 
@@ -43,6 +44,7 @@ This spec covers the SP1 user-profile contract:
 - Each day can store multiple preset ranges.
 - The UI may collapse the four-preset full-day combination into an `All day` shortcut.
 - This field remains distinct from future game-preference models in later sub-projects.
+- Linked external platform identities are modeled separately from the profile row itself; see [Core Platform Social Identities](2026-06-07-core-platform-social-identities.md).
 
 ## Avatar Contract
 
@@ -51,6 +53,7 @@ This spec covers the SP1 user-profile contract:
 - `avatar_url` remains the only persisted avatar field on the user.
 - PostgreSQL stores only the final URL reference.
 - Avatar bytes are **not** stored in the database or embedded as base64 in profile JSON.
+- Official provider login/link flows may seed `avatar_url` once from fetched provider metadata when the canonical profile avatar is still empty, but later provider syncs must not overwrite an avatar the user already has.
 
 ### Allowed Sources
 
@@ -191,6 +194,7 @@ The onboarding profile step uses the same avatar editor contract as profile edit
 The profile edit screen allows updates to:
 
 - display name
+- canonical account email
 - bio
 - timezone
 - avatar
@@ -204,8 +208,15 @@ The profile screen:
 
 - shows the avatar at the top
 - shows email and timezone in the account section
+- treats the account email row as the dedicated entry point for changing the canonical recovery/sign-in email after onboarding
 - shows recurring gaming hours using an intelligent grouped display
 - uses `has_password_login` for connected-account state
+- splits provider identity rendering into `Connected Accounts` for auth/login providers and `Socials` for social-facing identities
+- mirrors linked Steam/Discord identities into `Socials` automatically while keeping Xbox / PlayStation / Nintendo in the manual-edit social section
+- treats mirrored official socials as read-only rows in `Socials`; they open the provider profile externally when a direct profile URL is available and otherwise remain non-interactive
+- treats connected manual socials as social-action-first rows: Xbox opens the generated profile URL, PlayStation opens the stored share link, and Nintendo copies the friend code while a secondary edit affordance remains available
+- uses the shared provider-visual registry for standalone provider rows, with branded `line_icons` glyphs where available, explicit shared fallbacks otherwise, and provider-tinted or platform-appropriate monochrome icon treatment while keeping the existing glass-row layout
+- keeps the app profile (`display_name`, `avatar_url`) visually separate from provider-owned identity snapshots
 
 ## Localization And UX Rules
 
@@ -217,6 +228,15 @@ The profile screen:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-07 | Avatar contract | Documented that official provider login/link flows may seed the canonical profile avatar once when it is empty, while later provider syncs must not overwrite an existing avatar | Keeps the written profile/avatar contract aligned with the new Discord avatar bootstrap behavior without weakening user control over custom profile photos |
+| 2026-06-07 | Edit profile and profile rendering | Added the dedicated profile-level canonical email change flow and clarified that the account email row is the maintained entry point for updating it after onboarding | Keeps post-onboarding email management consistent instead of hiding email edits in the separate add-password flow |
+| 2026-06-07 | Provider visuals | Clarified that standalone provider rows may use platform-appropriate monochrome treatment in addition to provider-tinted icons, covering Apple on the dark profile surface | Keeps the written profile contract aligned with the shipped Apple row visuals after the audit follow-through corrected contrast |
+| 2026-06-07 | Provider visuals | Clarified that provider rows use branded `line_icons` glyphs where available and shared fallback glyphs otherwise | Keeps the written profile contract aligned with the shipped Nintendo fallback icon instead of overstating full brand-icon coverage |
+| 2026-06-07 | Social row behavior | Documented that connected manual socials now prioritize their outbound action on tap while preserving an explicit secondary edit affordance | Keeps the maintained profile contract aligned with the corrected Xbox / PlayStation / Nintendo row behavior after the audit follow-through |
+| 2026-06-07 | Provider visuals | Documented the maintained shared provider icon treatment for `Connected Accounts` and `Socials`, including branded `line_icons` glyphs and provider-tinted standalone icons | Keeps the written profile UI contract aligned with the shared provider visual system now used across auth and profile surfaces |
+| 2026-06-07 | Social row behavior | Clarified that mirrored official socials in the `Socials` section are read-only, visually match other socials, and open external provider profiles only when a usable profile URL exists | Aligns the maintained profile contract with the intended tap behavior for Steam and Discord socials |
+| 2026-06-07 | Profile rendering | Split provider identity rendering into separate `Connected Accounts` and `Socials` sections, with Steam/Discord mirrored into the social view and manual platforms managed there | Keeps the profile UX aligned with the intended distinction between login linkage and social presence |
+| 2026-06-07 | Scope, field notes, and profile rendering | Added the profile-side contract for linked provider identities and clarified that app profile fields remain separate from social-platform identities | Keeps the profile spec aligned with the new normalized provider-identity model and connected-accounts UI |
 | 2026-06-04 | Spec topology | Created a dedicated profiles spec by extracting user-profile, avatar, onboarding-profile, and edit-profile contracts from the larger SP1 core-platform spec | Keeps the most frequently changing SP1 surface focused and easier to maintain |
 | 2026-06-04 | Avatar failure contract | Added the maintained avatar-upload error-code surface for invalid file types, oversize uploads, and temporary storage unavailability | Keeps the profile/avatar API contract aligned with the implemented backend responses and localized Flutter error handling |
 | 2026-06-04 | Web avatar upload flow | Clarified that mobile sources are cropped before upload while the web picker currently uploads validated original bytes directly and depends on storage CORS | Keeps the spec aligned with the implemented cross-platform avatar editor behavior and deployment requirements |

@@ -7,6 +7,7 @@ metadata:
 data:
   INGAME_DEBUG: {{ .Values.config.debug | quote }}
   INGAME_CORS_ALLOW_ORIGINS: {{ .Values.config.corsAllowOrigins | quote }}
+  INGAME_DISCORD_CLIENT_ID: {{ .Values.config.discordClientId | quote }}
   INGAME_APPLE_CLIENT_IDS: {{ .Values.config.appleClientIds | quote }}
   INGAME_LOG_LEVEL: {{ .Values.config.logLevel | quote }}
   INGAME_API_PREFIX: {{ .Values.config.apiPrefix | quote }}

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+import httpx
 from httpx import AsyncClient
 from sqlalchemy import text
 
@@ -34,6 +35,7 @@ async def test_get_me(client: AsyncClient):
     assert data["email"] == "user@test.com"
     assert data["display_name"] == "Test User"
     assert data["has_password_login"] is True
+    assert data["provider_identities"] == []
 
 
 @pytest.mark.asyncio
@@ -61,6 +63,26 @@ async def test_get_me_for_apple_only_user_marks_password_login_disconnected(
     assert data["email"] == "apple-only@test.com"
     assert data["apple_id"] == "apple-only-123"
     assert data["has_password_login"] is False
+    assert data["provider_identities"] == [
+        {
+            "provider": "apple",
+            "auth_mode": "official_oauth",
+            "external_id": "apple-only-123",
+            "username": None,
+            "display_name": None,
+            "email": "apple-only@test.com",
+            "avatar_url": None,
+            "profile_url": None,
+            "metadata": None,
+            "last_synced_at": None,
+            "supports_login": True,
+            "supports_refresh": False,
+            "supports_direct_profile_link": False,
+            "supports_manual_entry": False,
+            "supports_copy_only_action": False,
+            "is_social_identity": False,
+        }
+    ]
 
 
 @pytest.mark.asyncio
@@ -354,10 +376,21 @@ async def test_link_steam_success(client: AsyncClient):
         "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000001"
     }
 
-    with patch(
-        "app.api.v1.users.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000001",
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000001",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam User",
+                "avatar_url": "https://steamcdn.test/avatar.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000001",
+            },
+        ),
     ):
         response = await client.post(
             "/api/v1/users/me/link-steam",
@@ -366,6 +399,74 @@ async def test_link_steam_success(client: AsyncClient):
         )
     assert response.status_code == 200
     assert response.json()["steam_id"] == "76561198000000001"
+    assert response.json()["avatar_url"] == "https://steamcdn.test/avatar.jpg"
+    identities = response.json()["provider_identities"]
+    assert len(identities) == 1
+    assert identities[0]["provider"] == "steam"
+    assert identities[0]["external_id"] == "76561198000000001"
+    assert identities[0]["supports_login"] is True
+    assert identities[0]["is_social_identity"] is True
+    assert identities[0]["avatar_url"] == "https://steamcdn.test/avatar.jpg"
+    assert (
+        identities[0]["profile_url"]
+        == "https://steamcommunity.com/profiles/76561198000000001"
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_me_refreshes_stale_steam_identity(client: AsyncClient, db_session):
+    token = await _register_and_get_token(client)
+    fake_params = {
+        "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000011"
+    }
+
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000011",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Linked",
+                "avatar_url": "https://steamcdn.test/linked.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000011",
+            },
+        ),
+    ):
+        await client.post(
+            "/api/v1/users/me/link-steam",
+            headers=_auth(token),
+            json={"openid_params": fake_params},
+        )
+
+    await db_session.execute(
+        text(
+            "update provider_identities set last_synced_at = '2020-01-01T00:00:00+00:00' "
+            "where provider = 'steam'"
+        )
+    )
+    await db_session.commit()
+
+    with patch(
+        "app.api.v1.users.service.get_steam_profile",
+        new_callable=AsyncMock,
+        return_value={
+            "display_name": "Steam Refreshed",
+            "avatar_url": "https://steamcdn.test/refreshed.jpg",
+            "profile_url": "https://steamcommunity.com/profiles/76561198000000011",
+        },
+    ):
+        response = await client.get("/api/v1/users/me", headers=_auth(token))
+
+    assert response.status_code == 200
+    identities = response.json()["provider_identities"]
+    assert identities[0]["provider"] == "steam"
+    assert identities[0]["display_name"] == "Steam Refreshed"
+    assert identities[0]["avatar_url"] == "https://steamcdn.test/refreshed.jpg"
+    assert identities[0]["profile_url"] == "https://steamcommunity.com/profiles/76561198000000011"
 
 
 @pytest.mark.asyncio
@@ -377,10 +478,21 @@ async def test_link_steam_conflict(client: AsyncClient):
         "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000099"
     }
 
-    with patch(
-        "app.api.v1.users.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000099",
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000099",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Conflict",
+                "avatar_url": "https://steamcdn.test/conflict.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000099",
+            },
+        ),
     ):
         resp1 = await client.post(
             "/api/v1/users/me/link-steam",
@@ -396,6 +508,47 @@ async def test_link_steam_conflict(client: AsyncClient):
         )
     assert response.status_code == 409
     assert response.json()["code"] == "user.steam_account_already_linked"
+
+
+@pytest.mark.asyncio
+async def test_link_steam_profile_fetch_failure_returns_structured_error(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+    fake_params = {
+        "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000999"
+    }
+
+    request = httpx.Request(
+        "GET",
+        "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/",
+    )
+    response = httpx.Response(403, request=request)
+
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000999",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            side_effect=httpx.HTTPStatusError(
+                "Steam profile request failed",
+                request=request,
+                response=response,
+            ),
+        ),
+    ):
+        result = await client.post(
+            "/api/v1/users/me/link-steam",
+            headers=_auth(token),
+            json={"openid_params": fake_params},
+        )
+
+    assert result.status_code == 503
+    assert result.json()["code"] == "auth.steam_profile_unavailable"
 
 
 @pytest.mark.asyncio
@@ -415,6 +568,129 @@ async def test_link_apple_success(client: AsyncClient):
 
     assert response.status_code == 200
     assert response.json()["apple_id"] == "apple-link-123"
+
+
+@pytest.mark.asyncio
+async def test_link_discord_success(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    with (
+        patch(
+            "app.api.v1.users.service.exchange_discord_code",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access",
+                "refresh_token": "discord-refresh",
+                "expires_in": 3600,
+            },
+        ),
+        patch(
+            "app.api.v1.users.service.get_discord_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "external_id": "discord-link-123",
+                "username": "discord_link",
+                "display_name": "Discord Link",
+                "email": "discord-link@test.com",
+                "avatar_url": "https://cdn.discord.test/avatar.png",
+                "profile_url": "https://discord.com/users/discord-link-123",
+            },
+        ),
+    ):
+        response = await client.post(
+            "/api/v1/users/me/link-discord",
+            headers=_auth(token),
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == "https://cdn.discord.test/avatar.png"
+    identities = response.json()["provider_identities"]
+    assert len(identities) == 1
+    assert identities[0]["provider"] == "discord"
+    assert identities[0]["external_id"] == "discord-link-123"
+    assert identities[0]["supports_login"] is True
+
+
+@pytest.mark.asyncio
+async def test_get_me_refreshes_stale_discord_identity(client: AsyncClient, db_session):
+    token = await _register_and_get_token(client)
+
+    with (
+        patch(
+            "app.api.v1.users.service.exchange_discord_code",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access",
+                "refresh_token": "discord-refresh",
+                "expires_in": 3600,
+            },
+        ),
+        patch(
+            "app.api.v1.users.service.get_discord_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "external_id": "discord-refresh-123",
+                "username": "discord_refresh",
+                "display_name": "Discord First",
+                "email": "discord-refresh@test.com",
+                "avatar_url": "https://cdn.discord.test/first.png",
+                "profile_url": "https://discord.com/users/discord-refresh-123",
+            },
+        ),
+    ):
+        await client.post(
+            "/api/v1/users/me/link-discord",
+            headers=_auth(token),
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+    await db_session.execute(
+        text(
+            "update provider_identities set last_synced_at = '2020-01-01T00:00:00+00:00' "
+            "where provider = 'discord'"
+        )
+    )
+    await db_session.commit()
+
+    with (
+        patch(
+            "app.api.v1.users.service.refresh_discord_token",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access-2",
+                "refresh_token": "discord-refresh-2",
+                "expires_in": 7200,
+            },
+        ),
+        patch(
+            "app.api.v1.users.service.get_discord_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "external_id": "discord-refresh-123",
+                "username": "discord_refresh",
+                "display_name": "Discord Refreshed",
+                "email": "discord-refresh@test.com",
+                "avatar_url": "https://cdn.discord.test/refreshed.png",
+                "profile_url": "https://discord.com/users/discord-refresh-123",
+            },
+        ),
+    ):
+        response = await client.get("/api/v1/users/me", headers=_auth(token))
+
+    assert response.status_code == 200
+    identities = response.json()["provider_identities"]
+    assert identities[0]["provider"] == "discord"
+    assert identities[0]["display_name"] == "Discord Refreshed"
+    assert identities[0]["avatar_url"] == "https://cdn.discord.test/refreshed.png"
 
 
 @pytest.mark.asyncio
@@ -499,10 +775,21 @@ async def test_unlink_steam(client: AsyncClient):
         "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000002"
     }
 
-    with patch(
-        "app.api.v1.users.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000002",
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000002",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Unlink",
+                "avatar_url": "https://steamcdn.test/unlink.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000002",
+            },
+        ),
     ):
         await client.post(
             "/api/v1/users/me/link-steam",
@@ -524,10 +811,21 @@ async def test_unlink_steam_records_revoked_provider_identity(
         "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000002"
     }
 
-    with patch(
-        "app.api.v1.users.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000002",
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000002",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Revoked",
+                "avatar_url": "https://steamcdn.test/revoked.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000002",
+            },
+        ),
     ):
         await client.post(
             "/api/v1/users/me/link-steam",
@@ -568,6 +866,98 @@ async def test_unlink_apple(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_upsert_manual_xbox_identity(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    response = await client.put(
+        "/api/v1/users/me/social-identities/xbox",
+        headers=_auth(token),
+        json={"username": "MasterChief117"},
+    )
+
+    assert response.status_code == 200
+    identities = response.json()["provider_identities"]
+    assert len(identities) == 1
+    assert identities[0] == {
+        "provider": "xbox",
+        "auth_mode": "manual_unverified",
+        "external_id": "MasterChief117",
+        "username": "MasterChief117",
+        "display_name": None,
+        "email": None,
+        "avatar_url": None,
+        "profile_url": "https://account.xbox.com/en-us/profile?gamertag=MasterChief117",
+        "metadata": None,
+        "last_synced_at": None,
+        "supports_login": False,
+        "supports_refresh": False,
+        "supports_direct_profile_link": True,
+        "supports_manual_entry": True,
+        "supports_copy_only_action": False,
+        "is_social_identity": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_upsert_manual_playstation_identity(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    response = await client.put(
+        "/api/v1/users/me/social-identities/playstation",
+        headers=_auth(token),
+        json={
+            "username": "PSHero",
+            "profile_url": "https://profile.playstation.com/PSHero",
+        },
+    )
+
+    assert response.status_code == 200
+    identities = response.json()["provider_identities"]
+    assert len(identities) == 1
+    assert identities[0]["provider"] == "playstation"
+    assert identities[0]["username"] == "PSHero"
+    assert identities[0]["profile_url"] == "https://profile.playstation.com/PSHero"
+    assert identities[0]["supports_direct_profile_link"] is True
+    assert identities[0]["supports_manual_entry"] is True
+
+
+@pytest.mark.asyncio
+async def test_upsert_manual_nintendo_identity(client: AsyncClient):
+    token = await _register_and_get_token(client)
+
+    response = await client.put(
+        "/api/v1/users/me/social-identities/nintendo",
+        headers=_auth(token),
+        json={
+            "external_id": "SW-1234-5678-9012",
+            "display_name": "Switch Buddy",
+        },
+    )
+
+    assert response.status_code == 200
+    identities = response.json()["provider_identities"]
+    assert len(identities) == 1
+    assert identities[0] == {
+        "provider": "nintendo",
+        "auth_mode": "manual_unverified",
+        "external_id": "SW-1234-5678-9012",
+        "username": None,
+        "display_name": "Switch Buddy",
+        "email": None,
+        "avatar_url": None,
+        "profile_url": None,
+        "metadata": {"friend_code": "SW-1234-5678-9012"},
+        "last_synced_at": None,
+        "supports_login": False,
+        "supports_refresh": False,
+        "supports_direct_profile_link": False,
+        "supports_manual_entry": True,
+        "supports_copy_only_action": True,
+        "is_social_identity": True,
+    }
+
+
+@pytest.mark.asyncio
 async def test_unlink_apple_records_revoked_provider_identity(
     client: AsyncClient, db_session
 ):
@@ -605,10 +995,21 @@ async def test_relink_steam_clears_revoked_provider_identity(
         "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000002"
     }
 
-    with patch(
-        "app.api.v1.users.service.validate_steam_login",
-        new_callable=AsyncMock,
-        return_value="76561198000000002",
+    with (
+        patch(
+            "app.api.v1.users.service.validate_steam_login",
+            new_callable=AsyncMock,
+            return_value="76561198000000002",
+        ),
+        patch(
+            "app.api.v1.users.service.get_steam_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "display_name": "Steam Relink",
+                "avatar_url": "https://steamcdn.test/relink.jpg",
+                "profile_url": "https://steamcommunity.com/profiles/76561198000000002",
+            },
+        ),
     ):
         await client.post(
             "/api/v1/users/me/link-steam",

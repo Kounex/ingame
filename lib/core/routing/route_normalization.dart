@@ -6,6 +6,7 @@ const Set<String> _redirectCarrierPaths = {
   RoutePaths.login,
   RoutePaths.register,
   RoutePaths.steamAuth,
+  RoutePaths.discordAuth,
   RoutePaths.onboarding,
 };
 
@@ -13,6 +14,7 @@ const Set<String> _invalidRedirectPaths = {
   RoutePaths.login,
   RoutePaths.register,
   RoutePaths.steamAuth,
+  RoutePaths.discordAuth,
   RoutePaths.onboarding,
 };
 

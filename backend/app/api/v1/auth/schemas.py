@@ -27,6 +27,12 @@ class AppleAuthRequest(BaseModel):
     display_name: str | None = None
 
 
+class DiscordAuthRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=2048)
+    code_verifier: str = Field(min_length=32, max_length=255)
+    redirect_uri: str = Field(min_length=1, max_length=2048)
+
+
 class AvailabilityRequest(BaseModel):
     value: str = Field(min_length=1, max_length=255)
 

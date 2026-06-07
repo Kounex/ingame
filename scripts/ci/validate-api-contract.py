@@ -36,6 +36,7 @@ OPENAPI_TO_SPEC_MODEL = {
 }
 
 IGNORED_OPENAPI_FIELDS: dict[str, set[str]] = {
+    "UserResponse": {"provider_identities"},
     "GroupMemberResponse": {"user_id", "display_name", "avatar_url"},
     "GroupResponse": {"member_count", "has_pending_join_request"},
     "JoinRequestResponse": {"user"},

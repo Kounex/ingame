@@ -7,6 +7,7 @@ from app.api.v1.auth.schemas import (
     AuthResponse,
     AvailabilityRequest,
     AvailabilityResponse,
+    DiscordAuthRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
@@ -55,6 +56,17 @@ async def check_display_name(
 @router.post("/steam", response_model=AuthResponse)
 async def steam_auth(data: SteamAuthRequest, db: AsyncSession = Depends(get_db)):
     result = await service.steam_auth(db, data.openid_params)
+    return result
+
+
+@router.post("/discord", response_model=AuthResponse)
+async def discord_auth(data: DiscordAuthRequest, db: AsyncSession = Depends(get_db)):
+    result = await service.discord_auth(
+        db,
+        code=data.code,
+        code_verifier=data.code_verifier,
+        redirect_uri=data.redirect_uri,
+    )
     return result
 
 

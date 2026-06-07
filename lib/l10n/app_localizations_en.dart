@@ -42,6 +42,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get socialContinueWithSteam => 'Continue with Steam';
 
   @override
+  String get socialContinueWithDiscord => 'Continue with Discord';
+
+  @override
   String get socialContinueWithApple => 'Continue with Apple';
 
   @override
@@ -139,6 +142,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonCancel => 'Cancel';
+
+  @override
+  String get commonEdit => 'Edit';
 
   @override
   String get commonDelete => 'Delete';
@@ -436,6 +442,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get steamAuthConnecting => 'Connecting to Steam...';
 
   @override
+  String get discordAuthConnecting => 'Connecting to Discord...';
+
+  @override
   String get steamAuthTryAgain => 'Try Again';
 
   @override
@@ -487,6 +496,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSectionConnectedAccounts => 'Connected Accounts';
 
   @override
+  String get profileSectionSocials => 'Socials';
+
+  @override
   String get profileSectionPreferences => 'Preferences';
 
   @override
@@ -511,13 +523,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNotConnected => 'Not connected';
 
   @override
+  String get profileSocialIdentityLinkInConnectedAccounts => 'Link in Connected Accounts';
+
+  @override
   String get profileConnectedAccountsEmailPassword => 'Email & Password';
 
   @override
   String get profileConnectedAccountsSteam => 'Steam';
 
   @override
+  String get profileConnectedAccountsDiscord => 'Discord';
+
+  @override
   String get profileConnectedAccountsApple => 'Apple';
+
+  @override
+  String get profileConnectedAccountsXbox => 'Xbox';
+
+  @override
+  String get profileConnectedAccountsPlayStation => 'PlayStation';
+
+  @override
+  String get profileConnectedAccountsNintendo => 'Nintendo';
 
   @override
   String get profileConnectedTapToDisconnect => 'Connected. Tap to disconnect.';
@@ -566,17 +593,42 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get profileDiscordLinkedSuccess => 'Discord account linked successfully';
+
+  @override
+  String profileLinkDiscordFailed(String message) {
+    return 'Failed to link Discord: $message';
+  }
+
+  @override
   String get profileSetEmailPasswordTitle => 'Add Email & Password';
 
   @override
-  String get profileSetEmailPasswordDescription => 'Add email login to your account so you can sign in without a social provider.';
+  String get profileSetEmailPasswordDescription => 'Add a password to the email already on your account so you can sign in without a social provider.';
 
   @override
   String get profileEmailPasswordAddedSuccess => 'Email & password added successfully';
 
   @override
   String profileSetEmailFailed(String message) {
-    return 'Failed to set email: $message';
+    return 'Failed to add email & password: $message';
+  }
+
+  @override
+  String get profileChangeEmailTitle => 'Change Email';
+
+  @override
+  String get profileChangeEmailDescription => 'Update the account email used for recovery and future email & password sign-in.';
+
+  @override
+  String get profileChangeEmailSuccess => 'Email updated successfully';
+
+  @override
+  String get profileAddEmailFirst => 'Set an account email first before adding a password.';
+
+  @override
+  String profileChangeEmailFailed(String message) {
+    return 'Failed to change email: $message';
   }
 
   @override
@@ -588,6 +640,64 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String profileLinkAppleFailed(String message) {
     return 'Failed to link Apple: $message';
+  }
+
+  @override
+  String profileSocialIdentityAddTitle(String provider) {
+    return 'Add $provider';
+  }
+
+  @override
+  String profileSocialIdentityEditTitle(String provider) {
+    return 'Edit $provider';
+  }
+
+  @override
+  String get profileSocialIdentityGamertagLabel => 'Gamertag';
+
+  @override
+  String get profileSocialIdentityShareLinkLabel => 'Profile share link';
+
+  @override
+  String get profileSocialIdentityFriendCodeLabel => 'Friend code';
+
+  @override
+  String get profileSocialIdentityOnlineIdLabel => 'Online ID';
+
+  @override
+  String get profileSocialIdentityNicknameLabel => 'Nickname';
+
+  @override
+  String get profileSocialIdentityInvalidShareLink => 'Enter a valid profile share link.';
+
+  @override
+  String profileSocialIdentitySavedSuccess(String provider) {
+    return '$provider saved.';
+  }
+
+  @override
+  String profileSocialIdentityCopiedSuccess(String provider) {
+    return '$provider copied.';
+  }
+
+  @override
+  String profileSocialIdentityOpenFailed(String provider) {
+    return 'Failed to open $provider profile.';
+  }
+
+  @override
+  String profileSocialIdentityCopyFailed(String provider) {
+    return 'Failed to copy $provider.';
+  }
+
+  @override
+  String profileSocialIdentityRemovedSuccess(String provider) {
+    return '$provider removed.';
+  }
+
+  @override
+  String profileSocialIdentitySaveFailed(String provider, String message) {
+    return 'Failed to save $provider: $message';
   }
 
   @override
@@ -1017,6 +1127,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupCoordinationActivityEmpty => 'No activity yet.';
+
+  @override
+  String get groupCoordinationActivityRecent => 'Recent';
+
+  @override
+  String get groupCoordinationActivityHistory => 'History';
+
+  @override
+  String get groupCoordinationActivityFilterAll => 'All';
+
+  @override
+  String get groupCoordinationActivityFilterSessions => 'Sessions';
+
+  @override
+  String get groupCoordinationActivityFilterAvailability => 'Availability';
+
+  @override
+  String get groupCoordinationActivityFilterRsvps => 'RSVPs';
+
+  @override
+  String get groupCoordinationActivityFilterMine => 'Mine';
+
+  @override
+  String groupCoordinationActivityBucketToday(int count) {
+    return 'Today ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityBucketYesterday(int count) {
+    return 'Yesterday ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityBucketEarlierThisWeek(int count) {
+    return 'Earlier this week ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityBucketEarlier(int count) {
+    return 'Earlier ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityRsvpBurst(int count) {
+    return '$count RSVP updates';
+  }
 
   @override
   String get groupCoordinationAddWindowTitle => 'Add ready window';

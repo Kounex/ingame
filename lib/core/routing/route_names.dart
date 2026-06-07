@@ -4,6 +4,7 @@ class RouteNames {
   static const String login = 'login';
   static const String register = 'register';
   static const String steamAuth = 'steam-auth';
+  static const String discordAuth = 'discord-auth';
   static const String home = 'home';
   static const String discover = 'discover';
   static const String profile = 'profile';
@@ -22,6 +23,7 @@ class RoutePaths {
   static const String login = '/login';
   static const String register = '/register';
   static const String steamAuth = '/steam-auth';
+  static const String discordAuth = '/discord-auth';
   static const String home = '/';
   static const String discover = '/discover';
   static const String profile = '/profile';

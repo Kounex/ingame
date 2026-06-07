@@ -30,4 +30,26 @@ void main() {
 
     expect(cancelled, isTrue);
   });
+
+  testWidgets('loading view supports Discord-specific progress copy', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: const Scaffold(
+          body: SteamAuthLoadingView(
+            onCancel: _noop,
+            message: 'Connecting to Discord...',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Connecting to Discord...'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+  });
 }
+
+void _noop() {}

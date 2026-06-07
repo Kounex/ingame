@@ -317,7 +317,7 @@ class _AmbientDebugOverlayState extends State<_AmbientDebugOverlay> {
   static const _timeDilationPresetLabels = ['1x', '5x', '20x'];
   static const _defaultDebugTimeDilation = 1.0;
 
-  bool _isCollapsed = false;
+  bool _isCollapsed = true;
   bool _motionExpanded = true;
   bool _shaderExpanded = false;
   late double _timeDilationValue;

@@ -11,6 +11,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
+import '../../../../shared/widgets/app_popup_menu_button.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/avatar_with_status.dart';
@@ -732,7 +733,7 @@ class _MemberSettingsRow extends ConsumerWidget {
               onDemote != null ||
               onTransferOwnership != null ||
               onRemove != null)
-            PopupMenuButton<_MemberAction>(
+            AppPopupMenuButton<_MemberAction>(
               icon: const Icon(
                 Icons.more_horiz,
                 color: AppColors.textSecondary,

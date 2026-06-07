@@ -12,11 +12,13 @@ import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_chip.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/app_dropdown_selector.dart';
+import '../../../../shared/widgets/app_popup_menu_button.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/services/app_haptics.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/coordination_model.dart';
@@ -70,6 +72,7 @@ class _GroupCoordinationScreenState
             ),
           ),
           data: (coordination) {
+            final upcomingWindows = _upcomingWindows(coordination.windows);
             final detailState = detailAsync.value;
             if (detailAsync.hasError) {
               return DesktopContentRegion(
@@ -116,7 +119,7 @@ class _GroupCoordinationScreenState
                   padding: const EdgeInsets.all(AppSpacing.md),
                   children: [
                     _SummaryCard(
-                      windowCount: coordination.windows.length,
+                      windowCount: upcomingWindows.length,
                       sessionCount: coordination.sessions.length,
                       activityCount: coordination.activity.length,
                     ),
@@ -152,7 +155,10 @@ class _GroupCoordinationScreenState
                       onRsvp: _handleSessionRsvp,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    _ActivitySection(activity: coordination.activity),
+                    _ActivitySection(
+                      activity: coordination.activity,
+                      currentUserId: currentUserId,
+                    ),
                   ],
                 ),
               ),
@@ -853,7 +859,7 @@ class _SessionCard extends ConsumerWidget {
                   ),
                 ),
                 if (_canEditSession())
-                  PopupMenuButton<_SessionCardAction>(
+                  AppPopupMenuButton<_SessionCardAction>(
                     icon: const Icon(
                       Icons.more_vert,
                       color: AppColors.textSecondary,
@@ -1232,52 +1238,463 @@ class _SessionResponseSection extends StatelessWidget {
   }
 }
 
-class _ActivitySection extends StatelessWidget {
-  const _ActivitySection({required this.activity});
+enum _ActivityFilter { all, sessions, availability, rsvps, mine }
+
+class _ActivitySection extends StatefulWidget {
+  const _ActivitySection({required this.activity, required this.currentUserId});
 
   final List<GroupActivityEvent> activity;
+  final String? currentUserId;
+
+  @override
+  State<_ActivitySection> createState() => _ActivitySectionState();
+}
+
+class _ActivitySectionState extends State<_ActivitySection> {
+  static const _recentHighlightLimit = 3;
+
+  _ActivityFilter _selectedFilter = _ActivityFilter.all;
+  final Set<String> _expandedBuckets = <String>{};
 
   @override
   Widget build(BuildContext context) {
+    final sortedActivity = [...widget.activity]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final filteredActivity = sortedActivity
+        .where(
+          (event) => _matchesActivityFilter(
+            event,
+            _selectedFilter,
+            currentUserId: widget.currentUserId,
+          ),
+        )
+        .toList();
+    final recentHighlights = _buildRecentActivityHighlights(
+      context,
+      filteredActivity,
+    ).take(_recentHighlightLimit).toList();
+    final recentEventIds = recentHighlights
+        .expand((highlight) => highlight.sourceEventIds)
+        .toSet();
+    final historyBuckets = _buildActivityHistoryBuckets(
+      context,
+      filteredActivity
+          .where((event) => !recentEventIds.contains(event.id))
+          .toList(),
+    );
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.l10n.groupCoordinationActivityTitle,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.l10n.groupCoordinationActivityTitle,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (filteredActivity.isNotEmpty)
+                AppChip.surface(
+                  label: context.l10n.groupCoordinationActivityCount(
+                    filteredActivity.length,
+                  ),
+                  compact: true,
+                  backgroundColor: AppColors.glassSurface,
+                  textColor: AppColors.textSecondary,
+                  icon: Icons.bolt_outlined,
+                  iconColor: AppColors.primary,
+                ),
+            ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (activity.isEmpty)
+          if (filteredActivity.isEmpty)
             Text(
               context.l10n.groupCoordinationActivityEmpty,
               style: const TextStyle(color: AppColors.textSecondary),
             )
-          else
-            for (final event in activity)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(
-                  Icons.bolt_outlined,
-                  color: AppColors.primary,
-                ),
-                title: Text(
-                  _activityLabel(context, event),
-                  style: const TextStyle(color: AppColors.textPrimary),
-                ),
-                subtitle: Text(
-                  _timeAgo(context, event.createdAt),
-                  style: const TextStyle(color: AppColors.textSecondary),
+          else ...[
+            Text(
+              context.l10n.groupCoordinationActivityRecent,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              key: const Key('activity-recent-list'),
+              decoration: BoxDecoration(
+                color: AppColors.glassSurface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.glassBorder),
+              ),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Column(
+                children: [
+                  for (
+                    var index = 0;
+                    index < recentHighlights.length;
+                    index++
+                  ) ...[
+                    if (index > 0)
+                      const Divider(
+                        color: AppColors.hairlineDivider,
+                        height: 16,
+                      ),
+                    _RecentActivityTile(highlight: recentHighlights[index]),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              context.l10n.groupCoordinationActivityHistory,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final filter in _ActivityFilter.values)
+                  ChoiceChip(
+                    key: Key('activity-filter-${filter.name}'),
+                    label: Text(_activityFilterLabel(context, filter)),
+                    selected: _selectedFilter == filter,
+                    onSelected: (_) {
+                      setState(() => _selectedFilter = filter);
+                    },
+                    selectedColor: AppColors.primary.withValues(alpha: 0.22),
+                    backgroundColor: AppColors.glassSurface,
+                    labelStyle: TextStyle(
+                      color: _selectedFilter == filter
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontWeight: _selectedFilter == filter
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
+                    side: const BorderSide(color: AppColors.glassBorder),
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            for (final bucket in historyBuckets)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _ActivityHistoryBucketCard(
+                  bucket: bucket,
+                  isExpanded: _expandedBuckets.contains(bucket.key),
+                  onToggle: () {
+                    setState(() {
+                      if (_expandedBuckets.contains(bucket.key)) {
+                        _expandedBuckets.remove(bucket.key);
+                      } else {
+                        _expandedBuckets.add(bucket.key);
+                      }
+                    });
+                  },
                 ),
               ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _RecentActivityTile extends StatelessWidget {
+  const _RecentActivityTile({required this.highlight});
+
+  final _RecentActivityHighlight highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ActivityAvatarBadge(
+          label: highlight.actorInitials,
+          icon: highlight.isAggregate ? Icons.people_outline : null,
+          backgroundColor: highlight.tintColor.withValues(alpha: 0.14),
+          foregroundColor: highlight.tintColor,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      highlight.label,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    _timeAgo(context, highlight.createdAt),
+                    style: const TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Icon(highlight.icon, size: 14, color: highlight.tintColor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      highlight.metaLabel,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActivityHistoryBucketCard extends StatelessWidget {
+  const _ActivityHistoryBucketCard({
+    required this.bucket,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  final _ActivityHistoryBucket bucket;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: Key('activity-history-group-${bucket.key}'),
+      decoration: BoxDecoration(
+        color: AppColors.glassSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      bucket.label,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded) ...[
+            const Divider(height: 1, color: AppColors.hairlineDivider),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Column(
+                children: [
+                  for (
+                    var index = 0;
+                    index < bucket.events.length;
+                    index++
+                  ) ...[
+                    if (index > 0)
+                      const Divider(
+                        color: AppColors.hairlineDivider,
+                        height: AppSpacing.md,
+                      ),
+                    _HistoryActivityTile(
+                      event: bucket.events[index],
+                      showCompactSpacing:
+                          index > 0 &&
+                          bucket.events[index - 1].actorUserId ==
+                              bucket.events[index].actorUserId,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryActivityTile extends StatelessWidget {
+  const _HistoryActivityTile({
+    required this.event,
+    required this.showCompactSpacing,
+  });
+
+  final GroupActivityEvent event;
+  final bool showCompactSpacing;
+
+  @override
+  Widget build(BuildContext context) {
+    final tintColor = _activityTintColor(event.type);
+    return Padding(
+      padding: EdgeInsets.only(top: showCompactSpacing ? 0 : 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ActivityAvatarBadge(
+            label: _activityInitials(event.actorDisplayName),
+            backgroundColor: tintColor.withValues(alpha: 0.12),
+            foregroundColor: tintColor,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _activityLabel(context, event),
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _timeAgo(context, event.createdAt),
+                  style: const TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Icon(_activityTypeIcon(event.type), size: 16, color: tintColor),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityAvatarBadge extends StatelessWidget {
+  const _ActivityAvatarBadge({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    this.icon,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: icon != null
+          ? Icon(icon, size: 16, color: foregroundColor)
+          : Text(
+              label,
+              style: TextStyle(
+                color: foregroundColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+    );
+  }
+}
+
+class _RecentActivityHighlight {
+  const _RecentActivityHighlight({
+    required this.label,
+    required this.metaLabel,
+    required this.createdAt,
+    required this.icon,
+    required this.tintColor,
+    required this.actorInitials,
+    required this.sourceEventIds,
+    this.isAggregate = false,
+  });
+
+  final String label;
+  final String metaLabel;
+  final DateTime createdAt;
+  final IconData icon;
+  final Color tintColor;
+  final String actorInitials;
+  final List<String> sourceEventIds;
+  final bool isAggregate;
+}
+
+class _ActivityHistoryBucket {
+  const _ActivityHistoryBucket({
+    required this.key,
+    required this.label,
+    required this.events,
+  });
+
+  final String key;
+  final String label;
+  final List<GroupActivityEvent> events;
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -1911,29 +2328,239 @@ String _rsvpLabel(BuildContext context, String response) {
   };
 }
 
+bool _matchesActivityFilter(
+  GroupActivityEvent event,
+  _ActivityFilter filter, {
+  required String? currentUserId,
+}) {
+  return switch (filter) {
+    _ActivityFilter.all => true,
+    _ActivityFilter.sessions => _isSessionActivity(event.type),
+    _ActivityFilter.availability => _isAvailabilityActivity(event.type),
+    _ActivityFilter.rsvps => event.type == 'session_rsvp_updated',
+    _ActivityFilter.mine => event.actorUserId == currentUserId,
+  };
+}
+
+String _activityFilterLabel(BuildContext context, _ActivityFilter filter) {
+  return switch (filter) {
+    _ActivityFilter.all => context.l10n.groupCoordinationActivityFilterAll,
+    _ActivityFilter.sessions =>
+      context.l10n.groupCoordinationActivityFilterSessions,
+    _ActivityFilter.availability =>
+      context.l10n.groupCoordinationActivityFilterAvailability,
+    _ActivityFilter.rsvps => context.l10n.groupCoordinationActivityFilterRsvps,
+    _ActivityFilter.mine => context.l10n.groupCoordinationActivityFilterMine,
+  };
+}
+
+List<_RecentActivityHighlight> _buildRecentActivityHighlights(
+  BuildContext context,
+  List<GroupActivityEvent> activity,
+) {
+  final highlights = <_RecentActivityHighlight>[];
+  var index = 0;
+
+  while (index < activity.length) {
+    final event = activity[index];
+    if (event.type == 'session_rsvp_updated') {
+      final cluster = <GroupActivityEvent>[event];
+      var cursor = index + 1;
+      while (cursor < activity.length &&
+          activity[cursor].type == 'session_rsvp_updated' &&
+          cluster.first.createdAt
+                  .difference(activity[cursor].createdAt)
+                  .inMinutes
+                  .abs() <=
+              20) {
+        cluster.add(activity[cursor]);
+        cursor++;
+      }
+      if (cluster.length >= 2) {
+        highlights.add(
+          _RecentActivityHighlight(
+            label: _rsvpAggregateLabel(context, cluster.length),
+            metaLabel: _recentAggregateMetaLabel(cluster),
+            createdAt: cluster.first.createdAt,
+            icon: Icons.how_to_reg_outlined,
+            tintColor: AppColors.warning,
+            actorInitials: cluster.length.toString(),
+            sourceEventIds: cluster.map((event) => event.id).toList(),
+            isAggregate: true,
+          ),
+        );
+        index = cursor;
+        continue;
+      }
+    }
+
+    highlights.add(_recentHighlightFromEvent(context, event));
+    index++;
+  }
+
+  return highlights;
+}
+
+_RecentActivityHighlight _recentHighlightFromEvent(
+  BuildContext context,
+  GroupActivityEvent event,
+) {
+  return _RecentActivityHighlight(
+    label: _activityLabel(context, event),
+    metaLabel: event.actorDisplayName,
+    createdAt: event.createdAt,
+    icon: _activityTypeIcon(event.type),
+    tintColor: _activityTintColor(event.type),
+    actorInitials: _activityInitials(event.actorDisplayName),
+    sourceEventIds: [event.id],
+  );
+}
+
+String _rsvpAggregateLabel(BuildContext context, int count) {
+  return context.l10n.groupCoordinationActivityRsvpBurst(count);
+}
+
+String _recentAggregateMetaLabel(List<GroupActivityEvent> cluster) {
+  final names = cluster.map((event) => event.actorDisplayName).toList();
+  return names.join(', ');
+}
+
+List<_ActivityHistoryBucket> _buildActivityHistoryBuckets(
+  BuildContext context,
+  List<GroupActivityEvent> activity,
+) {
+  final grouped = <String, List<GroupActivityEvent>>{};
+  final labels = <String, String>{};
+  final order = <String>[];
+
+  for (final event in activity) {
+    final key = _activityHistoryBucketKey(event.createdAt);
+    grouped
+        .putIfAbsent(key, () {
+          order.add(key);
+          labels[key] = _activityHistoryBucketLabel(context, key, 0);
+          return <GroupActivityEvent>[];
+        })
+        .add(event);
+  }
+
+  return [
+    for (final key in order)
+      _ActivityHistoryBucket(
+        key: key,
+        label: _activityHistoryBucketLabel(context, key, grouped[key]!.length),
+        events: grouped[key]!,
+      ),
+  ];
+}
+
+String _activityHistoryBucketKey(DateTime timestamp) {
+  final local = timestamp.toLocal();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final date = DateTime(local.year, local.month, local.day);
+  final diffDays = today.difference(date).inDays;
+
+  if (diffDays <= 0) {
+    return 'today';
+  }
+  if (diffDays == 1) {
+    return 'yesterday';
+  }
+  if (diffDays < 7) {
+    return 'earlier_this_week';
+  }
+  return 'earlier';
+}
+
+String _activityHistoryBucketLabel(
+  BuildContext context,
+  String bucketKey,
+  int count,
+) {
+  return switch (bucketKey) {
+    'today' => context.l10n.groupCoordinationActivityBucketToday(count),
+    'yesterday' => context.l10n.groupCoordinationActivityBucketYesterday(count),
+    'earlier_this_week' =>
+      context.l10n.groupCoordinationActivityBucketEarlierThisWeek(count),
+    _ => context.l10n.groupCoordinationActivityBucketEarlier(count),
+  };
+}
+
+bool _isSessionActivity(String type) {
+  return type == 'session_proposed' ||
+      type == 'session_updated' ||
+      type == 'session_deleted';
+}
+
+bool _isAvailabilityActivity(String type) {
+  return type == 'scheduled_ready_updated' || type == 'scheduled_ready_deleted';
+}
+
+IconData _activityTypeIcon(String type) {
+  return switch (type) {
+    'scheduled_ready_updated' => Icons.calendar_today_outlined,
+    'scheduled_ready_deleted' => Icons.event_busy_outlined,
+    'session_proposed' => Icons.sports_esports_outlined,
+    'session_updated' => Icons.edit_calendar_outlined,
+    'session_deleted' => Icons.delete_outline,
+    'session_rsvp_updated' => Icons.how_to_reg_outlined,
+    _ => Icons.bolt_outlined,
+  };
+}
+
+Color _activityTintColor(String type) {
+  return switch (type) {
+    'session_deleted' => AppColors.error,
+    'session_rsvp_updated' => AppColors.warning,
+    'scheduled_ready_updated' ||
+    'scheduled_ready_deleted' => AppColors.secondary,
+    'session_updated' => AppColors.primaryDark,
+    _ => AppColors.primary,
+  };
+}
+
+String _activityInitials(String displayName) {
+  final parts = displayName
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) {
+    return '?';
+  }
+  if (parts.length == 1) {
+    return parts.first[0].toUpperCase();
+  }
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+}
+
 String _activityLabel(BuildContext context, GroupActivityEvent event) {
+  return _activityLabelForL10n(context.l10n, event);
+}
+
+String _activityLabelForL10n(AppLocalizations l10n, GroupActivityEvent event) {
   return switch (event.type) {
     'scheduled_ready_updated' =>
-      context.l10n.groupCoordinationActivityScheduledReadyUpdated(
+      l10n.groupCoordinationActivityScheduledReadyUpdated(
         event.actorDisplayName,
       ),
     'scheduled_ready_deleted' =>
-      context.l10n.groupCoordinationActivityScheduledReadyDeleted(
+      l10n.groupCoordinationActivityScheduledReadyDeleted(
         event.actorDisplayName,
       ),
-    'session_proposed' => context.l10n.groupCoordinationActivitySessionProposed(
+    'session_proposed' => l10n.groupCoordinationActivitySessionProposed(
       event.actorDisplayName,
     ),
-    'session_updated' => context.l10n.groupCoordinationActivitySessionUpdated(
+    'session_updated' => l10n.groupCoordinationActivitySessionUpdated(
       event.actorDisplayName,
     ),
-    'session_deleted' => context.l10n.groupCoordinationActivitySessionDeleted(
+    'session_deleted' => l10n.groupCoordinationActivitySessionDeleted(
       event.actorDisplayName,
     ),
-    'session_rsvp_updated' =>
-      context.l10n.groupCoordinationActivitySessionRsvpUpdated(
-        event.actorDisplayName,
-      ),
+    'session_rsvp_updated' => l10n.groupCoordinationActivitySessionRsvpUpdated(
+      event.actorDisplayName,
+    ),
     _ => event.message,
   };
 }

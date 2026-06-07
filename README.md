@@ -78,13 +78,43 @@ By default, Flutter runtime hosts stay repo-local for development:
 - `INGAME_WEB_APP_BASE_URL=http://localhost:8080`
 - `INGAME_INVITE_BASE_URL=http://localhost:8080`
 
+Optional social-login build flags:
+
+- `DISCORD_CLIENT_ID=<your Discord application client id>` enables the Discord sign-in button and OAuth flow in Flutter/web builds
+- `APPLE_SERVICE_ID=com.kounex.ingame.web` enables Apple Sign-In on web builds
+
+On this machine, the recommended local place for personal overrides is `~/.localrc`
+if your shell already sources it. For Discord, add:
+
+```bash
+export INGAME_DISCORD_CLIENT_ID=<your-discord-client-id>
+export DISCORD_CLIENT_ID=<your-discord-client-id>
+```
+
 If you want the native app to target a different backend, browser-app host, or invite host:
 
 ```bash
 flutter run \
   --dart-define=INGAME_API_BASE_URL=http://localhost:8000/api/v1 \
   --dart-define=INGAME_WEB_APP_BASE_URL=http://localhost:8080 \
-  --dart-define=INGAME_INVITE_BASE_URL=http://localhost:8080
+  --dart-define=INGAME_INVITE_BASE_URL=http://localhost:8080 \
+  --dart-define=DISCORD_CLIENT_ID=<your-discord-client-id>
+```
+
+For a local Chrome run that uses your current shell environment, pins Flutter
+Chrome to a predictable local port, and forwards the local host defines plus web
+social-login flags, use:
+
+```bash
+./scripts/release/chrome_local.sh
+```
+
+By default, that helper uses `http://localhost:8090` for the browser app so it
+does not collide with the containerized `ingame-web` runtime on `8080` or the
+local marketing runtime on `8081`. Override the port if needed:
+
+```bash
+INGAME_WEB_DEV_PORT=8091 ./scripts/release/chrome_local.sh
 ```
 
 ### Backend setup without Compose
@@ -93,6 +123,11 @@ flutter run \
 python3 -m pip install -r backend/requirements.txt
 python3 -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload
 ```
+
+Optional backend auth-provider config:
+
+- `INGAME_DISCORD_CLIENT_ID=<your Discord application client id>`
+- `INGAME_APPLE_CLIENT_IDS=ingame.kounex.com,com.kounex.ingame.web`
 
 ## Verification
 
@@ -257,6 +292,23 @@ Then start the release stack with:
 ```bash
 podman compose -f docker-compose.release.yml up -d
 ```
+
+#### Pre-release data policy
+
+Until the app has live production data or an explicit `1.0`-style release,
+prefer clean schema migrations over shipping legacy compatibility code for old
+stack data. If a pre-release feature change is large enough that a migration is
+not worth the complexity, document an explicit PostgreSQL data reset / volume
+wipe for self-hosted stacks instead of carrying transitional runtime code.
+
+For Docker or Portainer-hosted updates, always state which path applies:
+
+- run `alembic upgrade head` by restarting the `api` service with the updated stack
+- wipe the PostgreSQL volume and redeploy when the feature intentionally starts from a clean database
+
+After the first live release with real user data, treat backward compatibility
+as required by default and prefer database migrations unless an exception is
+explicitly approved.
 
 ### Helm charts
 

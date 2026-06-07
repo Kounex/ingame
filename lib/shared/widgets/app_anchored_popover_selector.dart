@@ -8,6 +8,9 @@ import '../../core/theme/spacing.dart';
 import '../services/app_haptics.dart';
 import 'tappable.dart';
 
+const _menuItemAnimationDuration = Duration(milliseconds: 220);
+const _menuItemAnimationCurve = Curves.easeOutCubic;
+
 class AppAnchoredPopoverOption<T> {
   const AppAnchoredPopoverOption({
     required this.value,
@@ -49,7 +52,8 @@ class AppAnchoredPopoverMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
+      duration: _menuItemAnimationDuration,
+      curve: _menuItemAnimationCurve,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm + 2,

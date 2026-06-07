@@ -1,8 +1,8 @@
 ---
 spec: roadmap
-version: "1.73"
+version: "1.92"
 status: active
-last_updated: "2026-06-06"
+last_updated: "2026-06-07"
 ---
 
 # InGame -- Product Roadmap
@@ -62,10 +62,10 @@ graph LR
 **Goal:** Build the foundational layer -- authentication, user profiles, group management -- that all other features depend on.
 
 **Key features delivered:**
-- Email/password, Steam OAuth (OpenID 2.0), and Apple Sign-In authentication
-- Recovery email required by onboarding for every account, with auth-provided email prefill when available
-- Account linking (connect/disconnect Steam and Apple from profile)
-- Add email/password for social-only users; unlink lockout guard
+- Email/password, Steam OAuth (OpenID 2.0), Discord OAuth (PKCE), and Apple Sign-In authentication
+- Recovery email required by onboarding for every account, with auth-provided email prefill when available and a dedicated post-onboarding profile flow for changing the canonical account email later
+- Account linking plus normalized linked social identities for Steam, Discord, Xbox, PlayStation, and Nintendo, while Apple remains auth-only
+- Add email/password for social-only users by reusing the canonical account email instead of managing a second separate email there; unlink lockout guard
 - User profiles with gaming hours via a shared day-by-day preset editor (`Morning`, `Afternoon`, `Evening`, `Night`, `All day`), intelligent schedule display, bio, and a shared avatar editor that supports provider avatars, uploaded photos, camera capture, and URL entry while persisting only `avatar_url`
 - Groups with invite codes, discoverable directory, join requests with admin approval, and full owner/admin/member RBAC management
 - First-time user onboarding wizard (3-step) with optional recurring-availability capture using the same shared day-by-day preset editor as profile editing plus the same shared timezone selector used in profile editing
@@ -76,19 +76,20 @@ graph LR
 - Hybrid persistent navigation: sidebar/bottom nav stays visible during browsing; focused flows (auth, onboarding) hide nav
 - Desktop/web width-aware content framing: focused flows and shell pages use shared page-width archetypes (`compact`, `form`, `reading`, `wide`, opt-in `full`) so ultrawide layouts keep readable canvases while persistent navigation stays fixed
 - Reusable `InGameLogo` brand widget with the canonical logo image plus gradient wordmark styling
-- Platform-authentic social login buttons (Steam brand palette, Apple HIG)
-- Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus, and existing page transitions where retained
+- Platform-authentic social login buttons driven by the shared provider-visual registry (Steam/Discord/Apple brand treatment with centralized icon and color mapping)
+- Glassmorphism design system with Cue-backed shared motion surfaces (`GlassCard`, `AppToast`, social hover states, onboarding interactions, `StatusIndicator`), themed popup menus with transparent action-row interaction states, and existing page transitions where retained
 - Platform-aware route pages so web keeps custom fade/slide for focused and pushed detail routes, iOS keeps the interactive Cupertino back swipe while adding a stronger fade to reduce overlap, and indexed shell branch switches remain intentionally immediate
 - Shared animated ambient background plus an expressive production baseline motion scope so release builds keep the same premium background system visibly present outside debug-only tuning
 - Helm chart + Kustomize overlays for OpenShift deployment
 - Backend coverage across auth, users, groups, and realtime/WebSocket behavior
 
 **Spec set:**
-- [Overview](2026-05-30-core-platform-design.md) (v3.2)
-- [Auth](2026-05-30-core-platform-auth.md) (v1.7)
-- [Profiles](2026-05-30-core-platform-profiles.md) (v1.7)
+- [Overview](2026-05-30-core-platform-design.md) (v3.3)
+- [Auth](2026-05-30-core-platform-auth.md) (v2.9)
+- [Social Identities](2026-06-07-core-platform-social-identities.md) (v1.2)
+- [Profiles](2026-05-30-core-platform-profiles.md) (v1.14)
 - [Groups](2026-05-30-core-platform-groups.md) (v1.4)
-- [Implementation](2026-05-30-core-platform-implementation.md) (v1.60)
+- [Implementation](2026-05-30-core-platform-implementation.md) (v1.62)
 
 ---
 
@@ -103,7 +104,7 @@ graph LR
 - **Scheduled ready windows** -- members can publish multiple future "ready to play" windows without creating a formal RSVP event
 - **Group calendar views** -- shared coordination surfaces show scheduled ready windows through an upcoming-first preview plus full agenda browsing and establish the foundation for later recurring-availability comparison
 - **Session scheduling** -- propose a future time slot for a gaming session; group members RSVP (`in` / `maybe` / `out`)
-- **Activity feed** -- lightweight event stream in each group for scheduled-ready and session lifecycle changes
+- **Activity feed** -- lightweight event stream in each group for scheduled-ready and session lifecycle changes, surfaced as a compact planner journal with recent highlights and grouped history
 
 SP2 intentionally distinguishes two coordination models:
 - **Scheduled personal readiness** -- "I expect to be ready at these times"
@@ -115,17 +116,17 @@ SP2 intentionally distinguishes two coordination models:
 - `StatusIndicator` widget integration (already built in SP1, needs wiring to live data)
 - New data models: scheduled-ready windows for personal availability publication, `Session` for explicit group proposals, `SessionRsvp`, and a lightweight activity record
 - Backend: status store in Redis, scheduled-ready/session persistence in PostgreSQL where durable history is needed
-- Flutter: real-time providers, ready scheduling flows, coordination hub surfaces, incremental mutation handling, localized activity copy, and calendar/session/activity views that listen to live updates
+- Flutter: real-time providers, ready scheduling flows, coordination hub surfaces, incremental mutation handling, localized activity copy, and calendar/session/activity journal views that listen to live updates
 
 **Depends on:** SP1
 
 **Estimated effort:** Medium-large (core feature of the app, involves real-time infrastructure)
 
 **Spec set:**
-- [Overview](2026-05-30-real-time-coordination-design.md) (v2.2)
+- [Overview](2026-05-30-real-time-coordination-design.md) (v2.3)
 - [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.2)
-- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.5)
-- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.7)
+- [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.6)
+- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.8)
 
 ---
 
@@ -231,6 +232,12 @@ These patterns and practices apply across all sub-projects:
 
 | Date | Change | Detail |
 |------|--------|--------|
+| 2026-06-07 | SP2 activity journal sync | Refreshed the SP2 spec pointers and summary wording after redesigning planner activity into a compact recent-highlights plus grouped-history journal | Keeps the roadmap aligned with the maintained high-volume coordination UX instead of the old flat feed expectation |
+| 2026-06-07 | SP1 action-menu interaction polish | Bumped the SP1 implementation spec reference after standardizing ellipsis/action popup menus on a shared wrapper that suppresses the stock Material gray hover, highlight, and splash states | Keeps the roadmap aligned with the maintained glass-menu interaction contract now used across group and coordination action menus |
+| 2026-06-07 | SP1 iOS Discord build wiring | Updated the maintained auth spec pointer after teaching the iOS production wrapper to forward `DISCORD_CLIENT_ID` into native release/device builds | Keeps the roadmap aligned with the actual production wrapper contract for Discord-enabled iOS runs |
+| 2026-06-07 | SP1 Discord config surfaces | Added the maintained Discord client-id wiring across local compose, Helm/API runtime config, web image build args, and release-image CI documentation | Keeps the roadmap aligned with the actual provider config surfaces users must fill in before Discord auth can be enabled outside tests |
+| 2026-06-07 | SP1 social identities | Added Discord auth plus the normalized social-identity spec set and refreshed the SP1 overview/auth/profile spec pointers | Keeps the roadmap aligned with the new provider-capability model and linked-identity rollout beyond Steam and Apple |
+| 2026-06-07 | SP1 canonical email management | Updated the auth/profile spec pointers after promoting post-onboarding email changes to a dedicated profile flow and simplifying add-email/password to reuse the canonical account email | Keeps the roadmap aligned with the chosen cross-provider account-email model before the later email-verification pass |
 | 2026-06-06 | SP1 Apple web SDK wiring | Added the required Apple browser SDK script to the Flutter web entrypoint and documented that the web flow needs both the baked Service ID and Apple's JS client | Keeps the roadmap aligned with the verified browser-side Apple Sign-In requirement after confirming prod failed before any auth network request |
 | 2026-06-06 | SP1 Apple audience deployment fix | Corrected the maintained backend Apple web Service ID/default alignment to `com.kounex.ingame.web` and documented Helm-side `INGAME_APPLE_CLIENT_IDS` injection for API releases | Keeps the roadmap aligned with the production Apple Sign-In contract so web builds and backend token audience validation stay in sync |
 | 2026-06-06 | SP1 join-mode enforcement | Updated the groups and implementation spec pointers after tightening approval-group invite behavior so invite-link joins respect `join_mode` and create requests when approval is required | Keeps the roadmap aligned with the maintained invite/join contract instead of implying approval only matters in directory browsing |
@@ -301,3 +308,15 @@ These patterns and practices apply across all sub-projects:
 | 2026-06-05 | SP2 completion and roadmap reorder | Marked SP2 complete, promoted Settings & Notifications to SP3 with a dedicated spec, and renumbered Game Matching to SP4 | Aligns the roadmap with the delivered coordination slice and the newly approved priority order for the next implementation phase |
 | 2026-06-05 | SP2 audit follow-through | Clarified that coordination fan-out is commit-gated and the shipped planning hub now uses richer range/notes/localization behavior with stronger regression coverage | Keeps the roadmap summary aligned with the corrected SP2 backend contract and the polished coordination UX now in the repo |
 | 2026-06-06 | SP2 spec metadata sync | Updated the shipped SP2 calendar wording and refreshed the child-spec version pointers after the maintained transport, coordination-models, and implementation docs advanced | Keeps the roadmap aligned with the current planning-hub UX and removes stale SP2 spec-set metadata |
+| 2026-06-07 | SP1 spec metadata sync | Refreshed the SP1 auth/profile version pointers after the provider-visual follow-through and manual social-action corrections advanced the maintained child specs | Keeps the roadmap entry point aligned with the latest auth/profile contracts so reviewers are not sent to stale version metadata |
+| 2026-06-07 | SP1 profile metadata sync | Refreshed the Profiles child-spec version pointer after clarifying the maintained fallback-glyph contract for provider visuals | Keeps the roadmap aligned with the latest profile-spec wording after the audit follow-through tightened the provider-visual contract |
+| 2026-06-07 | SP1 auth UI summary | Replaced the stale Apple-HIG wording with the maintained shared provider-visual auth-button contract | Keeps the roadmap summary aligned with the current auth spec and shipped social-button implementation after the audit follow-through |
+| 2026-06-07 | SP1 Apple platform/visual metadata sync | Refreshed the SP1 auth/profile version pointers after tightening Apple availability to iOS-only and clarifying Apple’s monochrome profile-row treatment | Keeps the roadmap entry point aligned with the latest Apple-specific auth/profile contracts after the audit follow-through |
+| 2026-06-07 | SP1 native auth callback metadata sync | Refreshed the Auth child-spec version pointer after correcting the maintained Android Steam bridge-page callback contract | Keeps the roadmap entry point aligned with the shipped native Steam auth flow after the audit follow-through removed stale callback wording |
+| 2026-06-07 | SP1 social summary alignment | Removed Apple from the roadmap’s linked-social-identity summary so it matches the maintained auth-only Apple contract | Keeps the roadmap summary aligned with the shipped profile/social surfaces and avoids implying an unsupported Apple social identity |
+| 2026-06-07 | SP1 auth button contract sync | Refreshed the Auth child-spec version pointer after clarifying that provider-authentic button treatment includes Apple's maintained monochrome surface | Keeps the roadmap entry point aligned with the shipped auth-button visuals after the provider-surface audit follow-through |
+| 2026-06-07 | SP1 social refresh metadata sync | Refreshed the Social Identities child-spec version pointer after removing an unshipped manual refresh trigger from the maintained contract | Keeps the roadmap entry point aligned with the current social-identity surfaces instead of implying a user-triggered refresh action already exists |
+| 2026-06-07 | SP1 Nintendo social-action metadata sync | Refreshed the Social Identities child-spec version pointer after narrowing Nintendo’s maintained outbound action wording to copy-only | Keeps the roadmap entry point aligned with the shipped Nintendo social interaction instead of implying an unimplemented share affordance |
+| 2026-06-07 | SP1 local build metadata sync | Refreshed the Implementation child-spec version pointer after documenting the maintained `.dockerignore` requirement for local Podman/Docker Flutter web rebuilds | Keeps the roadmap entry point aligned with the build contract needed to refresh the current workspace in the local container stack |
+| 2026-06-07 | SP1 local Chrome helper metadata sync | Refreshed the Auth child-spec version pointer after documenting the maintained `chrome_local.sh` helper for Discord/Apple-enabled local browser runs | Keeps the roadmap entry point aligned with the local Flutter web auth helper contract used during development |
+| 2026-06-07 | SP1 local Chrome helper robustness sync | Refreshed the Auth child-spec version pointer after simplifying `chrome_local.sh` to use the current shell environment while keeping the `sh` to `bash` re-exec behavior | Keeps the roadmap entry point aligned with the maintained local browser helper contract used on developer machines that already export local auth defines from their shell startup files |

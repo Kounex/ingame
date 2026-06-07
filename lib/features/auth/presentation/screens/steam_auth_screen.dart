@@ -17,10 +17,7 @@ import '../../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
 
 class SteamAuthScreen extends ConsumerStatefulWidget {
-  const SteamAuthScreen({
-    super.key,
-    this.redirectTo,
-  });
+  const SteamAuthScreen({super.key, this.redirectTo});
 
   final String? redirectTo;
 
@@ -62,7 +59,8 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
     ref.listen<AsyncValue<AuthState>>(authNotifierProvider, (_, next) {
       next.whenData((state) {
         state.whenOrNull(
-          authenticated: (_) => context.go(widget.redirectTo ?? RoutePaths.home),
+          authenticated: (_) =>
+              context.go(widget.redirectTo ?? RoutePaths.home),
           error: (failure) {
             if (mounted) {
               setState(() {
@@ -111,18 +109,11 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 48,
-          ),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 48),
           const SizedBox(height: AppSpacing.md),
           Text(
             failure.userMessage(context.l10n),
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -149,10 +140,7 @@ class _SteamAuthScreenState extends ConsumerState<SteamAuthScreen> {
 }
 
 class SteamAuthBackToLoginRow extends StatelessWidget {
-  const SteamAuthBackToLoginRow({
-    required this.onTap,
-    super.key,
-  });
+  const SteamAuthBackToLoginRow({required this.onTap, super.key});
 
   final VoidCallback onTap;
 
@@ -183,12 +171,10 @@ class SteamAuthBackToLoginRow extends StatelessWidget {
 }
 
 class SteamAuthLoadingView extends StatelessWidget {
-  const SteamAuthLoadingView({
-    required this.onCancel,
-    super.key,
-  });
+  const SteamAuthLoadingView({required this.onCancel, this.message, super.key});
 
   final VoidCallback onCancel;
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +186,7 @@ class SteamAuthLoadingView extends StatelessWidget {
           const LoadingIndicator(),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            context.l10n.steamAuthConnecting,
+            message ?? context.l10n.steamAuthConnecting,
             style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 16,

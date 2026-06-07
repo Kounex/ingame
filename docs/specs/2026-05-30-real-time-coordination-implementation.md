@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination-implementation
-version: "1.7"
+version: "1.8"
 status: complete
-last_updated: "2026-06-06"
+last_updated: "2026-06-07"
 sub_project: 2
 ---
 
@@ -52,6 +52,8 @@ This spec covers the implementation-facing SP2 details:
 - both the preview and agenda sheet keep the same permission-aware edit affordances for ready windows, while the section header still owns the add action
 - session cards are summary-only surfaces that show status, RSVP totals by response type, and at most a short notes preview; tapping the card opens a detail sheet for full notes, attendee breakdown, and RSVP actions
 - editable session cards should still route management through a compact overflow menu so `Edit session` and destructive `Delete session` live together without crowding the card chrome; delete must confirm before execution and use the shared destructive feedback path
+- the activity surface should use a compact journal card with a short `Recent` highlights block plus progressively expanded day-grouped `History` instead of rendering every event as a full-height row on first load
+- activity filters should stay lightweight (`All`, sessions, availability, RSVP, optional current-user scope) and keep actor identity visually scannable in dense rows for multi-member groups
 - the group detail entry point surfaces lightweight coordination summary metadata before navigation into the full planning hub
 - later SP2 follow-up work may still add a recurring-availability comparison mode without changing the delivered scheduled-ready/session contracts
 
@@ -111,7 +113,7 @@ SP2 is considered complete only when all of the following are true:
 - `WebSocketClient` tests: connect, decode, disconnect, reconnect with fresh token, command send helpers, connection-state transitions, `channel.ready` gating, snapshot cache for late subscribers, and cache clear on disconnect
 - provider tests: auth transition connect/disconnect, snapshot merge, bootstrap hydration, legacy snapshot normalization, offline-ready hydration, ready updates, ready expiry, lifecycle-derived away handling, ready-first status derivation, connection-state sync, and ready-toggle rejection while disconnected or reconnecting
 - provider tests: coordination bootstrap, incremental mutation behavior, and websocket reconciliation for windows, sessions, session deletion, RSVPs, and activity
-- widget tests: member list and status rendering from live provider state plus coordination-hub rendering for grouped upcoming-window agendas, permission-aware editing, compact session cards, session detail-sheet RSVP flows, destructive confirmation, session notes, and localized activity
+- widget tests: member list and status rendering from live provider state plus coordination-hub rendering for grouped upcoming-window agendas, permission-aware editing, compact session cards, compact activity journals with grouped history/filtering, session detail-sheet RSVP flows, destructive confirmation, session notes, and localized activity
 - integration tests remain planned for a full login -> open group -> receive live ready change path
 
 ### CI Requirements
@@ -142,3 +144,4 @@ SP2 is considered complete only when all of the following are true:
 | 2026-06-06 | Coordination delete flow | Added the session delete repository/provider/backend contract, the `session_deleted` live-update path, and the card-level overflow-menu delete UX with destructive confirmation | Keeps the delivery spec aligned with the new planner cleanup path while preserving incremental multi-client updates and shared confirmation/haptic behavior |
 | 2026-06-06 | Upcoming windows browser | Replaced the old week-range ready-window navigation with an upcoming preview list plus an agenda-style bottom sheet, and documented shared edit affordances across both surfaces | Aligns the implementation spec with the new planning-hub UX that surfaces the next windows immediately instead of forcing blind date-range browsing |
 | 2026-06-06 | Coordination surface polish | Documented standout grouped-day headers for upcoming windows plus compact session cards that open a richer detail sheet for RSVP interaction | Keeps the implementation-facing Flutter contract aligned with the latest planning-hub readability pass and the new summary-vs-detail split for sessions |
+| 2026-06-07 | Activity journal implementation | Documented the compact recent-plus-history activity journal, lightweight filters, dense member-aware rows, and the corresponding Flutter widget-test expectations | Keeps the implementation-facing SP2 contract aligned with the high-volume planner redesign instead of the old flat activity list |

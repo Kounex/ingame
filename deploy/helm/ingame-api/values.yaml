@@ -36,6 +36,7 @@ resources:
 config:
   debug: "false"
   corsAllowOrigins: "https://app.in-game.app"
+  discordClientId: ""
   appleClientIds: "ingame.kounex.com,com.kounex.ingame.web"
   logLevel: "info"
   apiPrefix: "/api/v1"

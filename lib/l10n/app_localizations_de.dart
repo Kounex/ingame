@@ -42,6 +42,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get socialContinueWithSteam => 'Mit Steam fortfahren';
 
   @override
+  String get socialContinueWithDiscord => 'Mit Discord fortfahren';
+
+  @override
   String get socialContinueWithApple => 'Mit Apple fortfahren';
 
   @override
@@ -139,6 +142,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commonCancel => 'Abbrechen';
+
+  @override
+  String get commonEdit => 'Bearbeiten';
 
   @override
   String get commonDelete => 'Löschen';
@@ -436,6 +442,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get steamAuthConnecting => 'Verbindung zu Steam wird hergestellt...';
 
   @override
+  String get discordAuthConnecting => 'Verbindung zu Discord wird hergestellt...';
+
+  @override
   String get steamAuthTryAgain => 'Erneut versuchen';
 
   @override
@@ -487,6 +496,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSectionConnectedAccounts => 'Verknuepfte Konten';
 
   @override
+  String get profileSectionSocials => 'Socials';
+
+  @override
   String get profileSectionPreferences => 'Einstellungen';
 
   @override
@@ -511,13 +523,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileNotConnected => 'Nicht verbunden';
 
   @override
+  String get profileSocialIdentityLinkInConnectedAccounts => 'In verknuepften Konten verbinden';
+
+  @override
   String get profileConnectedAccountsEmailPassword => 'E-Mail und Passwort';
 
   @override
   String get profileConnectedAccountsSteam => 'Steam';
 
   @override
+  String get profileConnectedAccountsDiscord => 'Discord';
+
+  @override
   String get profileConnectedAccountsApple => 'Apple';
+
+  @override
+  String get profileConnectedAccountsXbox => 'Xbox';
+
+  @override
+  String get profileConnectedAccountsPlayStation => 'PlayStation';
+
+  @override
+  String get profileConnectedAccountsNintendo => 'Nintendo';
 
   @override
   String get profileConnectedTapToDisconnect => 'Verbunden. Tippe zum Trennen.';
@@ -566,17 +593,42 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get profileDiscordLinkedSuccess => 'Discord-Konto erfolgreich verknuepft';
+
+  @override
+  String profileLinkDiscordFailed(String message) {
+    return 'Discord konnte nicht verknuepft werden: $message';
+  }
+
+  @override
   String get profileSetEmailPasswordTitle => 'E-Mail und Passwort hinzufuegen';
 
   @override
-  String get profileSetEmailPasswordDescription => 'Fuege eine E-Mail-Anmeldung zu deinem Konto hinzu, damit du dich ohne Social-Provider anmelden kannst.';
+  String get profileSetEmailPasswordDescription => 'Fuege ein Passwort zu der E-Mail in deinem Konto hinzu, damit du dich ohne Social-Provider anmelden kannst.';
 
   @override
   String get profileEmailPasswordAddedSuccess => 'E-Mail und Passwort erfolgreich hinzugefuegt';
 
   @override
   String profileSetEmailFailed(String message) {
-    return 'E-Mail konnte nicht gesetzt werden: $message';
+    return 'E-Mail und Passwort konnten nicht hinzugefuegt werden: $message';
+  }
+
+  @override
+  String get profileChangeEmailTitle => 'E-Mail aendern';
+
+  @override
+  String get profileChangeEmailDescription => 'Aktualisiere die Konto-E-Mail fuer Wiederherstellung und die kuenftige Anmeldung mit E-Mail und Passwort.';
+
+  @override
+  String get profileChangeEmailSuccess => 'E-Mail erfolgreich aktualisiert';
+
+  @override
+  String get profileAddEmailFirst => 'Lege zuerst eine Konto-E-Mail fest, bevor du ein Passwort hinzufuegst.';
+
+  @override
+  String profileChangeEmailFailed(String message) {
+    return 'E-Mail konnte nicht geaendert werden: $message';
   }
 
   @override
@@ -588,6 +640,64 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String profileLinkAppleFailed(String message) {
     return 'Apple konnte nicht verknuepft werden: $message';
+  }
+
+  @override
+  String profileSocialIdentityAddTitle(String provider) {
+    return '$provider hinzufuegen';
+  }
+
+  @override
+  String profileSocialIdentityEditTitle(String provider) {
+    return '$provider bearbeiten';
+  }
+
+  @override
+  String get profileSocialIdentityGamertagLabel => 'Gamertag';
+
+  @override
+  String get profileSocialIdentityShareLinkLabel => 'Profilfreigabe-Link';
+
+  @override
+  String get profileSocialIdentityFriendCodeLabel => 'Freundescode';
+
+  @override
+  String get profileSocialIdentityOnlineIdLabel => 'Online-ID';
+
+  @override
+  String get profileSocialIdentityNicknameLabel => 'Spitzname';
+
+  @override
+  String get profileSocialIdentityInvalidShareLink => 'Gib einen gueltigen Profilfreigabe-Link ein.';
+
+  @override
+  String profileSocialIdentitySavedSuccess(String provider) {
+    return '$provider gespeichert.';
+  }
+
+  @override
+  String profileSocialIdentityCopiedSuccess(String provider) {
+    return '$provider kopiert.';
+  }
+
+  @override
+  String profileSocialIdentityOpenFailed(String provider) {
+    return '$provider-Profil konnte nicht geoeffnet werden.';
+  }
+
+  @override
+  String profileSocialIdentityCopyFailed(String provider) {
+    return '$provider konnte nicht kopiert werden.';
+  }
+
+  @override
+  String profileSocialIdentityRemovedSuccess(String provider) {
+    return '$provider entfernt.';
+  }
+
+  @override
+  String profileSocialIdentitySaveFailed(String provider, String message) {
+    return '$provider konnte nicht gespeichert werden: $message';
   }
 
   @override
@@ -1017,6 +1127,52 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get groupCoordinationActivityEmpty => 'Noch keine Aktivität.';
+
+  @override
+  String get groupCoordinationActivityRecent => 'Neu';
+
+  @override
+  String get groupCoordinationActivityHistory => 'Verlauf';
+
+  @override
+  String get groupCoordinationActivityFilterAll => 'Alle';
+
+  @override
+  String get groupCoordinationActivityFilterSessions => 'Sessions';
+
+  @override
+  String get groupCoordinationActivityFilterAvailability => 'Verfügbarkeit';
+
+  @override
+  String get groupCoordinationActivityFilterRsvps => 'RSVPs';
+
+  @override
+  String get groupCoordinationActivityFilterMine => 'Meine';
+
+  @override
+  String groupCoordinationActivityBucketToday(int count) {
+    return 'Heute ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityBucketYesterday(int count) {
+    return 'Gestern ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityBucketEarlierThisWeek(int count) {
+    return 'Früher diese Woche ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityBucketEarlier(int count) {
+    return 'Früher ($count)';
+  }
+
+  @override
+  String groupCoordinationActivityRsvpBurst(int count) {
+    return '$count RSVP-Updates';
+  }
 
   @override
   String get groupCoordinationAddWindowTitle => 'Bereitschaftsfenster hinzufügen';

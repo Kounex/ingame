@@ -16,10 +16,7 @@ class ProfileRepository {
   }
 
   Future<User> updateProfile(Map<String, dynamic> updates) async {
-    final response = await dio.patch(
-      ApiEndpoints.usersMe,
-      data: updates,
-    );
+    final response = await dio.patch(ApiEndpoints.usersMe, data: updates);
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -39,6 +36,22 @@ class ProfileRepository {
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<User> linkDiscord({
+    required String code,
+    required String codeVerifier,
+    required String redirectUri,
+  }) async {
+    final response = await dio.post(
+      ApiEndpoints.linkDiscord,
+      data: {
+        'code': code,
+        'code_verifier': codeVerifier,
+        'redirect_uri': redirectUri,
+      },
+    );
+    return User.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<User> unlinkSteam() async {
     final response = await dio.delete(ApiEndpoints.linkSteam);
     return User.fromJson(response.data as Map<String, dynamic>);
@@ -46,6 +59,35 @@ class ProfileRepository {
 
   Future<User> unlinkApple() async {
     final response = await dio.delete(ApiEndpoints.linkApple);
+    return User.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<User> unlinkDiscord() async {
+    final response = await dio.delete(ApiEndpoints.linkDiscord);
+    return User.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<User> upsertManualSocialIdentity({
+    required String provider,
+    String? externalId,
+    String? username,
+    String? displayName,
+    String? profileUrl,
+  }) async {
+    final response = await dio.put(
+      ApiEndpoints.socialIdentity(provider),
+      data: {
+        'external_id': externalId,
+        'username': username,
+        'display_name': displayName,
+        'profile_url': profileUrl,
+      },
+    );
+    return User.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<User> deleteManualSocialIdentity(String provider) async {
+    final response = await dio.delete(ApiEndpoints.socialIdentity(provider));
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 

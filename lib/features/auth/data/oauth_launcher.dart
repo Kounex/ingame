@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -18,14 +22,32 @@ class AppleSignInUnavailableException implements Exception {
   const AppleSignInUnavailableException();
 }
 
+class DiscordSignInUnavailableException implements Exception {
+  const DiscordSignInUnavailableException();
+}
+
+class DiscordAuthResult {
+  const DiscordAuthResult({
+    required this.code,
+    required this.codeVerifier,
+    required this.redirectUri,
+  });
+
+  final String code;
+  final String codeVerifier;
+  final String redirectUri;
+}
+
 class OAuthLauncher {
   OAuthLauncher._();
 
   static const _callbackScheme = 'ingame';
   static const _steamCallbackPath = '/auth/steam-callback.html';
+  static const _discordCallbackPath = '/auth/discord-callback.html';
   static const _nativeBridgeParam = 'ingame_native';
   static const _appleCallbackPath = '/auth/apple-callback.html';
   static const _appleWebServiceId = String.fromEnvironment('APPLE_SERVICE_ID');
+  static const _discordClientId = String.fromEnvironment('DISCORD_CLIENT_ID');
 
   static String get _steamReturnTo {
     return steamReturnToForPlatform(
@@ -103,6 +125,96 @@ class OAuthLauncher {
     return null;
   }
 
+  @visibleForTesting
+  static String discordRedirectUriForPlatform({
+    required bool isWeb,
+    required String webAppBaseUrl,
+    String? browserOrigin,
+  }) {
+    if (isWeb) {
+      final origin = browserOrigin ?? Uri.base.origin;
+      return '$origin$_discordCallbackPath';
+    }
+    return '$_callbackScheme://auth/discord/callback';
+  }
+
+  static String get _discordRedirectUri => discordRedirectUriForPlatform(
+    isWeb: kIsWeb,
+    webAppBaseUrl: ApiEndpoints.webAppBaseUrl,
+  );
+
+  static String _randomVerifier([int length = 64]) {
+    const alphabet =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => alphabet[random.nextInt(alphabet.length)],
+    ).join();
+  }
+
+  static String _pkceChallenge(String verifier) {
+    final digest = sha256.convert(utf8.encode(verifier));
+    return base64UrlEncode(digest.bytes).replaceAll('=', '');
+  }
+
+  static Future<DiscordAuthResult> launchDiscordAuth() async {
+    if (!discordSignInAvailable) {
+      throw const DiscordSignInUnavailableException();
+    }
+    final clientId = normalizedDiscordClientId(_discordClientId);
+    final codeVerifier = _randomVerifier();
+    final state = _randomVerifier();
+    final redirectUri = _discordRedirectUri;
+    final authUrl = Uri.https('discord.com', '/oauth2/authorize', {
+      'response_type': 'code',
+      'client_id': clientId,
+      'scope': 'identify email',
+      'redirect_uri': redirectUri,
+      'state': state,
+      'prompt': 'consent',
+      'code_challenge': _pkceChallenge(codeVerifier),
+      'code_challenge_method': 'S256',
+    });
+
+    final resultUrl = await FlutterWebAuth2.authenticate(
+      url: authUrl.toString(),
+      callbackUrlScheme: _callbackScheme,
+      options: const FlutterWebAuth2Options(),
+    );
+    final callbackUri = Uri.parse(resultUrl);
+    final providerError = callbackUri.queryParameters['error'];
+    if (providerError == 'access_denied') {
+      throw Exception('Discord sign-in cancelled.');
+    }
+    final returnedState = callbackUri.queryParameters['state'];
+    if (returnedState == null || returnedState != state) {
+      throw Exception('Discord sign-in state mismatch.');
+    }
+    final code = callbackUri.queryParameters['code'];
+    if (code == null || code.isEmpty) {
+      throw Exception('Discord authorization code missing.');
+    }
+    return DiscordAuthResult(
+      code: code,
+      codeVerifier: codeVerifier,
+      redirectUri: redirectUri,
+    );
+  }
+
+  @visibleForTesting
+  static String normalizedDiscordClientId(String? clientId) {
+    return clientId?.trim() ?? '';
+  }
+
+  @visibleForTesting
+  static bool discordSignInAvailableForClientId(String? clientId) {
+    return normalizedDiscordClientId(clientId).isNotEmpty;
+  }
+
+  static bool get discordSignInAvailable =>
+      discordSignInAvailableForClientId(_discordClientId);
+
   /// Launches the Steam OpenID 2.0 browser flow and returns the callback
   /// query parameters on success. Throws on cancellation or failure.
   static Future<Map<String, String>> launchSteamAuth() async {
@@ -167,7 +279,7 @@ class OAuthLauncher {
       return normalizedAppleWebServiceId(webServiceId).isNotEmpty;
     }
 
-    return platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+    return platform == TargetPlatform.iOS;
   }
 
   static bool get appleSignInAvailable => appleSignInAvailableForPlatform(
@@ -178,7 +290,7 @@ class OAuthLauncher {
 
   /// Launches Apple Sign-In and returns the identity token on success.
   /// On web, requires a configured service ID and redirect URI in Apple
-  /// Developer Console. Uses native AuthenticationServices on iOS/macOS.
+  /// Developer Console. Uses native AuthenticationServices on iOS.
   /// Throws [SignInWithAppleAuthorizationException] on cancellation.
   static Future<AppleSignInResult> launchAppleSignIn() async {
     final webServiceId = normalizedAppleWebServiceId(_appleWebServiceId);
@@ -218,6 +330,9 @@ class OAuthLauncher {
     if (error is AppleSignInUnavailableException) {
       return const LocalizedFailure(AppFailureMessageKey.authAppleUnavailable);
     }
+    if (error is DiscordSignInUnavailableException) {
+      return const LocalizedFailure(AppFailureMessageKey.authErrorGeneric);
+    }
     if (isCancellationError(error)) {
       return const LocalizedFailure(AppFailureMessageKey.authSignInCancelled);
     }
@@ -241,6 +356,8 @@ class OAuthLauncher {
 
   static bool isCancellationError(Object error) {
     final message = error.toString().toLowerCase();
-    return message.contains('cancel') || message.contains('closed');
+    return message.contains('cancel') ||
+        message.contains('user closed the browser') ||
+        message.contains('window closed by user');
   }
 }

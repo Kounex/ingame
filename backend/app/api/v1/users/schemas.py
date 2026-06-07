@@ -7,8 +7,10 @@ __all__ = [
     "UpdateUserRequest",
     "AvatarUploadInitRequest",
     "AvatarUploadInitResponse",
+    "LinkDiscordRequest",
     "LinkSteamRequest",
     "LinkAppleRequest",
+    "ManualSocialIdentityUpsertRequest",
     "SetEmailPasswordRequest",
 ]
 
@@ -44,6 +46,19 @@ class LinkSteamRequest(BaseModel):
 
 class LinkAppleRequest(BaseModel):
     identity_token: str
+
+
+class LinkDiscordRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=2048)
+    code_verifier: str = Field(min_length=32, max_length=255)
+    redirect_uri: str = Field(min_length=1, max_length=2048)
+
+
+class ManualSocialIdentityUpsertRequest(BaseModel):
+    external_id: str | None = Field(default=None, max_length=255)
+    username: str | None = Field(default=None, max_length=255)
+    display_name: str | None = Field(default=None, max_length=255)
+    profile_url: str | None = Field(default=None, max_length=500)
 
 
 class SetEmailPasswordRequest(BaseModel):

@@ -1,0 +1,18 @@
+---
+description: Prefer migrations or explicit reset guidance over pre-release legacy compatibility code
+alwaysApply: true
+---
+
+# Pre-1.0 Data Policy
+
+Until the app has live production data or an explicit `1.0`-style release, do not add legacy or backward-compatibility code only to preserve existing dev, test, or self-hosted stack data.
+
+- Prefer clean Alembic migrations for schema and model changes.
+- If a migration adds more complexity than value before go-live, prefer an explicit DB reset / volume wipe instruction instead of shipping compatibility layers.
+- For Docker or Portainer deployments, state clearly whether an update requires:
+  - `alembic upgrade head`, or
+  - wiping the PostgreSQL data volume and redeploying.
+- Keep runtime code focused on the current contract, not transitional pre-release data shapes.
+- Do not remove genuinely required upgrade logic when the repo already ships a migration path that should be used.
+
+After the first live release with real user data, switch the default: backward compatibility becomes required, and database migrations are the primary path unless there is an explicitly approved exception.

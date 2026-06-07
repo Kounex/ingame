@@ -39,6 +39,14 @@ def test_settings_accepts_comma_separated_apple_client_ids(monkeypatch):
     ]
 
 
+def test_settings_accepts_discord_client_id(monkeypatch):
+    monkeypatch.setenv("INGAME_DISCORD_CLIENT_ID", "123456789012345678")
+
+    settings = Settings()
+
+    assert settings.discord_client_id == "123456789012345678"
+
+
 def test_settings_uses_legacy_single_apple_client_id_env_name(monkeypatch):
     monkeypatch.delenv("INGAME_APPLE_CLIENT_IDS", raising=False)
     monkeypatch.setenv("INGAME_APPLE_CLIENT_ID", "com.kounex.ingame.web")

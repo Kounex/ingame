@@ -30,14 +30,18 @@ class ApiEndpoints {
   static const String checkEmail = '/auth/check-email';
   static const String checkDisplayName = '/auth/check-display-name';
   static const String steamAuth = '/auth/steam';
+  static const String discordAuth = '/auth/discord';
   static const String appleAuth = '/auth/apple';
 
   // Users
   static const String usersMe = '/users/me';
   static const String avatarUploadInit = '/users/me/avatar-upload/init';
   static const String linkSteam = '/users/me/link-steam';
+  static const String linkDiscord = '/users/me/link-discord';
   static const String linkApple = '/users/me/link-apple';
   static const String setEmailPassword = '/users/me/set-email-password';
+  static String socialIdentity(String provider) =>
+      '/users/me/social-identities/$provider';
   static String user(String id) => '/users/$id';
 
   // Groups

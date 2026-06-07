@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'dart:io';
@@ -353,6 +355,114 @@ void main() {
 
     expect(source, contains('AppAnchoredPopoverSelector<Locale>('));
   });
+
+  testWidgets('login language switcher stays stable across view focus changes', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    FlutterView? view;
+    final errors = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = (details) => errors.add(details);
+    addTearDown(() {
+      FlutterError.onError = previousOnError;
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+        ],
+        child: _LocaleHarness(
+          home: Builder(
+            builder: (context) {
+              view = View.of(context);
+              return const LoginScreen();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+      ViewFocusEvent(
+        viewId: view!.viewId,
+        state: ViewFocusState.unfocused,
+        direction: ViewFocusDirection.forward,
+      ),
+    );
+    await tester.pump();
+
+    ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+      ViewFocusEvent(
+        viewId: view!.viewId,
+        state: ViewFocusState.focused,
+        direction: ViewFocusDirection.forward,
+      ),
+    );
+    await tester.pump();
+
+    expect(errors, isEmpty);
+  });
+
+  testWidgets(
+    'open login language switcher stays stable across view focus changes',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      FlutterView? view;
+      final errors = <FlutterErrorDetails>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = (details) => errors.add(details);
+      addTearDown(() {
+        FlutterError.onError = previousOnError;
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            preferencesProvider.overrideWithValue(PreferencesService(prefs)),
+          ],
+          child: _LocaleHarness(
+            home: Builder(
+              builder: (context) {
+                view = View.of(context);
+                return const LoginScreen();
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('language-switcher-compact-trigger')),
+      );
+      await tester.pumpAndSettle();
+
+      ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+        ViewFocusEvent(
+          viewId: view!.viewId,
+          state: ViewFocusState.unfocused,
+          direction: ViewFocusDirection.forward,
+        ),
+      );
+      await tester.pump();
+
+      ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+        ViewFocusEvent(
+          viewId: view!.viewId,
+          state: ViewFocusState.focused,
+          direction: ViewFocusDirection.forward,
+        ),
+      );
+      await tester.pump();
+
+      expect(errors, isEmpty);
+    },
+  );
 
   testWidgets(
     'profile shows email separately from password login state for Apple-only accounts',

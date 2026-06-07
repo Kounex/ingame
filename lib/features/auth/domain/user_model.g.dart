@@ -17,6 +17,11 @@ _User _$UserFromJson(Map<String, dynamic> json) => _User(
   preferredGamingHours: json['preferred_gaming_hours'] as Map<String, dynamic>?,
   steamId: json['steam_id'] as String?,
   appleId: json['apple_id'] as String?,
+  providerIdentities:
+      (json['provider_identities'] as List<dynamic>?)
+          ?.map((e) => ProviderIdentity.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ProviderIdentity>[],
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -36,6 +41,7 @@ Map<String, dynamic> _$UserToJson(_User instance) => <String, dynamic>{
   'preferred_gaming_hours': instance.preferredGamingHours,
   'steam_id': instance.steamId,
   'apple_id': instance.appleId,
+  'provider_identities': instance.providerIdentities,
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
 };

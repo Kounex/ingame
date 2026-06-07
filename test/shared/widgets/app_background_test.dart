@@ -1,4 +1,8 @@
+import 'dart:ui';
+
+import 'package:cue/cue.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ingame/shared/widgets/app_background.dart';
 
@@ -216,6 +220,129 @@ void main() {
       expect(find.text('Debug'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'AmbientMotionDebugLayer starts collapsed and expands on demand',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AmbientMotionDebugLayer(
+            child: Scaffold(body: SizedBox.expand()),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Debug'), findsOneWidget);
+      expect(find.text('Motion'), findsNothing);
+      expect(find.text('Shader'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Motion'), findsOneWidget);
+      expect(find.text('Shader'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AmbientMotionDebugLayer stays stable across view focus changes',
+    (tester) async {
+      FlutterView? view;
+      final errors = <FlutterErrorDetails>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = (details) => errors.add(details);
+      addTearDown(() {
+        FlutterError.onError = previousOnError;
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AmbientMotionDebugLayer(
+            child: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  view = View.of(context);
+                  return const SizedBox.expand();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+        ViewFocusEvent(
+          viewId: view!.viewId,
+          state: ViewFocusState.unfocused,
+          direction: ViewFocusDirection.forward,
+        ),
+      );
+      await tester.pump();
+
+      ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+        ViewFocusEvent(
+          viewId: view!.viewId,
+          state: ViewFocusState.focused,
+          direction: ViewFocusDirection.forward,
+        ),
+      );
+      await tester.pump();
+
+      expect(errors, isEmpty);
+    },
+  );
+
+  testWidgets('CueDebugTools stays stable across view focus changes', (
+    tester,
+  ) async {
+    FlutterView? view;
+    final errors = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = (details) => errors.add(details);
+    addTearDown(() {
+      FlutterError.onError = previousOnError;
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CueDebugTools(
+          child: Scaffold(
+            body: Builder(
+              builder: (context) {
+                view = View.of(context);
+                return Cue.onMount(
+                  child: const SizedBox.expand(),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+      ViewFocusEvent(
+        viewId: view!.viewId,
+        state: ViewFocusState.unfocused,
+        direction: ViewFocusDirection.forward,
+      ),
+    );
+    await tester.pump();
+
+    ServicesBinding.instance.platformDispatcher.onViewFocusChange?.call(
+      ViewFocusEvent(
+        viewId: view!.viewId,
+        state: ViewFocusState.focused,
+        direction: ViewFocusDirection.forward,
+      ),
+    );
+    await tester.pump();
+
+    expect(errors, isEmpty);
+  });
 
   testWidgets('SharedAnimatedBackground exposes visible fallback orbs', (
     tester,

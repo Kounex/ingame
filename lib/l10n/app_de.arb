@@ -11,6 +11,7 @@
   "loginRegister": "Registrieren",
   "socialDividerOr": "oder",
   "socialContinueWithSteam": "Mit Steam fortfahren",
+  "socialContinueWithDiscord": "Mit Discord fortfahren",
   "socialContinueWithApple": "Mit Apple fortfahren",
   "validatorFieldRequired": "{fieldName} ist erforderlich",
   "@validatorFieldRequired": {
@@ -66,6 +67,7 @@
   "commonFinish": "Fertig",
   "commonSave": "Speichern",
   "commonCancel": "Abbrechen",
+  "commonEdit": "Bearbeiten",
   "commonDelete": "Löschen",
   "commonRemove": "Entfernen",
   "commonDeny": "Ablehnen",
@@ -199,6 +201,7 @@
   "inviteLinkCopied": "Einladungslink in die Zwischenablage kopiert",
   "inviteDetailsCopied": "Einladungsdetails in die Zwischenablage kopiert",
   "steamAuthConnecting": "Verbindung zu Steam wird hergestellt...",
+  "discordAuthConnecting": "Verbindung zu Discord wird hergestellt...",
   "steamAuthTryAgain": "Erneut versuchen",
   "steamAuthBackToPrefix": "Zurueck zu",
   "steamAuthBackToLogin": "Zurueck zum Login",
@@ -216,6 +219,7 @@
   "profileLogoutConfirmMessage": "Du musst dich erneut anmelden, um auf deine Gruppen und dein Profil zuzugreifen.",
   "profileSectionAccount": "Konto",
   "profileSectionConnectedAccounts": "Verknuepfte Konten",
+  "profileSectionSocials": "Socials",
   "profileSectionPreferences": "Einstellungen",
   "profileEmailLabel": "E-Mail",
   "profileTimezoneLabel": "Zeitzone",
@@ -224,9 +228,14 @@
   "profileUnknown": "Unbekannt",
   "profileConnected": "Verbunden",
   "profileNotConnected": "Nicht verbunden",
+  "profileSocialIdentityLinkInConnectedAccounts": "In verknuepften Konten verbinden",
   "profileConnectedAccountsEmailPassword": "E-Mail und Passwort",
   "profileConnectedAccountsSteam": "Steam",
+  "profileConnectedAccountsDiscord": "Discord",
   "profileConnectedAccountsApple": "Apple",
+  "profileConnectedAccountsXbox": "Xbox",
+  "profileConnectedAccountsPlayStation": "PlayStation",
+  "profileConnectedAccountsNintendo": "Nintendo",
   "profileConnectedTapToDisconnect": "Verbunden. Tippe zum Trennen.",
   "profileDisconnectTitle": "{provider} trennen?",
   "@profileDisconnectTitle": {
@@ -277,11 +286,32 @@
       }
     }
   },
+  "profileDiscordLinkedSuccess": "Discord-Konto erfolgreich verknuepft",
+  "profileLinkDiscordFailed": "Discord konnte nicht verknuepft werden: {message}",
+  "@profileLinkDiscordFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "profileSetEmailPasswordTitle": "E-Mail und Passwort hinzufuegen",
-  "profileSetEmailPasswordDescription": "Fuege eine E-Mail-Anmeldung zu deinem Konto hinzu, damit du dich ohne Social-Provider anmelden kannst.",
+  "profileSetEmailPasswordDescription": "Fuege ein Passwort zu der E-Mail in deinem Konto hinzu, damit du dich ohne Social-Provider anmelden kannst.",
   "profileEmailPasswordAddedSuccess": "E-Mail und Passwort erfolgreich hinzugefuegt",
-  "profileSetEmailFailed": "E-Mail konnte nicht gesetzt werden: {message}",
+  "profileSetEmailFailed": "E-Mail und Passwort konnten nicht hinzugefuegt werden: {message}",
   "@profileSetEmailFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileChangeEmailTitle": "E-Mail aendern",
+  "profileChangeEmailDescription": "Aktualisiere die Konto-E-Mail fuer Wiederherstellung und die kuenftige Anmeldung mit E-Mail und Passwort.",
+  "profileChangeEmailSuccess": "E-Mail erfolgreich aktualisiert",
+  "profileAddEmailFirst": "Lege zuerst eine Konto-E-Mail fest, bevor du ein Passwort hinzufuegst.",
+  "profileChangeEmailFailed": "E-Mail konnte nicht geaendert werden: {message}",
+  "@profileChangeEmailFailed": {
     "placeholders": {
       "message": {
         "type": "String"
@@ -293,6 +323,79 @@
   "profileLinkAppleFailed": "Apple konnte nicht verknuepft werden: {message}",
   "@profileLinkAppleFailed": {
     "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityAddTitle": "{provider} hinzufuegen",
+  "@profileSocialIdentityAddTitle": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityEditTitle": "{provider} bearbeiten",
+  "@profileSocialIdentityEditTitle": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityGamertagLabel": "Gamertag",
+  "profileSocialIdentityShareLinkLabel": "Profilfreigabe-Link",
+  "profileSocialIdentityFriendCodeLabel": "Freundescode",
+  "profileSocialIdentityOnlineIdLabel": "Online-ID",
+  "profileSocialIdentityNicknameLabel": "Spitzname",
+  "profileSocialIdentityInvalidShareLink": "Gib einen gueltigen Profilfreigabe-Link ein.",
+  "profileSocialIdentitySavedSuccess": "{provider} gespeichert.",
+  "@profileSocialIdentitySavedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityCopiedSuccess": "{provider} kopiert.",
+  "@profileSocialIdentityCopiedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityOpenFailed": "{provider}-Profil konnte nicht geoeffnet werden.",
+  "@profileSocialIdentityOpenFailed": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityCopyFailed": "{provider} konnte nicht kopiert werden.",
+  "@profileSocialIdentityCopyFailed": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentityRemovedSuccess": "{provider} entfernt.",
+  "@profileSocialIdentityRemovedSuccess": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSocialIdentitySaveFailed": "{provider} konnte nicht gespeichert werden: {message}",
+  "@profileSocialIdentitySaveFailed": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
       "message": {
         "type": "String"
       }
@@ -583,6 +686,53 @@
   "groupCoordinationSessionsEmpty": "Noch keine geplanten Sessions.",
   "groupCoordinationActivityTitle": "Aktivität",
   "groupCoordinationActivityEmpty": "Noch keine Aktivität.",
+  "groupCoordinationActivityRecent": "Neu",
+  "groupCoordinationActivityHistory": "Verlauf",
+  "groupCoordinationActivityFilterAll": "Alle",
+  "groupCoordinationActivityFilterSessions": "Sessions",
+  "groupCoordinationActivityFilterAvailability": "Verfügbarkeit",
+  "groupCoordinationActivityFilterRsvps": "RSVPs",
+  "groupCoordinationActivityFilterMine": "Meine",
+  "groupCoordinationActivityBucketToday": "Heute ({count})",
+  "@groupCoordinationActivityBucketToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityBucketYesterday": "Gestern ({count})",
+  "@groupCoordinationActivityBucketYesterday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityBucketEarlierThisWeek": "Früher diese Woche ({count})",
+  "@groupCoordinationActivityBucketEarlierThisWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityBucketEarlier": "Früher ({count})",
+  "@groupCoordinationActivityBucketEarlier": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCoordinationActivityRsvpBurst": "{count} RSVP-Updates",
+  "@groupCoordinationActivityRsvpBurst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "groupCoordinationAddWindowTitle": "Bereitschaftsfenster hinzufügen",
   "groupCoordinationEditWindowTitle": "Bereitschaftsfenster bearbeiten",
   "groupCoordinationDeleteWindowConfirmTitle": "Bereitschaftsfenster löschen?",

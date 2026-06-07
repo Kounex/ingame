@@ -167,6 +167,29 @@ ScheduledReadyWindow _windowFixture({
   );
 }
 
+GroupActivityEvent _activityFixture({
+  required String id,
+  required String actorUserId,
+  required String actorDisplayName,
+  required String type,
+  required DateTime createdAt,
+  String? message,
+  String? sessionId,
+  String? scheduledReadyWindowId,
+}) {
+  return GroupActivityEvent(
+    id: id,
+    groupId: 'group-1',
+    actorUserId: actorUserId,
+    actorDisplayName: actorDisplayName,
+    type: type,
+    message: message ?? '$actorDisplayName $type',
+    sessionId: sessionId,
+    scheduledReadyWindowId: scheduledReadyWindowId,
+    createdAt: createdAt,
+  );
+}
+
 void main() {
   testWidgets(
     'coordination screen uses permission-aware affordances and richer planning UI',
@@ -294,6 +317,472 @@ void main() {
       expect(find.text('Owner hat eine Session vorgeschlagen'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'activity journal shows recent highlights and collapsed history groups by default',
+    (tester) async {
+      final now = DateTime.now().toUtc();
+      final notifier = _FakeCoordinationNotifier(
+        GroupCoordinationState(
+          activity: [
+            _activityFixture(
+              id: 'activity-1',
+              actorUserId: 'owner-1',
+              actorDisplayName: 'Owner',
+              type: 'session_proposed',
+              createdAt: now.subtract(const Duration(minutes: 8)),
+              sessionId: 'session-1',
+            ),
+            _activityFixture(
+              id: 'activity-2',
+              actorUserId: 'member-1',
+              actorDisplayName: 'Kai',
+              type: 'scheduled_ready_updated',
+              createdAt: now.subtract(const Duration(minutes: 24)),
+              scheduledReadyWindowId: 'window-1',
+            ),
+            _activityFixture(
+              id: 'activity-3',
+              actorUserId: 'member-2',
+              actorDisplayName: 'Lena',
+              type: 'session_updated',
+              createdAt: now.subtract(const Duration(hours: 3)),
+              sessionId: 'session-1',
+            ),
+            _activityFixture(
+              id: 'activity-4',
+              actorUserId: 'member-3',
+              actorDisplayName: 'Scout',
+              type: 'session_deleted',
+              createdAt: now.subtract(const Duration(days: 1, hours: 1)),
+              sessionId: 'session-2',
+            ),
+          ],
+        ),
+      );
+      final authNotifier = _FakeAuthNotifier(
+        const AuthState.authenticated(
+          User(id: 'member-1', displayName: 'Kai', timezone: 'UTC'),
+        ),
+      );
+      final detailNotifier = _FakeGroupDetailNotifier(
+        const GroupDetailState(
+          group: Group(
+            id: 'group-1',
+            name: 'Raid Night',
+            inviteCode: 'ABC123',
+            isDiscoverable: false,
+            joinMode: 'open',
+            createdBy: 'owner-1',
+            memberCount: 4,
+          ),
+          members: [
+            GroupMember(
+              id: 'membership-owner',
+              userId: 'owner-1',
+              displayName: 'Owner',
+              role: 'owner',
+            ),
+            GroupMember(
+              id: 'membership-member',
+              userId: 'member-1',
+              displayName: 'Kai',
+              role: 'member',
+            ),
+          ],
+          currentUserId: 'member-1',
+          currentUserRole: 'member',
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            groupCoordinationNotifierProvider(
+              'group-1',
+            ).overrideWith(() => notifier),
+            authNotifierProvider.overrideWith(() => authNotifier),
+            groupDetailNotifierProvider(
+              'group-1',
+            ).overrideWith(() => detailNotifier),
+          ],
+          child: const MaterialApp(
+            locale: Locale('en'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: GroupCoordinationScreen(groupId: 'group-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Activity'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Recent'), findsOneWidget);
+      expect(find.text('History'), findsOneWidget);
+      expect(find.byKey(const Key('activity-recent-list')), findsOneWidget);
+      expect(find.text('Today (3)'), findsNothing);
+      expect(find.text('Yesterday (1)'), findsOneWidget);
+      expect(find.text('Scout removed a session'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'activity history excludes entries already surfaced in recent highlights',
+    (tester) async {
+      final now = DateTime.now().toUtc();
+      final notifier = _FakeCoordinationNotifier(
+        GroupCoordinationState(
+          activity: [
+            _activityFixture(
+              id: 'activity-1',
+              actorUserId: 'owner-1',
+              actorDisplayName: 'Owner',
+              type: 'session_proposed',
+              createdAt: now.subtract(const Duration(minutes: 8)),
+              sessionId: 'session-1',
+            ),
+            _activityFixture(
+              id: 'activity-2',
+              actorUserId: 'member-1',
+              actorDisplayName: 'Kai',
+              type: 'scheduled_ready_updated',
+              createdAt: now.subtract(const Duration(minutes: 24)),
+              scheduledReadyWindowId: 'window-1',
+            ),
+            _activityFixture(
+              id: 'activity-3',
+              actorUserId: 'member-2',
+              actorDisplayName: 'Lena',
+              type: 'session_updated',
+              createdAt: now.subtract(const Duration(hours: 3)),
+              sessionId: 'session-1',
+            ),
+            _activityFixture(
+              id: 'activity-4',
+              actorUserId: 'member-3',
+              actorDisplayName: 'Scout',
+              type: 'session_deleted',
+              createdAt: now.subtract(const Duration(days: 1, hours: 1)),
+              sessionId: 'session-2',
+            ),
+          ],
+        ),
+      );
+      final authNotifier = _FakeAuthNotifier(
+        const AuthState.authenticated(
+          User(id: 'member-1', displayName: 'Kai', timezone: 'UTC'),
+        ),
+      );
+      final detailNotifier = _FakeGroupDetailNotifier(
+        const GroupDetailState(
+          group: Group(
+            id: 'group-1',
+            name: 'Raid Night',
+            inviteCode: 'ABC123',
+            isDiscoverable: false,
+            joinMode: 'open',
+            createdBy: 'owner-1',
+            memberCount: 4,
+          ),
+          members: [
+            GroupMember(
+              id: 'membership-owner',
+              userId: 'owner-1',
+              displayName: 'Owner',
+              role: 'owner',
+            ),
+            GroupMember(
+              id: 'membership-member',
+              userId: 'member-1',
+              displayName: 'Kai',
+              role: 'member',
+            ),
+          ],
+          currentUserId: 'member-1',
+          currentUserRole: 'member',
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            groupCoordinationNotifierProvider(
+              'group-1',
+            ).overrideWith(() => notifier),
+            authNotifierProvider.overrideWith(() => authNotifier),
+            groupDetailNotifierProvider(
+              'group-1',
+            ).overrideWith(() => detailNotifier),
+          ],
+          child: const MaterialApp(
+            locale: Locale('en'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: GroupCoordinationScreen(groupId: 'group-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Activity'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('activity-history-group-yesterday')),
+      );
+      await tester.pumpAndSettle();
+
+      final yesterdayGroup = find.byKey(
+        const Key('activity-history-group-yesterday'),
+      );
+      expect(
+        find.descendant(
+          of: yesterdayGroup,
+          matching: find.text('Owner proposed a session'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: yesterdayGroup,
+          matching: find.text('Kai updated a ready window'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: yesterdayGroup,
+          matching: find.text('Lena updated a session'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: yesterdayGroup,
+          matching: find.text('Scout removed a session'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'activity journal aggregates adjacent rsvp updates in recent highlights',
+    (tester) async {
+      final now = DateTime.now().toUtc();
+      final notifier = _FakeCoordinationNotifier(
+        GroupCoordinationState(
+          activity: [
+            _activityFixture(
+              id: 'activity-1',
+              actorUserId: 'member-1',
+              actorDisplayName: 'Kai',
+              type: 'session_rsvp_updated',
+              createdAt: now.subtract(const Duration(minutes: 4)),
+              sessionId: 'session-1',
+            ),
+            _activityFixture(
+              id: 'activity-2',
+              actorUserId: 'member-2',
+              actorDisplayName: 'Lena',
+              type: 'session_rsvp_updated',
+              createdAt: now.subtract(const Duration(minutes: 9)),
+              sessionId: 'session-1',
+            ),
+            _activityFixture(
+              id: 'activity-3',
+              actorUserId: 'owner-1',
+              actorDisplayName: 'Owner',
+              type: 'session_proposed',
+              createdAt: now.subtract(const Duration(minutes: 25)),
+              sessionId: 'session-1',
+            ),
+          ],
+        ),
+      );
+      final authNotifier = _FakeAuthNotifier(
+        const AuthState.authenticated(
+          User(id: 'member-1', displayName: 'Kai', timezone: 'UTC'),
+        ),
+      );
+      final detailNotifier = _FakeGroupDetailNotifier(
+        const GroupDetailState(
+          group: Group(
+            id: 'group-1',
+            name: 'Raid Night',
+            inviteCode: 'ABC123',
+            isDiscoverable: false,
+            joinMode: 'open',
+            createdBy: 'owner-1',
+            memberCount: 3,
+          ),
+          members: [
+            GroupMember(
+              id: 'membership-owner',
+              userId: 'owner-1',
+              displayName: 'Owner',
+              role: 'owner',
+            ),
+            GroupMember(
+              id: 'membership-member',
+              userId: 'member-1',
+              displayName: 'Kai',
+              role: 'member',
+            ),
+          ],
+          currentUserId: 'member-1',
+          currentUserRole: 'member',
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            groupCoordinationNotifierProvider(
+              'group-1',
+            ).overrideWith(() => notifier),
+            authNotifierProvider.overrideWith(() => authNotifier),
+            groupDetailNotifierProvider(
+              'group-1',
+            ).overrideWith(() => detailNotifier),
+          ],
+          child: const MaterialApp(
+            locale: Locale('en'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: GroupCoordinationScreen(groupId: 'group-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Activity'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 RSVP updates'), findsOneWidget);
+      expect(find.text('Kai updated an RSVP'), findsNothing);
+      expect(find.text('Lena updated an RSVP'), findsNothing);
+    },
+  );
+
+  testWidgets('activity journal type filters narrow recent and history items', (
+    tester,
+  ) async {
+    final now = DateTime.now().toUtc();
+    final notifier = _FakeCoordinationNotifier(
+      GroupCoordinationState(
+        activity: [
+          _activityFixture(
+            id: 'activity-1',
+            actorUserId: 'owner-1',
+            actorDisplayName: 'Owner',
+            type: 'session_proposed',
+            createdAt: now.subtract(const Duration(minutes: 5)),
+            sessionId: 'session-1',
+          ),
+          _activityFixture(
+            id: 'activity-2',
+            actorUserId: 'member-1',
+            actorDisplayName: 'Kai',
+            type: 'scheduled_ready_updated',
+            createdAt: now.subtract(const Duration(minutes: 25)),
+            scheduledReadyWindowId: 'window-1',
+          ),
+          _activityFixture(
+            id: 'activity-3',
+            actorUserId: 'member-2',
+            actorDisplayName: 'Lena',
+            type: 'session_rsvp_updated',
+            createdAt: now.subtract(const Duration(days: 1, minutes: 25)),
+            sessionId: 'session-1',
+          ),
+        ],
+      ),
+    );
+    final authNotifier = _FakeAuthNotifier(
+      const AuthState.authenticated(
+        User(id: 'member-1', displayName: 'Kai', timezone: 'UTC'),
+      ),
+    );
+    final detailNotifier = _FakeGroupDetailNotifier(
+      const GroupDetailState(
+        group: Group(
+          id: 'group-1',
+          name: 'Raid Night',
+          inviteCode: 'ABC123',
+          isDiscoverable: false,
+          joinMode: 'open',
+          createdBy: 'owner-1',
+          memberCount: 3,
+        ),
+        members: [
+          GroupMember(
+            id: 'membership-owner',
+            userId: 'owner-1',
+            displayName: 'Owner',
+            role: 'owner',
+          ),
+          GroupMember(
+            id: 'membership-member',
+            userId: 'member-1',
+            displayName: 'Kai',
+            role: 'member',
+          ),
+        ],
+        currentUserId: 'member-1',
+        currentUserRole: 'member',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          groupCoordinationNotifierProvider(
+            'group-1',
+          ).overrideWith(() => notifier),
+          authNotifierProvider.overrideWith(() => authNotifier),
+          groupDetailNotifierProvider(
+            'group-1',
+          ).overrideWith(() => detailNotifier),
+        ],
+        child: const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: GroupCoordinationScreen(groupId: 'group-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Activity'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('activity-filter-sessions')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Owner proposed a session'), findsOneWidget);
+    expect(find.text('Kai updated availability'), findsNothing);
+    expect(find.text('Lena updated an RSVP'), findsNothing);
+  });
 
   testWidgets(
     'upcoming windows preview shows only the next five and opens the agenda sheet for the rest',
@@ -572,6 +1061,93 @@ void main() {
 
     expect(find.text('No upcoming ready windows.'), findsOneWidget);
     expect(find.text('No scheduled ready windows yet.'), findsNothing);
+  });
+
+  testWidgets('summary card counts only upcoming ready windows', (
+    tester,
+  ) async {
+    final notifier = _FakeCoordinationNotifier(
+      GroupCoordinationState(
+        windows: [
+          _windowFixture(
+            id: 'window-past-1',
+            displayName: 'Past Alpha',
+            startsAt: DateTime.utc(2020, 6, 1, 18),
+          ),
+          _windowFixture(
+            id: 'window-past-2',
+            displayName: 'Past Bravo',
+            startsAt: DateTime.utc(2020, 6, 2, 18),
+          ),
+          _windowFixture(
+            id: 'window-future-1',
+            displayName: 'Future Alpha',
+            startsAt: DateTime.utc(2099, 6, 1, 18),
+          ),
+          _windowFixture(
+            id: 'window-future-2',
+            displayName: 'Future Bravo',
+            startsAt: DateTime.utc(2099, 6, 2, 18),
+          ),
+        ],
+      ),
+    );
+    final authNotifier = _FakeAuthNotifier(
+      const AuthState.authenticated(
+        User(id: 'owner-1', displayName: 'Owner', timezone: 'UTC'),
+      ),
+    );
+    final detailNotifier = _FakeGroupDetailNotifier(
+      const GroupDetailState(
+        group: Group(
+          id: 'group-1',
+          name: 'Raid Night',
+          inviteCode: 'ABC123',
+          isDiscoverable: false,
+          joinMode: 'open',
+          createdBy: 'owner-1',
+          memberCount: 1,
+        ),
+        members: [
+          GroupMember(
+            id: 'membership-owner',
+            userId: 'owner-1',
+            displayName: 'Owner',
+            role: 'owner',
+          ),
+        ],
+        currentUserId: 'owner-1',
+        currentUserRole: 'owner',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          groupCoordinationNotifierProvider(
+            'group-1',
+          ).overrideWith(() => notifier),
+          authNotifierProvider.overrideWith(() => authNotifier),
+          groupDetailNotifierProvider(
+            'group-1',
+          ).overrideWith(() => detailNotifier),
+        ],
+        child: const MaterialApp(
+          locale: Locale('en'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: GroupCoordinationScreen(groupId: 'group-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 windows'), findsOneWidget);
+    expect(find.text('4 windows'), findsNothing);
+    expect(find.text('Future Alpha'), findsOneWidget);
+    expect(find.text('Future Bravo'), findsOneWidget);
+    expect(find.text('Past Alpha'), findsNothing);
+    expect(find.text('Past Bravo'), findsNothing);
   });
 
   testWidgets(

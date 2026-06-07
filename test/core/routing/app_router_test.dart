@@ -157,6 +157,30 @@ void main() {
     expect(branchRoots.every((route) => route.pageBuilder != null), isTrue);
   });
 
+  test('focused auth routes include dedicated Steam and Discord pages', () {
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(
+          () => _FakeAuthNotifier(const AuthState.unauthenticated()),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final router = container.read(routerProvider);
+    final routes = router.configuration.routes.whereType<GoRoute>().toList();
+    final authRoutes = routes
+        .where(
+          (route) =>
+              route.path == RoutePaths.steamAuth ||
+              route.path == RoutePaths.discordAuth,
+        )
+        .toList();
+
+    expect(authRoutes, hasLength(2));
+    expect(authRoutes.every((route) => route.pageBuilder != null), isTrue);
+  });
+
   testWidgets(
     'protected profile route stays behind login while auth is still resolving',
     (tester) async {

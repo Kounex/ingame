@@ -1,8 +1,8 @@
 ---
 spec: core-platform-implementation
-version: "1.60"
+version: "1.64"
 status: complete
-last_updated: "2026-06-06"
+last_updated: "2026-06-07"
 sub_project: 1
 ---
 
@@ -84,6 +84,7 @@ lib/
 - `LanguageSwitcher` -- shared locale-switching surface
 - `AppAnchoredPopoverMenuItem` -- shared selected-row treatment for anchored selector menus
 - `AppDropdownSelector` -- shared wrapper for input-like dropdown fields that should keep the stock `DropdownButtonFormField` interaction model while matching the app's maintained menu styling
+- `AppPopupMenuButton` -- shared wrapper for ellipsis/action popup menus that keeps the global glass shell while suppressing default gray hover, highlight, and splash states inside action rows
 - `InGameLogo` -- shared brand wordmark that pairs the canonical logo image asset with the gradient `InGame` text treatment
 - `AppToast` -- shared feedback/toast system
 - `SharedAnimatedBackground` -- one shared premium ambient background layer rendered behind routes
@@ -109,6 +110,10 @@ lib/
 - `docker-compose.release.yml` now includes bundled MinIO by default for
   self-hosted environments while still allowing operators to repoint the API at
   a different S3-compatible backend if they intentionally customize the stack.
+- Containerized Flutter web builds must ignore host-generated artifacts such as
+  `.dart_tool/`, `build/`, and platform ephemeral folders so Podman/Docker
+  image builds regenerate package config inside the container instead of
+  inheriting workstation-specific absolute paths from the repo checkout.
 - The release compose bootstrap path is inlined inside the MinIO helper service
   so stack deployers like Portainer do not depend on repo-file bind mounts for
   bucket initialization, and it overrides the `minio/mc` entrypoint with
@@ -169,6 +174,7 @@ lib/
 - the app root may host a single shared `AppBackgroundSurface` above the navigator so focused-flow route transitions reuse one stable scrim instead of animating separate per-screen background layers; nested route-level `AppBackgroundSurface` usage should collapse to a no-op when that shared root surface is already present
 - new user-facing strings must be localized through ARB files
 - popup menus follow the global glass theme
+- ellipsis/action popup menus should route through `AppPopupMenuButton` so popup rows inherit transparent hover, highlight, and splash states instead of the stock Material gray interaction overlay
 - selector-style popovers should use the shared `AppAnchoredPopoverSelector` rather than ad-hoc `PopupMenuButton` implementations so compact and settings-row triggers still share one maintained popup behavior path
 - anchored selector popovers should cap their initial menu height to roughly one-third of the current viewport, keep scrolling inside the popover surface, show a scrollbar only when scrolling is needed, and prefer opening below or above the trigger based on available space before falling back to screen-edge clamping
 - anchored selector triggers must remain keyboard-focusable and support standard activation keys (`Enter` / `Space`) so shared popover controls stay accessible on web and desktop
@@ -193,7 +199,7 @@ lib/
 - release builds must install the shared ambient motion scope too, with a renderer-aware production baseline: native fragment-shader paths default to ambient intensity `0.0`, while web and any fallback renderer default to `0.8` so browser/fallback backgrounds still read clearly on phone-sized screens without overdriving the native shader path
 - mobile-native shader rendering may apply an additional visibility boost plus tighter blob radius/softness, stronger chroma, and low-frequency shape distortion on top of the shared ambient intensity so iPhone/Android devices keep clearly readable cyan/purple accent spots with more organic silhouettes without changing the maintained web fallback look
 - debug/runtime diagnostics for the ambient background should report the actual current renderer mode (`loading`, `shader`, `fallback`) rather than assuming every non-web build is using the shader
-- debug builds may expose session-only motion controls, including global `timeDilation`, through a visible collapsible overlay instead of hidden startup overrides so transition capture and shader tuning stay inspectable during development; the maintained default slowdown is `1x`
+- debug builds may expose session-only motion controls, including global `timeDilation`, through a visible collapsible overlay instead of hidden startup overrides so transition capture and shader tuning stay inspectable during development; the maintained default slowdown is `1x`, and the outer debug card should start collapsed until the developer explicitly expands it
 - debug builds may also expose a session-only ambient shader diagnostic mode plus a scrim bypass toggle so mobile-device investigations can temporarily force unmistakable neon blobs on a near-unmasked surface without changing release visuals
 - focused transparent flows such as login/register/onboarding should minimize overlapping translucent glass surfaces during navigation; the covered route may fade out quickly while the incoming route waits briefly before revealing with a delayed fade/slide handoff so auth-style transitions avoid the temporary dark-film/brightness-kick artifact at completion
 
@@ -222,12 +228,14 @@ Outside the shell:
 - login
 - register
 - Steam auth callback flow
+- Discord auth callback flow
 - invite/join flow
 - onboarding
 
 ### Redirect Rules
 
 - protected routes can preserve a `from` target
+- focused auth callback routes such as Steam and Discord preserve `from` and return to login cleanly on user cancellation
 - onboarding can interrupt a protected/deep-link flow, then return to it afterward
 - explicit logout goes to a clean login route without preserving stale return targets
 
@@ -248,6 +256,9 @@ Outside the shell:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-07 | Navigation structure and redirect rules | Added the dedicated Discord auth callback flow beside Steam and documented that focused auth callback routes preserve `from` while still allowing a clean cancel path back to login | Keeps the routing contract aligned with the maintained cancellable provider-auth handoff UX instead of treating Discord as a special direct-launch exception |
+| 2026-06-07 | Shared primitives and interaction conventions | Added `AppPopupMenuButton` as the maintained wrapper for ellipsis/action menus and documented the no-gray hover/highlight/splash contract for popup action rows | Keeps action menus visually aligned with the glass system instead of falling back to default Material ink states in different features |
+| 2026-06-07 | Runtime storage integration and local image builds | Added the maintained requirement that containerized Flutter web builds ignore host-generated artifacts like `.dart_tool/` so Podman/Docker rebuilds regenerate package config inside the container | Keeps the deployment/build contract aligned with the local stack path needed to rebuild the current workspace successfully |
 | 2026-06-06 | Interaction conventions | Clarified that weekly availability preset chips keep their semantic icon as the only leading affordance when selected and emit subtle selection haptics on toggle | Prevents selected preset chips from showing a conflicting overlapping checkmark over the existing icon and aligns the shared availability editor with the app-wide toggle haptics contract |
 | 2026-06-06 | Interaction conventions | Tightened the selector-popover rule so selector-style popovers should always route through `AppAnchoredPopoverSelector`, regardless of list length, while keeping custom trigger chrome in feature wrappers | Removes the last split between stock popup buttons and the shared anchored popover so selector popovers have one maintained implementation path |
 | 2026-06-06 | Core components and interaction conventions | Added `AppAnchoredPopoverSelector` as the maintained shared widget for long selector-style popovers, including scrollbar, internal scroll, and preferred above/below anchored opening before clamp fallback | Gives long lists like timezone a reusable anchored popover path that avoids the stock popup route's visible repositioning and hidden scrolling affordance |
@@ -271,6 +282,7 @@ Outside the shell:
 | 2026-06-06 | Motion rules | Added a mobile-native-only shader visibility boost on top of the shared ambient intensity while leaving the web fallback path unchanged | Restores visible ambient shader presence on iPhone-sized screens without regressing the already-good web background rendering |
 | 2026-06-06 | Brand asset contract | Clarified that `InGameLogo` must render the canonical logo asset without extra runtime corner clipping | Prevents shared brand-mark usage from shaving off the source logo's rounded corners in reused Flutter UI placements |
 | 2026-06-06 | Motion rules | Raised the maintained production ambient baseline to `0.8` so release builds match the intended expressive shader/orb visibility target on smaller screens | Keeps the written visual contract aligned with the stronger production baseline used across web and mobile |
+| 2026-06-07 | Motion rules | Clarified that the ambient debug overlay's outer card starts collapsed by default while keeping the maintained `1x` slowdown baseline | Reduces developer-surface distraction on load without changing the available motion and shader controls once expanded |
 | 2026-06-05 | Interaction conventions and motion rules | Documented the Cupertino-preserving iOS fade route, clarified that indexed-shell branch switches remain immediate while pushed pages animate, and added the production ambient baseline plus truthful renderer diagnostics contract | Aligns the written platform-motion contract with the production follow-up fixes for iOS overlap, ambient visibility, and the verified Windows web route matrix |
 | 2026-06-04 | Interaction conventions | Added the maintained desktop/web page-width archetype contract (`compact`, `form`, `reading`, `wide`, opt-in `full`) plus alignment rules for focused flows, shell content, and matching app bars | Prevents ultrawide web layouts from stretching single-column flows while keeping width decisions consistent and reusable |
 | 2026-06-04 | Interaction conventions | Refined compact async-validation affordances so both the trailing spinner and trailing error glyph use the same aligned compact wrapper instead of mismatched slot treatment, while still showing localized inline error text | Keeps the shared input contract aligned with the maintained register/onboarding validation UX |

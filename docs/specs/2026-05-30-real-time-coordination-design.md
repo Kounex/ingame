@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination
-version: "2.2"
+version: "2.3"
 status: complete
-last_updated: "2026-06-05"
+last_updated: "2026-06-07"
 sub_project: 2
 ---
 
@@ -36,7 +36,7 @@ SP2 now delivers the full coordination slice on top of the earlier presence-firs
 - scheduled ready windows with CRUD over REST and live server-event fan-out
 - group calendar and coordination hub surfaces in Flutter
 - session proposals with RSVP (`in`, `maybe`, `out`)
-- lightweight group activity stream for scheduled-ready and session lifecycle updates
+- lightweight group activity stream for scheduled-ready and session lifecycle updates, surfaced in the planner as a compact recent-plus-history journal
 - backend and frontend test coverage for presence plus coordination fan-out
 
 ### Presence Rules
@@ -142,3 +142,4 @@ flowchart TD
 | 2026-06-04 | Spec topology | Converted the larger SP2 realtime spec into a thin overview plus focused transport/presence, coordination-models, and implementation child specs | Keeps phase-1 delivery contracts readable while letting future SP2 planning evolve without bloating one document |
 | 2026-06-05 | Delivery status | Marked SP2 complete and updated the overview to reflect the shipped scheduled-ready, session, RSVP, activity, and coordination-hub slice | Keeps the SP2 entry point aligned with the delivered coordination contract before Notifications becomes the next numbered sub-project |
 | 2026-06-05 | Durability and coordination UX follow-through | Clarified commit-before-fan-out websocket semantics and the incremental planning-hub update model after the audit follow-up | Keeps the maintained SP2 overview aligned with the corrected backend durability contract and the shipped non-disruptive coordination UX |
+| 2026-06-07 | Activity journal summary | Updated the SP2 overview to note that planner activity now ships as a compact recent-highlights plus grouped-history journal instead of an unbounded flat list | Keeps the overview aligned with the maintained coordination-hub UX for high-volume groups |

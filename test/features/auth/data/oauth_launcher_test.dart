@@ -4,6 +4,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ingame/features/auth/data/oauth_launcher.dart';
 
 void main() {
+  test('native Discord callback uses custom app scheme', () {
+    expect(
+      OAuthLauncher.discordRedirectUriForPlatform(
+        isWeb: false,
+        webAppBaseUrl: 'https://app.in-game.app/groups/abc?foo=bar#frag',
+      ),
+      'ingame://auth/discord/callback',
+    );
+  });
+
+  test('web Discord callback uses current origin callback page', () {
+    expect(
+      OAuthLauncher.discordRedirectUriForPlatform(
+        isWeb: true,
+        webAppBaseUrl: 'http://localhost:8080',
+        browserOrigin: 'https://app.in-game.app',
+      ),
+      'https://app.in-game.app/auth/discord-callback.html',
+    );
+  });
+
   test('native Steam callback replaces existing path, query, and fragment', () {
     expect(
       OAuthLauncher.steamReturnToForPlatform(
@@ -88,6 +109,15 @@ void main() {
     );
   });
 
+  test('does not treat generic closed failures as cancellation', () {
+    expect(
+      OAuthLauncher.isCancellationError(
+        Exception('Connection closed unexpectedly'),
+      ),
+      isFalse,
+    );
+  });
+
   test('does not treat generic failures as cancellation', () {
     expect(
       OAuthLauncher.isCancellationError(Exception('Server rejected callback')),
@@ -140,7 +170,7 @@ void main() {
     );
   });
 
-  test('apple sign-in is available only on Apple native platforms', () {
+  test('apple sign-in is available only on supported native platforms', () {
     expect(
       OAuthLauncher.appleSignInAvailableForPlatform(
         isWeb: false,
@@ -155,7 +185,7 @@ void main() {
         platform: TargetPlatform.macOS,
         webServiceId: null,
       ),
-      isTrue,
+      isFalse,
     );
     expect(
       OAuthLauncher.appleSignInAvailableForPlatform(
