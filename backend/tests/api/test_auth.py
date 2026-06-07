@@ -243,7 +243,11 @@ async def test_apple_auth_invalid_token_returns_validation_code(client: AsyncCli
 
 
 @pytest.mark.asyncio
-async def test_discord_auth_success(client: AsyncClient):
+async def test_discord_auth_success(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr("app.config.settings.discord_client_id", "discord-client-id")
+
     with (
         patch(
             "app.api.v1.auth.service.exchange_discord_code",
@@ -304,7 +308,11 @@ async def test_discord_auth_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_discord_auth_does_not_overwrite_existing_profile_avatar(client: AsyncClient):
+async def test_discord_auth_does_not_overwrite_existing_profile_avatar(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr("app.config.settings.discord_client_id", "discord-client-id")
+
     with (
         patch(
             "app.api.v1.auth.service.exchange_discord_code",
@@ -657,7 +665,11 @@ async def test_apple_auth_after_unlink_requires_relink_from_profile(client: Asyn
 
 
 @pytest.mark.asyncio
-async def test_discord_auth_after_unlink_requires_relink_from_profile(client: AsyncClient):
+async def test_discord_auth_after_unlink_requires_relink_from_profile(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr("app.config.settings.discord_client_id", "discord-client-id")
+
     register = await client.post(
         "/api/v1/auth/register",
         json={
