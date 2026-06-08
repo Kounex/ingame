@@ -1,6 +1,6 @@
 ---
 spec: roadmap
-version: "1.97"
+version: "1.98"
 status: active
 last_updated: "2026-06-08"
 ---
@@ -232,6 +232,7 @@ These patterns and practices apply across all sub-projects:
 
 | Date | Change | Detail |
 |------|--------|--------|
+| 2026-06-09 | Marketing CI path fix | Corrected the marketing nginx validation workflow step so it resolves the checked-in nginx config from the repo root instead of inheriting `marketing/site` as the working directory | Keeps the documented PR CI marketing verification contract aligned with the actual workflow path resolution used on GitHub Actions |
 | 2026-06-08 | SP2 reconnect scope reconciliation | Refreshed the SP2 Transport & Presence pointer after documenting that membership-refresh reconnects must reconcile Redis group-online scope even when another socket for the same user is still open | Keeps the roadmap entry point aligned with the fixed realtime presence contract instead of leaving the spec set behind the shipped manager behavior |
 | 2026-06-08 | SP2 coordination delivery semantics | Refreshed the SP2 Implementation pointer after documenting non-fatal post-commit fan-out failures for durable writes and fail-loudly `/activity` bootstrap expectations in Flutter/provider coverage | Keeps the roadmap entry point aligned with the maintained coordination delivery contract instead of leaving the implementation spec pointer behind the shipped behavior |
 | 2026-06-08 | Marketing and release verification sync | Added marketing-site verification to PR CI, refreshed the marketing auth capability summary to include Discord, and updated release/docs pointers so operator-facing runtime/version guidance matches the current stack | Keeps repo automation and user-facing docs aligned with the shipped marketing runtime and current release metadata instead of leaving drift between CI, docs, and deployment defaults |
