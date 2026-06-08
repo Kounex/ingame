@@ -19,7 +19,6 @@ import 'page_transitions.dart';
 import '../../features/groups/presentation/screens/group_directory_screen.dart';
 import '../../features/groups/presentation/screens/groups_list_screen.dart';
 import '../../features/groups/presentation/screens/join_group_screen.dart';
-import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../shared/widgets/adaptive_shell.dart';
 import 'route_names.dart';
@@ -295,16 +294,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                   key: state.pageKey,
                   child: const ProfileScreen(),
                 ),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    name: RouteNames.editProfile,
-                    pageBuilder: (context, state) => adaptiveRoutePage(
-                      key: state.pageKey,
-                      child: const EditProfileScreen(),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),

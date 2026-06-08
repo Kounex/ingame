@@ -32,6 +32,41 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
+  marketing:
+    name: Marketing Tests And Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: marketing/site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: marketing/site/package-lock.json
+
+      - name: Install marketing dependencies
+        run: npm ci
+
+      - name: Run marketing tests
+        run: npm test
+
+      - name: Build marketing site
+        run: npm run build
+
+      - name: Validate marketing nginx config
+        run: |
+          docker run --rm \
+            -v "$PWD/marketing/nginx.conf:/etc/nginx/nginx.conf:ro" \
+            nginx:alpine \
+            nginx -t
+
   backend:
     name: Backend Tests
     runs-on: ubuntu-latest

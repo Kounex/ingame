@@ -12,10 +12,11 @@ alwaysApply: false
 - Publish deployable runtimes as separate GHCR images:
   - `ghcr.io/<owner>/ingame-api`
   - `ghcr.io/<owner>/ingame-web`
-- Keep backend and frontend image references independent in Compose, Helm, and future workflow config.
+  - `ghcr.io/<owner>/ingame-marketing`
+- Keep API, app-web, and marketing image references independent in Compose, Helm, and future workflow config.
 - Release workflows should publish both:
   - a semantic version tag from the release/tag event
   - an immutable commit-SHA tag
 - Prefer immutable SHA tags where exact rollout reproducibility matters; keep semver tags available for human-friendly release tracking.
-- Do not collapse the API and web runtimes into a single image naming scheme unless the deployment spec is explicitly updated.
+- Do not collapse the API, app-web, and marketing runtimes into a single image naming scheme unless the deployment spec is explicitly updated.
 - When adding or changing deployment automation, keep image repository names and tag strategy aligned across workflow outputs and deploy manifests in the same change.

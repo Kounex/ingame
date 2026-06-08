@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination-implementation
-version: "1.8"
+version: "1.10"
 status: complete
-last_updated: "2026-06-07"
+last_updated: "2026-06-08"
 sub_project: 2
 ---
 
@@ -24,6 +24,10 @@ This spec covers the implementation-facing SP2 details:
 
 - `websocketConnectionProvider` owns authenticated socket lifecycle
 - `websocketConnectionStateProvider` exposes client transport state: `disconnected`, `connecting`, `connected`
+- `websocketClientProvider`, `presenceNotifierProvider`, and authenticated
+  group-scoped coordination/detail providers must watch the shared
+  session-reset signal so logout or forced auth invalidation discards stale
+  realtime/bootstrap state before another account signs in
 - `WebSocketClient` caches the latest `presence_snapshot` for the current connection because the event stream is broadcast and non-replay
 - `presenceNotifierProvider` hydrates from that cache on build so bootstrap cannot be lost when the listener attaches after connect
 - `WebSocketClient.connect()` attaches the stream listener before awaiting `channel.ready` and only marks transport `connected` after the handshake succeeds
@@ -72,6 +76,7 @@ This spec covers the implementation-facing SP2 details:
 - group-membership authorization gates all coordination endpoints; session and scheduled-ready edits are restricted to the originator or elevated group roles
 - activity records are written transactionally alongside durable scheduled-ready/session coordination mutations so the feed can bootstrap from REST
 - coordination websocket publication must happen after the request-scoped transaction commit succeeds rather than before dependency cleanup
+- post-commit coordination fan-out failures must be logged and surfaced to operators without converting an already-committed durable write into an HTTP failure for the caller
 
 ### WebSocket
 
@@ -106,13 +111,16 @@ SP2 is considered complete only when all of the following are true:
 - ready expiry tests: stale ready clears and fan-out reflects the cleared state
 - reconnect tests: offline-but-ready members remain present in snapshots without an extra reconnect `ready_changed`
 - coordination API tests: scheduled-ready CRUD plus future-window validation, elevated editor permissions, session create/update/delete, RSVP writes, and activity bootstrap
+- coordination API tests: post-commit fan-out failures on durable writes must prove the HTTP response still reflects the committed mutation
 - coordination websocket tests: durable coordination mutations fan out to other connected group members for `scheduled_ready_updated`, `scheduled_ready_deleted`, `session_proposed`, `session_updated`, `session_deleted`, `session_rsvp_updated`, and `activity_recorded`
 
 ### Flutter
 
 - `WebSocketClient` tests: connect, decode, disconnect, reconnect with fresh token, command send helpers, connection-state transitions, `channel.ready` gating, snapshot cache for late subscribers, and cache clear on disconnect
-- provider tests: auth transition connect/disconnect, snapshot merge, bootstrap hydration, legacy snapshot normalization, offline-ready hydration, ready updates, ready expiry, lifecycle-derived away handling, ready-first status derivation, connection-state sync, and ready-toggle rejection while disconnected or reconnecting
-- provider tests: coordination bootstrap, incremental mutation behavior, and websocket reconciliation for windows, sessions, session deletion, RSVPs, and activity
+- provider tests: auth transition connect/disconnect, session-reset-driven websocket client recreation, snapshot merge, bootstrap hydration, legacy snapshot normalization, offline-ready hydration, ready updates, ready expiry, lifecycle-derived away handling, ready-first status derivation, connection-state sync, and ready-toggle rejection while disconnected or reconnecting
+- provider tests: coordination bootstrap, session-reset reload coverage, incremental mutation behavior, and websocket reconciliation for windows, sessions, session deletion, RSVPs, and activity
+- provider tests: missing required coordination bootstrap endpoints such as `/activity` must surface errors instead of silently degrading to compatibility fallbacks now that SP2 is complete
+- provider tests: authenticated group-detail and other user-scoped caches that watch the session-reset signal must prove a second account/session reloads fresh state instead of reusing in-memory data
 - widget tests: member list and status rendering from live provider state plus coordination-hub rendering for grouped upcoming-window agendas, permission-aware editing, compact session cards, compact activity journals with grouped history/filtering, session detail-sheet RSVP flows, destructive confirmation, session notes, and localized activity
 - integration tests remain planned for a full login -> open group -> receive live ready change path
 
@@ -136,6 +144,8 @@ SP2 is considered complete only when all of the following are true:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-08 | Backend responsibilities and testing strategy | Documented that post-commit coordination fan-out failures are non-fatal to already-committed writes and that missing required `/activity` bootstrap should surface as an error in Flutter/provider coverage | Keeps the SP2 implementation contract aligned with the restored fail-loudly activity bootstrap behavior and the safer post-commit delivery semantics |
+| 2026-06-08 | Flutter architecture and testing strategy | Documented the shared session-reset requirement for realtime/user-scoped providers and added explicit reset-regression coverage expectations for websocket, coordination, and group-detail state | Keeps the SP2 implementation contract aligned with the logout/auth-invalidation hardening so realtime bootstrap data cannot leak across account switches |
 | 2026-06-04 | Spec topology | Created a dedicated implementation spec by extracting Flutter architecture, backend responsibilities, testing expectations, and deployment notes from the larger SP2 realtime spec | Keeps delivery-oriented details together without mixing them into the core transport or future coordination model contracts |
 | 2026-06-04 | Membership refresh reconnect | Documented that current-user group membership mutations must refresh the authenticated WebSocket session so presence bootstrap rehydrates against the new group scope | Keeps realtime presence aligned immediately after group create/join/leave instead of waiting for a full relog |
 | 2026-06-05 | Completion gate and shipped coordination slice | Marked the implementation spec complete, documented the coordination repository/provider/screen architecture, and added the explicit SP2 completion gate | Makes the delivery contract reviewable now that SP2 includes durable scheduled-ready/session/activity work instead of only the original presence-first kickoff |

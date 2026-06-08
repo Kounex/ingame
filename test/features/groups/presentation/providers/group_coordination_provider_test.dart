@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ingame/core/auth/auth_session.dart';
 import 'package:ingame/core/networking/websocket_client.dart';
 import 'package:ingame/features/groups/data/group_coordination_repository.dart';
 import 'package:ingame/features/groups/domain/coordination_model.dart';
@@ -54,6 +55,28 @@ class _FakeCoordinationRepository extends GroupCoordinationRepository {
   @override
   Future<void> deleteSession(String groupId, String sessionId) async {
     deletedSessionId = sessionId;
+  }
+
+  void replaceState({
+    List<ScheduledReadyWindow>? nextWindows,
+    List<GroupSession>? nextSessions,
+    List<GroupActivityEvent>? nextActivity,
+  }) {
+    if (nextWindows != null) {
+      windows
+        ..clear()
+        ..addAll(nextWindows);
+    }
+    if (nextSessions != null) {
+      sessions
+        ..clear()
+        ..addAll(nextSessions);
+    }
+    if (nextActivity != null) {
+      activity
+        ..clear()
+        ..addAll(nextActivity);
+    }
   }
 }
 
@@ -196,6 +219,43 @@ class GroupCoordinationFixtures {
 }
 
 void main() {
+  test('session reset reloads cached coordination state for the next session', () async {
+    final repository = _FakeCoordinationRepository();
+    final wsClient = _RecordingWebSocketClient();
+    final container = ProviderContainer(
+      overrides: [
+        groupCoordinationRepositoryProvider.overrideWithValue(repository),
+        websocketClientProvider.overrideWithValue(wsClient),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final initialState = await container.read(
+      groupCoordinationNotifierProvider('group-1').future,
+    );
+    expect(initialState.sessions.map((item) => item.title), ['Raid Night']);
+    expect(initialState.activity.map((item) => item.id), ['activity-1']);
+
+    repository.replaceState(
+      nextSessions: [
+        GroupCoordinationFixtures.session(
+          id: 'session-2',
+          title: 'Second Account Session',
+        ),
+      ],
+      nextActivity: [GroupCoordinationFixtures.activity(id: 'activity-2')],
+    );
+    container.read(sessionResetSignalProvider.notifier).state++;
+
+    final refreshedState = await container.read(
+      groupCoordinationNotifierProvider('group-1').future,
+    );
+    expect(refreshedState.sessions.map((item) => item.title), [
+      'Second Account Session',
+    ]);
+    expect(refreshedState.activity.map((item) => item.id), ['activity-2']);
+  });
+
   test('bootstrap loads windows, sessions, and activity', () async {
     final repository = _FakeCoordinationRepository();
     final wsClient = _RecordingWebSocketClient();
@@ -473,7 +533,7 @@ void main() {
   );
 
   test(
-    'bootstrap tolerates missing activity feed and keeps other coordination data',
+    'bootstrap surfaces missing activity feed instead of falling back to empty activity',
     () async {
       final repository = _MissingActivityCoordinationRepository();
       final wsClient = _RecordingWebSocketClient();
@@ -485,13 +545,14 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final state = await container.read(
-        groupCoordinationNotifierProvider('group-1').future,
-      );
+      container.read(groupCoordinationNotifierProvider('group-1'));
+      await Future<void>.delayed(Duration.zero);
 
-      expect(state.windows.map((item) => item.id), ['window-1']);
-      expect(state.sessions.map((item) => item.id), ['session-1']);
-      expect(state.activity, isEmpty);
+      final state = container.read(
+        groupCoordinationNotifierProvider('group-1'),
+      );
+      expect(state.hasError, isTrue);
+      expect(state.error, isA<DioException>());
     },
   );
 

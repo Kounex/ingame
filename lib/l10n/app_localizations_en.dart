@@ -716,6 +716,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileWeekends => 'Weekends';
 
   @override
+  String get profileEditDisplayNameTitle => 'Edit display name';
+
+  @override
+  String get profileEditBioTitle => 'Edit bio';
+
+  @override
+  String get profileEditTimezoneTitle => 'Edit timezone';
+
+  @override
+  String get profileEditGamingHoursTitle => 'Edit gaming hours';
+
+  @override
   String get editProfileTitle => 'Edit Profile';
 
   @override

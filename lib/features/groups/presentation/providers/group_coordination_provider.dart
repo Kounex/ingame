@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/networking/websocket_client.dart';
 import '../../data/group_coordination_repository.dart';
 import '../../domain/coordination_model.dart';
@@ -48,6 +48,7 @@ class GroupCoordinationNotifier extends AsyncNotifier<GroupCoordinationState> {
 
   @override
   Future<GroupCoordinationState> build() async {
+    ref.watch(sessionResetSignalProvider);
     _subscription?.cancel();
     ref.onDispose(() => _subscription?.cancel());
     _subscription = ref
@@ -239,7 +240,7 @@ class GroupCoordinationNotifier extends AsyncNotifier<GroupCoordinationState> {
     final results = await Future.wait<Object>([
       repo.listScheduledReady(_groupId),
       repo.listSessions(_groupId),
-      _loadActivityOrFallbackOnNotFound(),
+      repo.listActivity(_groupId),
     ]).timeout(timeout);
 
     final windows = results[0] as List<ScheduledReadyWindow>;
@@ -250,19 +251,6 @@ class GroupCoordinationNotifier extends AsyncNotifier<GroupCoordinationState> {
       sessions: sessions,
       activity: activity,
     );
-  }
-
-  Future<List<GroupActivityEvent>> _loadActivityOrFallbackOnNotFound() async {
-    try {
-      return await ref
-          .read(groupCoordinationRepositoryProvider)
-          .listActivity(_groupId);
-    } on DioException catch (error) {
-      if (error.response?.statusCode == 404) {
-        return const [];
-      }
-      rethrow;
-    }
   }
 
   void _handleEvent(dynamic event) {

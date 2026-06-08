@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/group_model.dart';
@@ -63,6 +64,7 @@ class GroupDetailNotifier extends AsyncNotifier<GroupDetailState> {
 
   @override
   FutureOr<GroupDetailState> build() async {
+    ref.watch(sessionResetSignalProvider);
     final repo = ref.read(groupsRepositoryProvider);
     final authState = await ref.watch(authNotifierProvider.future);
     final currentUserId = authState.maybeWhen(

@@ -44,14 +44,20 @@ class ConnectionManager:
         await websocket.accept()
         existing = self._connections.get(user_id)
         is_first = existing is None or not existing
+        previous_group_ids = self._user_groups.get(user_id, [])
+        next_group_ids = list(dict.fromkeys(group_ids))
         if is_first:
             self._connections[user_id] = {websocket}
-            self._user_groups[user_id] = group_ids
-            for group_id in group_ids:
-                await add_to_group_online(group_id, str(user_id))
         else:
             existing.add(websocket)
-            self._user_groups[user_id] = group_ids
+        self._user_groups[user_id] = next_group_ids
+
+        for group_id in next_group_ids:
+            if group_id not in previous_group_ids:
+                await add_to_group_online(group_id, str(user_id))
+        for group_id in previous_group_ids:
+            if group_id not in next_group_ids:
+                await remove_from_group_online(group_id, str(user_id))
         return is_first
 
     async def send_presence_snapshot(

@@ -27,7 +27,7 @@ services:
       retries: 10
 
   api:
-    image: ghcr.io/kounex/ingame-api:${INGAME_VERSION:-0.3.4}
+    image: ghcr.io/kounex/ingame-api:${INGAME_VERSION:-0.6.0}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -57,7 +57,7 @@ services:
       - "8000:8000"
 
   web:
-    image: ghcr.io/kounex/ingame-web:${INGAME_VERSION:-0.3.4}
+    image: ghcr.io/kounex/ingame-web:${INGAME_VERSION:-0.6.0}
     restart: unless-stopped
     # Discord login is compiled into the Flutter web bundle at image-build time via
     # the Dockerfile.web `DISCORD_CLIENT_ID` build arg. Setting it here at runtime
@@ -73,7 +73,7 @@ services:
           - app
 
   marketing:
-    image: ghcr.io/kounex/ingame-marketing:${INGAME_VERSION:-0.3.4}
+    image: ghcr.io/kounex/ingame-marketing:${INGAME_VERSION:-0.6.0}
     restart: unless-stopped
     depends_on:
       - web

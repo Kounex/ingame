@@ -127,12 +127,22 @@ def cmd_validate_tag(tag: str, check_aligned: bool) -> int:
         backend_content = BACKEND_MAIN_PATH.read_text()
         api_chart_content = API_HELM_CHART_PATH.read_text()
         web_chart_content = WEB_HELM_CHART_PATH.read_text()
+        api_values_content = API_HELM_VALUES_PATH.read_text()
+        web_values_content = WEB_HELM_VALUES_PATH.read_text()
         if sync_fastapi_version(backend_content, pubspec_version) != backend_content:
             raise ValueError("backend/app/main.py is not aligned with pubspec.yaml")
         if sync_chart_versions(api_chart_content, pubspec_version) != api_chart_content:
             raise ValueError("deploy/helm/ingame-api/Chart.yaml is not aligned with pubspec.yaml")
         if sync_chart_versions(web_chart_content, pubspec_version) != web_chart_content:
             raise ValueError("deploy/helm/ingame-web/Chart.yaml is not aligned with pubspec.yaml")
+        if sync_api_values_image_refs(
+            api_values_content, owner="kounex", version=pubspec_version
+        ) != api_values_content:
+            raise ValueError("deploy/helm/ingame-api/values.yaml is not aligned with pubspec.yaml")
+        if sync_web_values_image_refs(
+            web_values_content, owner="kounex", version=pubspec_version
+        ) != web_values_content:
+            raise ValueError("deploy/helm/ingame-web/values.yaml is not aligned with pubspec.yaml")
     return 0
 
 
@@ -153,12 +163,22 @@ def cmd_check_aligned() -> int:
     backend_content = BACKEND_MAIN_PATH.read_text()
     api_chart_content = API_HELM_CHART_PATH.read_text()
     web_chart_content = WEB_HELM_CHART_PATH.read_text()
+    api_values_content = API_HELM_VALUES_PATH.read_text()
+    web_values_content = WEB_HELM_VALUES_PATH.read_text()
     if sync_fastapi_version(backend_content, version) != backend_content:
         raise ValueError("backend/app/main.py is not aligned with pubspec.yaml")
     if sync_chart_versions(api_chart_content, version) != api_chart_content:
         raise ValueError("deploy/helm/ingame-api/Chart.yaml is not aligned with pubspec.yaml")
     if sync_chart_versions(web_chart_content, version) != web_chart_content:
         raise ValueError("deploy/helm/ingame-web/Chart.yaml is not aligned with pubspec.yaml")
+    if sync_api_values_image_refs(
+        api_values_content, owner="kounex", version=version
+    ) != api_values_content:
+        raise ValueError("deploy/helm/ingame-api/values.yaml is not aligned with pubspec.yaml")
+    if sync_web_values_image_refs(
+        web_values_content, owner="kounex", version=version
+    ) != web_values_content:
+        raise ValueError("deploy/helm/ingame-web/values.yaml is not aligned with pubspec.yaml")
     return 0
 
 

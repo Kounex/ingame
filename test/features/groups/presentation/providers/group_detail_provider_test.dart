@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:ingame/core/auth/auth_session.dart';
 import 'package:ingame/features/auth/domain/auth_state.dart';
 import 'package:ingame/features/auth/domain/user_model.dart';
 import 'package:ingame/features/auth/presentation/providers/auth_provider.dart';
@@ -59,6 +60,12 @@ class _MutableGroupsRepository extends GroupsRepository {
   Future<List<GroupMember>> listMembers(String groupId) async =>
       List.of(_members);
 
+  void setMembers(List<GroupMember> nextMembers) {
+    _members
+      ..clear()
+      ..addAll(nextMembers);
+  }
+
   @override
   Future<List<JoinRequest>> listJoinRequests(String groupId) async => const [];
 
@@ -111,6 +118,43 @@ GroupDetailState _state({
 }
 
 void main() {
+  test('session reset reloads cached group detail for the next session', () async {
+    final repository = _MutableGroupsRepository();
+    final container = ProviderContainer(
+      overrides: [
+        authNotifierProvider.overrideWith(_FakeAuthNotifier.new),
+        groupsRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final initialState = await container.read(
+      groupDetailNotifierProvider('group-1').future,
+    );
+    expect(initialState.members.map((member) => member.displayName), [
+      'Owner',
+      'Admin',
+      'Member',
+    ]);
+
+    repository.setMembers([
+      const GroupMember(
+        id: 'm-owner-2',
+        userId: 'owner-2',
+        displayName: 'Second Owner',
+        role: 'owner',
+      ),
+    ]);
+    container.read(sessionResetSignalProvider.notifier).state++;
+
+    final refreshedState = await container.read(
+      groupDetailNotifierProvider('group-1').future,
+    );
+    expect(refreshedState.members.map((member) => member.displayName), [
+      'Second Owner',
+    ]);
+  });
+
   test('owner can promote, demote, transfer ownership, and remove others', () {
     final ownerState = _state(
       currentUserId: 'owner-1',

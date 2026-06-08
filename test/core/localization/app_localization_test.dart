@@ -18,7 +18,7 @@ import 'package:ingame/features/groups/presentation/widgets/member_list.dart';
 import 'package:ingame/shared/providers/presence_provider.dart';
 import 'package:ingame/shared/widgets/status_indicator.dart';
 import 'package:ingame/features/profile/presentation/providers/profile_provider.dart';
-import 'package:ingame/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:ingame/features/profile/presentation/screens/profile_screen.dart';
 import 'package:ingame/l10n/app_localizations.dart';
 
 void main() {
@@ -77,8 +77,11 @@ void main() {
     tester,
   ) async {
     Future<void> pumpGermanHome(Widget home) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [
+          preferencesProvider.overrideWithValue(PreferencesService(prefs)),
           groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
           groupsNotifierProvider.overrideWith(_EmptyGroupsNotifier.new),
           profileNotifierProvider.overrideWith(
@@ -109,12 +112,12 @@ void main() {
     expect(find.text('Gruppen suchen...'), findsOneWidget);
     expect(find.text('Noch keine sichtbaren Gruppen'), findsOneWidget);
 
-    await pumpGermanHome(const EditProfileScreen());
+    await pumpGermanHome(const ProfileScreen());
 
-    expect(find.text('Profil bearbeiten'), findsOneWidget);
-    expect(find.text('Gaming-Zeiten'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
+    expect(find.text('GAMING-ZEITEN'), findsOneWidget);
     expect(find.text('Zeitzone'), findsOneWidget);
-    expect(find.text('Änderungen speichern'), findsOneWidget);
+    expect(find.text('Abmelden'), findsOneWidget);
 
     await pumpGermanHome(const GroupsListScreen());
 

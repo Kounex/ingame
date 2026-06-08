@@ -12,7 +12,6 @@ class RouteNames {
   static const String groupDetail = 'group-detail';
   static const String groupCoordination = 'group-coordination';
   static const String joinGroup = 'join-group';
-  static const String editProfile = 'edit-profile';
   static const String groupSettings = 'group-settings';
   static const String onboarding = 'onboarding';
 }
@@ -32,7 +31,6 @@ class RoutePaths {
   static const String groupCoordination = '/groups/:id/coordination';
   static const String joinGroup = '/join/:code';
   static const String legacyJoinGroup = '/groups/join/:code';
-  static const String editProfile = '/profile/edit';
   static const String groupSettings = '/groups/:id/settings';
   static const String onboarding = '/onboarding';
 }

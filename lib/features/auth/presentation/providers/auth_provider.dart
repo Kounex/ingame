@@ -139,6 +139,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     await repo.logout();
     ref.read(logoutRedirectPendingProvider.notifier).state = true;
     state = const AsyncValue.data(AuthState.unauthenticated());
+    ref.read(sessionResetSignalProvider.notifier).state++;
   }
 }
 

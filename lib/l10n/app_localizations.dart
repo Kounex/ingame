@@ -1409,6 +1409,30 @@ abstract class AppLocalizations {
   /// **'Weekends'**
   String get profileWeekends;
 
+  /// No description provided for @profileEditDisplayNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit display name'**
+  String get profileEditDisplayNameTitle;
+
+  /// No description provided for @profileEditBioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit bio'**
+  String get profileEditBioTitle;
+
+  /// No description provided for @profileEditTimezoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit timezone'**
+  String get profileEditTimezoneTitle;
+
+  /// No description provided for @profileEditGamingHoursTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit gaming hours'**
+  String get profileEditGamingHoursTitle;
+
   /// No description provided for @editProfileTitle.
   ///
   /// In en, this message translates to:

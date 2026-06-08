@@ -1,8 +1,8 @@
 ---
 spec: core-platform-auth
-version: "2.16"
+version: "2.17"
 status: complete
-last_updated: "2026-06-07"
+last_updated: "2026-06-08"
 sub_project: 1
 ---
 
@@ -38,6 +38,7 @@ Social-connect identities that are not login providers are defined in [Core Plat
 5. Flutter stores tokens via `SecureStorageService` (`flutter_secure_storage` on native, `SharedPreferences` on web).
 6. A Dio interceptor attaches the access token to API requests.
 7. On `401`, Flutter attempts refresh once; on refresh failure it clears local credentials and returns to login.
+8. Explicit logout and forced auth invalidation both increment a shared session-reset signal so user-scoped Riverpod caches are treated as stale before the next account signs in.
 
 ### Steam First-Login Dependency
 
@@ -133,6 +134,8 @@ The shared `OAuthLauncher` utility (`lib/features/auth/data/oauth_launcher.dart`
 
 Connected-account rows on the profile screen trigger these flows directly, then refresh both the profile and auth providers after success.
 
+Explicit logout and forced auth invalidation (such as refresh-token failure) also trigger one shared session reset across Flutter's authenticated/provider-backed state. That reset must invalidate cached user-scoped providers, including profile, groups, group detail, coordination, and realtime/WebSocket-backed session state, so signing in as a different account never reuses stale in-memory data from the previous session.
+
 Discord requires a registered application client id and redirect URIs, but uses the Discord public-client PKCE flow so the mobile/web app does not ship a confidential client secret in Flutter.
 
 ## Platform Callback Configuration
@@ -190,6 +193,7 @@ Flutter maps these codes to locale-aware user-facing messages instead of parsing
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-08 | Auth flow and Flutter auth integration | Added the shared session-reset contract for explicit logout and forced auth invalidation so user-scoped Riverpod caches and realtime state are cleared before the next sign-in | Prevents stale profile/group/realtime data from leaking across account switches on the same running app session |
 | 2026-06-07 | Flutter auth integration | Added the dedicated focused Discord auth route/screen so login-side Discord uses the same cancellable progress handoff as Steam while preserving the post-login redirect target | Keeps the Discord browser handoff aligned with the established Steam auth UX instead of dropping users into an uninterruptible direct launch from the login form |
 | 2026-06-07 | Steam avatar seeding and link profile fetch | Documented that Steam auth/link now fetches the Steam profile during linking too, seeds the canonical profile avatar only when `user.avatar_url` is empty, and keeps later Steam logins from overwriting an existing app avatar | Keeps the Steam provider contract aligned with the same one-time avatar bootstrap behavior now used for Discord while making link-time profile metadata dependable |
 | 2026-06-07 | Discord avatar seeding | Documented that Discord auth seeds the canonical profile avatar only when `user.avatar_url` is still empty and never overwrites an existing app avatar later | Keeps the auth/login contract aligned with the intended one-time provider-avatar bootstrap behavior shown in profile UI |

@@ -1,8 +1,8 @@
 ---
 spec: roadmap
-version: "1.92"
+version: "1.97"
 status: active
-last_updated: "2026-06-07"
+last_updated: "2026-06-08"
 ---
 
 # InGame -- Product Roadmap
@@ -85,11 +85,11 @@ graph LR
 
 **Spec set:**
 - [Overview](2026-05-30-core-platform-design.md) (v3.3)
-- [Auth](2026-05-30-core-platform-auth.md) (v2.9)
+- [Auth](2026-05-30-core-platform-auth.md) (v2.17)
 - [Social Identities](2026-06-07-core-platform-social-identities.md) (v1.2)
-- [Profiles](2026-05-30-core-platform-profiles.md) (v1.14)
+- [Profiles](2026-05-30-core-platform-profiles.md) (v1.18)
 - [Groups](2026-05-30-core-platform-groups.md) (v1.4)
-- [Implementation](2026-05-30-core-platform-implementation.md) (v1.62)
+- [Implementation](2026-05-30-core-platform-implementation.md) (v1.66)
 
 ---
 
@@ -124,9 +124,9 @@ SP2 intentionally distinguishes two coordination models:
 
 **Spec set:**
 - [Overview](2026-05-30-real-time-coordination-design.md) (v2.3)
-- [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.2)
+- [Transport & Presence](2026-05-30-real-time-coordination-transport-presence.md) (v1.3)
 - [Coordination Models](2026-05-30-real-time-coordination-coordination-models.md) (v1.6)
-- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.8)
+- [Implementation](2026-05-30-real-time-coordination-implementation.md) (v1.10)
 
 ---
 
@@ -220,7 +220,7 @@ These patterns and practices apply across all sub-projects:
 
 **Localization:** User-facing Flutter copy is localized via Flutter's official `flutter_localizations + intl + gen_l10n` stack. English and German ARB catalogs live under `lib/l10n/`; widgets should use `context.l10n`, and non-widget helpers should use the locale-aware fallback accessor rather than inline English strings. This contract also covers shared widget copy plus supporting validator/error/helper text, and the German catalog should prefer natural `ä`, `ö`, `ü`, and `ß` forms when linguistically correct.
 
-**Testing strategy:** Each sub-project adds tests covering its scope. Backend uses pytest + httpx AsyncClient + SQLite test DB. Flutter uses Riverpod test utilities for providers and widget tests. CI runs all tests on PR.
+**Testing strategy:** Each sub-project adds tests covering its scope. Backend uses pytest + httpx AsyncClient + SQLite test DB. Flutter uses Riverpod test utilities for providers and widget tests. PR CI runs Flutter, backend, contract/spec, and marketing site verification.
 
 **Deployment:** Runtime changes deploy via the Helm charts at `deploy/helm/ingame-api/` and `deploy/helm/ingame-web/`, with Kustomize overlays for dev/staging/prod. ArgoCD auto-syncs from the GitOps repo. For image-based Docker hosts, `docker-compose.release.yml` provides a matching API + web + PostgreSQL + Redis stack without bundling ingress. Local compose now also includes MinIO plus avatar-bucket bootstrap and MinIO-level CORS so the S3-compatible avatar upload flow works end to end in development, while release compose now bundles MinIO by default for self-hosted installs even though the same API contract can still be repointed at another S3-compatible backend if operators intentionally customize the stack. The release MinIO bootstrap is now inlined in compose and runs through an explicit `/bin/sh -ec` entrypoint so Portainer-style stack deployers do not rely on repo-relative helper file mounts, multiline-shell parsing quirks, or the default `minio/mc` entrypoint. Storage runtime config may also split the API's internal object-storage endpoint from the browser-facing upload host when those surfaces need different network addresses. The browser SPA and invite/deep-link host are tracked separately: `app.in-game.app` for the web app, `in-game.app` for mobile app links plus `/.well-known/*`. The base domain now also includes a standalone Astro marketing surface under `marketing/`, built statically and served behind nginx so `/join/*` can still proxy through to the browser app. Release image publishing now covers a third runtime, `ingame-marketing`, so release deployments can pull the base-domain site independently from the SPA runtime.
 
@@ -232,6 +232,11 @@ These patterns and practices apply across all sub-projects:
 
 | Date | Change | Detail |
 |------|--------|--------|
+| 2026-06-08 | SP2 reconnect scope reconciliation | Refreshed the SP2 Transport & Presence pointer after documenting that membership-refresh reconnects must reconcile Redis group-online scope even when another socket for the same user is still open | Keeps the roadmap entry point aligned with the fixed realtime presence contract instead of leaving the spec set behind the shipped manager behavior |
+| 2026-06-08 | SP2 coordination delivery semantics | Refreshed the SP2 Implementation pointer after documenting non-fatal post-commit fan-out failures for durable writes and fail-loudly `/activity` bootstrap expectations in Flutter/provider coverage | Keeps the roadmap entry point aligned with the maintained coordination delivery contract instead of leaving the implementation spec pointer behind the shipped behavior |
+| 2026-06-08 | Marketing and release verification sync | Added marketing-site verification to PR CI, refreshed the marketing auth capability summary to include Discord, and updated release/docs pointers so operator-facing runtime/version guidance matches the current stack | Keeps repo automation and user-facing docs aligned with the shipped marketing runtime and current release metadata instead of leaving drift between CI, docs, and deployment defaults |
+| 2026-06-08 | SP1 and SP2 session reset alignment | Refreshed the SP1 Auth and Implementation version pointers plus the SP2 Implementation pointer after documenting the shared session-reset lifecycle and its reset-regression expectations across realtime/user-scoped providers | Keeps the roadmap entry points aligned with the maintained cross-session cache-reset contract instead of leaving the spec set on stale versions |
+| 2026-06-08 | SP1 social card reuse and subtitle contract | Refreshed the Profiles child-spec pointer after splitting the socials surface onto a reusable shared card and clarifying the maintained connected/not-connected/not-set subtitle rules across account and social rows | Keeps the roadmap entry point aligned with the shared profile/social UI contract that future member-social sheets will also reuse |
 | 2026-06-07 | SP2 activity journal sync | Refreshed the SP2 spec pointers and summary wording after redesigning planner activity into a compact recent-highlights plus grouped-history journal | Keeps the roadmap aligned with the maintained high-volume coordination UX instead of the old flat feed expectation |
 | 2026-06-07 | SP1 action-menu interaction polish | Bumped the SP1 implementation spec reference after standardizing ellipsis/action popup menus on a shared wrapper that suppresses the stock Material gray hover, highlight, and splash states | Keeps the roadmap aligned with the maintained glass-menu interaction contract now used across group and coordination action menus |
 | 2026-06-07 | SP1 iOS Discord build wiring | Updated the maintained auth spec pointer after teaching the iOS production wrapper to forward `DISCORD_CLIENT_ID` into native release/device builds | Keeps the roadmap aligned with the actual production wrapper contract for Discord-enabled iOS runs |

@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from functools import partial
@@ -21,6 +22,7 @@ from app.ws.manager import manager
 
 _SESSION_STATUSES = {"proposed", "confirmed", "cancelled"}
 AfterCommitHook = Callable[[], Awaitable[None]]
+logger = logging.getLogger(__name__)
 
 
 async def list_scheduled_ready_windows(
@@ -416,7 +418,10 @@ async def list_activity_events(
 
 async def publish_after_commit(hooks: tuple[AfterCommitHook, ...]) -> None:
     for hook in hooks:
-        await hook()
+        try:
+            await hook()
+        except Exception:
+            logger.exception("Coordination post-commit publish failed")
 
 
 async def _sessions_to_response(

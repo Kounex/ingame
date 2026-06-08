@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ingame/core/auth/auth_session.dart';
 import 'package:ingame/core/networking/websocket_client.dart';
 import 'package:ingame/features/auth/domain/auth_state.dart';
 import 'package:ingame/features/auth/domain/user_model.dart';
@@ -41,6 +42,10 @@ class _FakeGroupsRepository extends GroupsRepository {
   List<Group> _groups;
 
   Group get createdGroup => _groups.last;
+
+  void setGroups(List<Group> nextGroups) {
+    _groups = List<Group>.from(nextGroups);
+  }
 
   @override
   Future<List<Group>> listMyGroups() async => List<Group>.from(_groups);
@@ -120,6 +125,27 @@ ProviderContainer _createContainer({
 }
 
 void main() {
+  test('session reset reloads cached groups for the next authenticated session', () async {
+    final repository = _FakeGroupsRepository(
+      initialGroups: [_group(id: 'group-1', name: 'First Account Group')],
+    );
+    final websocketClient = _FakeWebSocketClient();
+    final container = _createContainer(
+      repository: repository,
+      websocketClient: websocketClient,
+    );
+    addTearDown(container.dispose);
+
+    final initialGroups = await container.read(groupsNotifierProvider.future);
+    expect(initialGroups.map((group) => group.name), ['First Account Group']);
+
+    repository.setGroups([_group(id: 'group-2', name: 'Second Account Group')]);
+    container.read(sessionResetSignalProvider.notifier).state++;
+
+    final refreshedGroups = await container.read(groupsNotifierProvider.future);
+    expect(refreshedGroups.map((group) => group.name), ['Second Account Group']);
+  });
+
   test('create refreshes websocket memberships after adding a new group', () async {
     final repository = _FakeGroupsRepository(
       initialGroups: [_group(id: 'group-1', name: 'Existing Group')],

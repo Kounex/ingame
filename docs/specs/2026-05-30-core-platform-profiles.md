@@ -1,8 +1,8 @@
 ---
 spec: core-platform-profiles
-version: "1.16"
+version: "1.18"
 status: complete
-last_updated: "2026-06-07"
+last_updated: "2026-06-08"
 sub_project: 1
 ---
 
@@ -171,6 +171,10 @@ It is **not** responsible for form submission timing or overall profile persiste
 - onboarding
 - profile editing
 
+### Shared Social Identities Card
+
+`SocialIdentitiesCard` is the reusable provider-row card used by profile surfaces that render social identities. It owns the shared glass card layout, provider icon treatment, row affordances, and subtitle rendering space so the current profile screen and future member-social sheets can present the same social rows with different actions.
+
 ## User Flows
 
 ### Onboarding
@@ -189,9 +193,13 @@ Profile setup requirements:
 
 The onboarding profile step uses the same avatar editor contract as profile editing.
 
-### Edit Profile
+### Profile Settings Hub
 
-The profile edit screen allows updates to:
+For post-onboarding users, the profile screen itself is the maintained settings
+hub. Routine personal-profile edits should not require navigating to a dedicated
+full-screen `Edit Profile` route.
+
+The profile hub allows updates to:
 
 - display name
 - canonical account email
@@ -199,22 +207,51 @@ The profile edit screen allows updates to:
 - timezone
 - avatar
 - recurring availability
+- local app preferences surfaced there, such as language
 
-Changes are saved through `PATCH /api/v1/users/me`.
+The maintained interaction model is mixed:
+
+- obvious single-setting edits should open directly from a tap on the avatar,
+  row, or card
+- settings that benefit from a focused editor may use a dedicated dialog,
+  bottom sheet, or anchored selector rather than a separate screen
+- cards with multiple equally valid actions may expose a subtle overflow menu
+  for secondary actions while preserving tap for the primary action
+- destructive or infrequent actions should remain secondary and must not replace
+  the row's most likely tap outcome
+
+Profile-data changes still save through `PATCH /api/v1/users/me`; local app
+preferences continue using their own maintained persistence path.
 
 ## Profile Rendering Contract
 
 The profile screen:
 
 - shows the avatar at the top
+- treats the avatar hero as directly editable on tap and may keep a secondary
+  `Change photo` action once an avatar exists
+- acts as the primary post-onboarding settings surface instead of routing common
+  profile edits through a separate dedicated edit screen
+- keeps high-frequency personal fields such as display name, bio, timezone, and
+  recurring availability on direct-tap entry points that open focused editors in
+  place
 - shows email and timezone in the account section
 - treats the account email row as the dedicated entry point for changing the canonical recovery/sign-in email after onboarding
+- treats preferences-style rows such as language as direct selectors rather than
+  as navigation into another settings subpage
 - shows recurring gaming hours using an intelligent grouped display
 - uses `has_password_login` for connected-account state
 - splits provider identity rendering into `Connected Accounts` for auth/login providers and `Socials` for social-facing identities
-- mirrors linked Steam/Discord identities into `Socials` automatically while keeping Xbox / PlayStation / Nintendo in the manual-edit social section
-- treats mirrored official socials as read-only rows in `Socials`; they open the provider profile externally when a direct profile URL is available and otherwise remain non-interactive
-- treats connected manual socials as social-action-first rows: Xbox opens the generated profile URL, PlayStation opens the stored share link, and Nintendo copies the friend code while a secondary edit affordance remains available
+- keeps `Connected Accounts` subtitles status-oriented: connected auth rows show `Connected`, disconnected auth rows show `Not connected`, and only rows with an available connect/disconnect action show a chevron affordance
+- keeps `Connected Accounts` action handling primary-action-first: row tap
+  performs the most likely connect/disconnect flow, while secondary management
+  actions may live in a subtle overflow affordance when needed
+- always renders Steam in `Socials`, and renders Discord there whenever the platform can start Discord sign-in or an identity is already linked
+- treats disconnected Steam/Discord rows in `Socials` as login-entry points: they show `Not connected` and tap into the same sign-in/link flow used by `Connected Accounts`
+- treats connected Steam/Discord rows in `Socials` as social-profile rows: they show provider identity details instead of `Connected`, open the provider profile externally when a direct profile URL is available, and otherwise remain non-interactive
+- treats disconnected Xbox / PlayStation / Nintendo rows in `Socials` as manual-entry prompts with a `Not set` subtitle
+- treats connected manual socials as social-action-first rows: Xbox opens the generated profile URL, PlayStation opens the stored share link, and Nintendo copies the friend code while a secondary overflow/menu affordance remains available for edit or removal
+- formats connected social subtitles from the stored provider identity details rather than generic status text; when helpful, multiple values may be concatenated into one subtitle (for example Nintendo nickname plus friend code)
 - uses the shared provider-visual registry for standalone provider rows, with branded `line_icons` glyphs where available, explicit shared fallbacks otherwise, and provider-tinted or platform-appropriate monochrome icon treatment while keeping the existing glass-row layout
 - keeps the app profile (`display_name`, `avatar_url`) visually separate from provider-owned identity snapshots
 
@@ -228,6 +265,8 @@ The profile screen:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-08 | Profile settings hub and profile rendering | Replaced the dedicated post-onboarding edit-profile-screen expectation with a mixed in-page settings hub contract: direct taps for obvious fields, focused sheets/dialogs/selectors where needed, and overflow menus only for secondary multi-action cases | Keeps the written profile UX aligned with the approved shift toward faster, more polished in-place editing instead of routing most changes through a redundant full-screen form |
+| 2026-06-08 | Shared components and profile rendering | Added the reusable `SocialIdentitiesCard` contract and clarified the maintained subtitle/tap rules for connected accounts plus login-based versus manual social rows | Keeps the written profile UI contract aligned with the shared social-card refactor and the approved connected/not-connected/not-set subtitle behavior |
 | 2026-06-07 | Avatar contract | Documented that official provider login/link flows may seed the canonical profile avatar once when it is empty, while later provider syncs must not overwrite an existing avatar | Keeps the written profile/avatar contract aligned with the new Discord avatar bootstrap behavior without weakening user control over custom profile photos |
 | 2026-06-07 | Edit profile and profile rendering | Added the dedicated profile-level canonical email change flow and clarified that the account email row is the maintained entry point for updating it after onboarding | Keeps post-onboarding email management consistent instead of hiding email edits in the separate add-password flow |
 | 2026-06-07 | Provider visuals | Clarified that standalone provider rows may use platform-appropriate monochrome treatment in addition to provider-tinted icons, covering Apple on the dark profile surface | Keeps the written profile contract aligned with the shipped Apple row visuals after the audit follow-through corrected contrast |

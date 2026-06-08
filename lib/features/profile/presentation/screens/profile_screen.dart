@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/localization/locale_aware_form_state_mixin.dart';
-import '../../../../core/routing/route_names.dart';
 import '../../../../core/localization/locale_controller.dart';
+import '../../../../core/localization/locale_aware_form_state_mixin.dart';
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
+import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/language_switcher.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/app_popup_menu_button.dart';
 import '../../../../shared/widgets/provider_visuals.dart';
-import '../../../../shared/widgets/user_avatar.dart';
+import '../../../../shared/widgets/social_identities_card.dart';
 import '../../../../shared/widgets/weekly_availability_editor.dart';
 import '../../../../shared/widgets/app_chip.dart';
 import '../../../../shared/widgets/app_list_row.dart';
@@ -30,10 +31,9 @@ import '../../../../shared/services/app_haptics.dart';
 
 import '../../../auth/data/oauth_launcher.dart';
 import '../../../auth/domain/provider_identity_model.dart';
-import '../../../auth/domain/user_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../data/profile_repository.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/profile_settings_editors.dart';
 
 bool _isValidPlayStationShareLink(String? value) {
   final trimmed = value?.trim() ?? '';
@@ -46,12 +46,48 @@ bool _isValidPlayStationShareLink(String? value) {
       (uri.host == 'playstation.com' || uri.host.endsWith('.playstation.com'));
 }
 
+enum _SocialRowAction { edit, remove }
+
+Future<bool> _saveProfileUpdates(
+  BuildContext context,
+  WidgetRef ref, {
+  required Map<String, dynamic> updates,
+  String? successMessage,
+}) async {
+  try {
+    await ref.read(profileNotifierProvider.notifier).updateProfile(updates);
+  } catch (error) {
+    if (!context.mounted) return false;
+    AppToast.error(context, ApiError.userMessage(error, context.l10n));
+    return false;
+  }
+
+  if (!context.mounted) return false;
+  if (successMessage != null && successMessage.isNotEmpty) {
+    AppToast.success(context, successMessage);
+  }
+  await ref.read(appHapticsProvider).success();
+  return true;
+}
+
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(profileNotifierProvider);
+    final isBlockingLoad = ref.watch(
+      profileNotifierProvider.select(
+        (state) => state.isLoading && state.asData?.value == null,
+      ),
+    );
+    final blockingError = ref.watch(
+      profileNotifierProvider.select(
+        (state) => state.asData?.value == null ? state.error : null,
+      ),
+    );
+    final hasProfileUser = ref.watch(
+      profileNotifierProvider.select((state) => state.asData?.value != null),
+    );
 
     return AppBackgroundSurface(
       child: Scaffold(
@@ -60,126 +96,51 @@ class ProfileScreen extends ConsumerWidget {
           title: context.l10n.profileTitle,
           contentWidth: DesktopContentWidth.reading,
         ),
-        body: profileAsync.when(
-          loading: () => const DesktopContentRegion(
-            width: DesktopContentWidth.reading,
-            child: Center(child: LoadingIndicator()),
-          ),
-          error: (error, _) => DesktopContentRegion(
-            width: DesktopContentWidth.reading,
-            child: ErrorDisplay(
-              message: ApiError.userMessage(error, context.l10n),
-              onRetry: () => ref.read(profileNotifierProvider.notifier).load(),
-            ),
-          ),
-          data: (user) {
-            if (user == null) {
-              return DesktopContentRegion(
+        body: isBlockingLoad
+            ? const DesktopContentRegion(
+                width: DesktopContentWidth.reading,
+                child: Center(child: LoadingIndicator()),
+              )
+            : !hasProfileUser
+            ? DesktopContentRegion(
                 width: DesktopContentWidth.reading,
                 child: ErrorDisplay(
-                  message: context.l10n.profileLoadError,
+                  message: blockingError != null
+                      ? ApiError.userMessage(blockingError, context.l10n)
+                      : context.l10n.profileLoadError,
                   onRetry: () =>
                       ref.read(profileNotifierProvider.notifier).load(),
                 ),
-              );
-            }
-
-            return DesktopContentRegion(
-              width: DesktopContentWidth.reading,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: AppSpacing.md),
-                    Center(
-                      child: UserAvatar(
-                        imageUrl: user.avatarUrl,
-                        displayName: user.displayName,
-                        size: 96,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Center(
-                      child: Text(
-                        user.displayName,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    if (user.bio != null && user.bio!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Center(
-                        child: Text(
-                          user.bio!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
+              )
+            : const DesktopContentRegion(
+                width: DesktopContentWidth.reading,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ProfileHeaderSection(),
+                      SizedBox(height: AppSpacing.xl),
+                      _AccountInfoCard(),
+                      SizedBox(height: AppSpacing.md),
+                      _PreferencesCard(),
+                      SizedBox(height: AppSpacing.md),
+                      _GamingHoursCard(),
+                      SizedBox(height: AppSpacing.md),
+                      _ConnectedAccountsCard(),
+                      SizedBox(height: AppSpacing.md),
+                      _SocialIdentitiesCard(),
+                      SizedBox(height: AppSpacing.xl),
+                      _ProfileActions(),
                     ],
-                    const SizedBox(height: AppSpacing.xl),
-                    _AccountInfoCard(user: user),
-                    const SizedBox(height: AppSpacing.md),
-                    const _PreferencesCard(),
-                    const SizedBox(height: AppSpacing.md),
-                    _GamingHoursCard(gamingHours: user.preferredGamingHours),
-                    const SizedBox(height: AppSpacing.md),
-                    _ConnectedAccountsCard(
-                      email: user.email,
-                      hasPasswordLogin: user.hasPasswordLogin,
-                      steamId: user.steamId,
-                      appleId: user.appleId,
-                      providerIdentities: user.providerIdentities,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _SocialIdentitiesCard(
-                      steamId: user.steamId,
-                      providerIdentities: user.providerIdentities,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    GlassButton(
-                      onPressed: () => context.goNamed(RouteNames.editProfile),
-                      child: Text(context.l10n.profileEdit),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    GlassButton(
-                      variant: GlassButtonVariant.ghost,
-                      onPressed: () => _confirmLogout(context, ref),
-                      child: Text(
-                        context.l10n.profileLogout,
-                        style: const TextStyle(color: AppColors.error),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
+                  ),
                 ),
               ),
-            );
-          },
-        ),
       ),
     );
-  }
-
-  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showAppConfirmationDialog(
-      context,
-      title: context.l10n.profileLogoutConfirmTitle,
-      message: context.l10n.profileLogoutConfirmMessage,
-      confirmLabel: context.l10n.profileLogout,
-      cancelLabel: context.l10n.commonCancel,
-      variant: AppConfirmationVariant.destructive,
-    );
-    if (!confirmed) return;
-
-    await ref.read(authNotifierProvider.notifier).logout();
-    await ref.read(appHapticsProvider).destructiveConfirm();
   }
 }
 
@@ -202,31 +163,151 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _AccountInfoCard extends ConsumerWidget {
-  const _AccountInfoCard({required this.user});
+class _ProfileHeaderSection extends ConsumerWidget {
+  const _ProfileHeaderSection();
 
-  final User user;
+  Future<void> _editDisplayName(
+    BuildContext context,
+    WidgetRef ref, {
+    required String displayName,
+  }) async {
+    await showProfileSettingsEditor<void>(
+      context: context,
+      builder: (_) => ProfileTextValueEditor(
+        title: context.l10n.profileEditDisplayNameTitle,
+        label: context.l10n.registerDisplayNameLabel,
+        initialValue: displayName,
+        hint: context.l10n.editProfileDisplayNameHint,
+        validator: FormValidators.displayName,
+        onSubmitted: (value) =>
+            _saveProfileUpdates(context, ref, updates: {'display_name': value}),
+      ),
+    );
+  }
+
+  Future<void> _editBio(
+    BuildContext context,
+    WidgetRef ref, {
+    required String bio,
+  }) async {
+    await showProfileSettingsEditor<void>(
+      context: context,
+      builder: (_) => ProfileTextValueEditor(
+        title: context.l10n.profileEditBioTitle,
+        label: context.l10n.editProfileBioLabel,
+        initialValue: bio,
+        hint: context.l10n.editProfileBioHint,
+        maxLines: 3,
+        onSubmitted: (value) =>
+            _saveProfileUpdates(context, ref, updates: {'bio': value}),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final header = ref.watch(
+      profileUserProvider.select(
+        (user) => (
+          avatarUrl: user?.avatarUrl,
+          bio: user?.bio,
+          displayName: user?.displayName ?? '',
+        ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpacing.md),
+        Center(
+          child: EditableAvatarField(
+            initialAvatarUrl: header.avatarUrl,
+            displayName: header.displayName,
+            size: 96,
+            onChanged: (value) async {
+              await _saveProfileUpdates(
+                context,
+                ref,
+                updates: {'avatar_url': value},
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Center(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () =>
+                _editDisplayName(context, ref, displayName: header.displayName),
+            child: Text(
+              header.displayName,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Center(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _editBio(context, ref, bio: header.bio ?? ''),
+            child: Text(
+              header.bio?.isNotEmpty == true
+                  ? header.bio!
+                  : context.l10n.profileNotSet,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: header.bio?.isNotEmpty == true
+                    ? AppColors.textSecondary
+                    : AppColors.textTertiary,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccountInfoCard extends ConsumerWidget {
+  const _AccountInfoCard();
 
   static String _formatDate(DateTime date) {
     return DateFormat.yMMMd(Intl.getCurrentLocale()).format(date);
   }
 
+  Future<void> _editTimezone(
+    BuildContext context,
+    WidgetRef ref, {
+    required String timezone,
+  }) async {
+    await showProfileSettingsEditor<void>(
+      context: context,
+      builder: (_) => ProfileTimezoneEditor(
+        initialTimezone: timezone,
+        onSubmitted: (value) =>
+            _saveProfileUpdates(context, ref, updates: {'timezone': value}),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rows = [
-      (
-        Icons.public,
-        context.l10n.profileTimezoneLabel,
-        user.timezone.replaceAll('_', ' '),
+    final accountInfo = ref.watch(
+      profileUserProvider.select(
+        (user) => (
+          createdAt: user?.createdAt,
+          email: user?.email,
+          timezone: user?.timezone ?? '',
+        ),
       ),
-      (
-        Icons.calendar_today_outlined,
-        context.l10n.profileMemberSinceLabel,
-        user.createdAt != null
-            ? _formatDate(user.createdAt!)
-            : context.l10n.profileUnknown,
-      ),
-    ];
+    );
+    final memberSince = accountInfo.createdAt != null
+        ? _formatDate(accountInfo.createdAt!)
+        : context.l10n.profileUnknown;
 
     return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -238,7 +319,7 @@ class _AccountInfoCard extends ConsumerWidget {
           _InfoRow(
             icon: Icons.email_outlined,
             label: context.l10n.profileEmailLabel,
-            value: user.email ?? context.l10n.profileNotSet,
+            value: accountInfo.email ?? context.l10n.profileNotSet,
             trailing: const Icon(
               Icons.chevron_right,
               color: AppColors.textTertiary,
@@ -249,37 +330,89 @@ class _AccountInfoCard extends ConsumerWidget {
                 context: context,
                 useRootNavigator: true,
                 builder: (context) =>
-                    _ChangeEmailDialog(initialEmail: user.email?.trim()),
+                    _ChangeEmailDialog(initialEmail: accountInfo.email?.trim()),
               );
               if (result == null || !context.mounted) return;
 
-              await ref.read(profileNotifierProvider.notifier).updateProfile({
-                'email': result,
-              });
-              if (!context.mounted) return;
-
-              final profileState = ref.read(profileNotifierProvider);
-              if (profileState.hasError) {
+              try {
+                await ref.read(profileNotifierProvider.notifier).updateProfile({
+                  'email': result,
+                });
+              } catch (error) {
+                if (!context.mounted) return;
                 AppToast.error(
                   context,
                   context.l10n.profileChangeEmailFailed(
-                    ApiError.userMessage(profileState.error!, context.l10n),
+                    ApiError.userMessage(error, context.l10n),
                   ),
                 );
                 return;
               }
 
+              if (!context.mounted) return;
               ref.invalidate(authNotifierProvider);
               AppToast.success(context, context.l10n.profileChangeEmailSuccess);
               await ref.read(appHapticsProvider).success();
             },
           ),
-          for (var i = 0; i < rows.length; i++) ...[
-            const Divider(height: 1),
-            _InfoRow(icon: rows[i].$1, label: rows[i].$2, value: rows[i].$3),
-          ],
+          const Divider(height: 1),
+          _InfoRow(
+            icon: Icons.public,
+            label: context.l10n.profileTimezoneLabel,
+            value: accountInfo.timezone.replaceAll('_', ' '),
+            trailing: const Icon(
+              Icons.chevron_right,
+              color: AppColors.textTertiary,
+              size: 18,
+            ),
+            onTap: () =>
+                _editTimezone(context, ref, timezone: accountInfo.timezone),
+          ),
+          const Divider(height: 1),
+          _InfoRow(
+            icon: Icons.calendar_today_outlined,
+            label: context.l10n.profileMemberSinceLabel,
+            value: memberSince,
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileActions extends ConsumerWidget {
+  const _ProfileActions();
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.profileLogoutConfirmTitle,
+      message: context.l10n.profileLogoutConfirmMessage,
+      confirmLabel: context.l10n.profileLogout,
+      cancelLabel: context.l10n.commonCancel,
+      variant: AppConfirmationVariant.destructive,
+    );
+    if (!confirmed) return;
+
+    await ref.read(authNotifierProvider.notifier).logout();
+    await ref.read(appHapticsProvider).destructiveConfirm();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GlassButton(
+          variant: GlassButtonVariant.ghost,
+          onPressed: () => _confirmLogout(context, ref),
+          child: Text(
+            context.l10n.profileLogout,
+            style: const TextStyle(color: AppColors.error),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+      ],
     );
   }
 }
@@ -303,10 +436,8 @@ class _PreferencesCard extends StatelessWidget {
   }
 }
 
-class _GamingHoursCard extends StatelessWidget {
-  const _GamingHoursCard({this.gamingHours});
-
-  final Map<String, dynamic>? gamingHours;
+class _GamingHoursCard extends ConsumerWidget {
+  const _GamingHoursCard();
 
   static const _dayOrder = [
     'monday',
@@ -335,12 +466,15 @@ class _GamingHoursCard extends StatelessWidget {
     );
   }
 
-  List<_ScheduleGroup> _buildGroups(BuildContext context) {
-    if (gamingHours == null || gamingHours!.isEmpty) return [];
+  List<_ScheduleGroup> _buildGroups(
+    BuildContext context,
+    Map<String, dynamic>? gamingHours,
+  ) {
+    if (gamingHours == null || gamingHours.isEmpty) return [];
 
     final daySlots = <String, List<String>>{};
     for (final day in _dayOrder) {
-      final raw = gamingHours![day];
+      final raw = gamingHours[day];
       if (raw == null) continue;
       final slots = (raw as List<dynamic>).cast<Map<String, dynamic>>();
       daySlots[day] = slots.map(_formatSlot).toList()..sort();
@@ -418,12 +552,34 @@ class _GamingHoursCard extends StatelessWidget {
     return weeklyAvailabilityPresetIcon(preset);
   }
 
+  Future<void> _editGamingHours(
+    BuildContext context,
+    WidgetRef ref, {
+    required Map<String, dynamic>? gamingHours,
+  }) async {
+    await showProfileSettingsEditor<void>(
+      context: context,
+      builder: (_) => ProfileGamingHoursEditor(
+        initialHours: gamingHours,
+        onSubmitted: (value) => _saveProfileUpdates(
+          context,
+          ref,
+          updates: {'preferred_gaming_hours': value},
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
-    final groups = _buildGroups(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gamingHours = ref.watch(
+      profileUserProvider.select((user) => user?.preferredGamingHours),
+    );
+    final groups = _buildGroups(context, gamingHours);
     final hasHours = groups.isNotEmpty;
 
     return GlassCard(
+      onTap: () => _editGamingHours(context, ref, gamingHours: gamingHours),
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,36 +683,48 @@ class _SlotChip extends StatelessWidget {
 }
 
 class _ConnectedAccountsCard extends ConsumerWidget {
-  const _ConnectedAccountsCard({
-    this.email,
-    required this.hasPasswordLogin,
-    this.steamId,
-    this.appleId,
-    required this.providerIdentities,
-  });
+  const _ConnectedAccountsCard();
 
-  final String? email;
-  final bool hasPasswordLogin;
-  final String? steamId;
-  final String? appleId;
-  final List<ProviderIdentity> providerIdentities;
-
-  int _authMethodCount() {
+  int _authMethodCount({
+    required bool hasPasswordLogin,
+    required String? steamId,
+    required String? appleId,
+    required List<ProviderIdentity> providerIdentities,
+  }) {
     var count = 0;
     if (hasPasswordLogin) count++;
     for (final identity in providerIdentities) {
       if (identity.supportsLogin) count++;
     }
-    if (steamId != null && _identityFor('steam')?.externalId == null) {
+    if (steamId != null &&
+        _identityFor(
+              'steam',
+              steamId: steamId,
+              appleId: appleId,
+              providerIdentities: providerIdentities,
+            )?.externalId ==
+            null) {
       count++;
     }
-    if (appleId != null && _identityFor('apple')?.externalId == null) {
+    if (appleId != null &&
+        _identityFor(
+              'apple',
+              steamId: steamId,
+              appleId: appleId,
+              providerIdentities: providerIdentities,
+            )?.externalId ==
+            null) {
       count++;
     }
     return count;
   }
 
-  ProviderIdentity? _identityFor(String provider) {
+  ProviderIdentity? _identityFor(
+    String provider, {
+    required String? steamId,
+    required String? appleId,
+    required List<ProviderIdentity> providerIdentities,
+  }) {
     for (final identity in providerIdentities) {
       if (identity.provider == provider) {
         return identity;
@@ -592,12 +760,7 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 
   String? _identityStatus(ProviderIdentity? identity) {
     if (identity == null) return null;
-    return identity.displayName ??
-        identity.username ??
-        (identity.provider == 'apple' ? null : identity.externalId) ??
-        (identity.supportsLogin
-            ? currentAppLocalizations().profileConnectedTapToDisconnect
-            : currentAppLocalizations().profileConnected);
+    return currentAppLocalizations().profileConnected;
   }
 
   Future<bool?> _confirmDisconnect(
@@ -643,15 +806,28 @@ class _ConnectedAccountsCard extends ConsumerWidget {
     );
   }
 
-  void _refreshProviders(WidgetRef ref) {
-    ref.read(profileNotifierProvider.notifier).load();
-    ref.invalidate(authNotifierProvider);
-  }
-
-  Future<void> _handleSteamTap(BuildContext context, WidgetRef ref) async {
-    final steamIdentity = _identityFor('steam');
+  Future<void> _handleSteamTap(
+    BuildContext context,
+    WidgetRef ref, {
+    required String? steamId,
+    required String? appleId,
+    required List<ProviderIdentity> providerIdentities,
+    required bool hasPasswordLogin,
+  }) async {
+    final steamIdentity = _identityFor(
+      'steam',
+      steamId: steamId,
+      appleId: appleId,
+      providerIdentities: providerIdentities,
+    );
     if (steamIdentity != null) {
-      if (_authMethodCount() <= 1) {
+      if (_authMethodCount(
+            hasPasswordLogin: hasPasswordLogin,
+            steamId: steamId,
+            appleId: appleId,
+            providerIdentities: providerIdentities,
+          ) <=
+          1) {
         AppToast.error(context, context.l10n.profileLastAuthMethodRequired);
         return;
       }
@@ -662,8 +838,8 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       );
       if (confirmed != true || !context.mounted) return;
       try {
-        await ref.read(profileRepositoryProvider).unlinkSteam();
-        _refreshProviders(ref);
+        await ref.read(profileNotifierProvider.notifier).unlinkSteam();
+        ref.invalidate(authNotifierProvider);
         if (context.mounted) {
           AppToast.success(
             context,
@@ -688,8 +864,8 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       try {
         final params = await OAuthLauncher.launchSteamAuth();
         if (!context.mounted) return;
-        await ref.read(profileRepositoryProvider).linkSteam(params);
-        _refreshProviders(ref);
+        await ref.read(profileNotifierProvider.notifier).linkSteam(params);
+        ref.invalidate(authNotifierProvider);
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileSteamLinkedSuccess);
         }
@@ -704,7 +880,12 @@ class _ConnectedAccountsCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _handleEmailTap(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleEmailTap(
+    BuildContext context,
+    WidgetRef ref, {
+    required String? email,
+    required bool hasPasswordLogin,
+  }) async {
     if (hasPasswordLogin) return;
     final currentEmail = email?.trim();
     if (currentEmail == null || currentEmail.isEmpty) {
@@ -721,9 +902,9 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 
     try {
       await ref
-          .read(profileRepositoryProvider)
+          .read(profileNotifierProvider.notifier)
           .setEmailPassword(email: result.email, password: result.password);
-      _refreshProviders(ref);
+      ref.invalidate(authNotifierProvider);
       if (context.mounted) {
         AppToast.success(
           context,
@@ -743,10 +924,28 @@ class _ConnectedAccountsCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _handleDiscordTap(BuildContext context, WidgetRef ref) async {
-    final discordIdentity = _identityFor('discord');
+  Future<void> _handleDiscordTap(
+    BuildContext context,
+    WidgetRef ref, {
+    required String? steamId,
+    required String? appleId,
+    required List<ProviderIdentity> providerIdentities,
+    required bool hasPasswordLogin,
+  }) async {
+    final discordIdentity = _identityFor(
+      'discord',
+      steamId: steamId,
+      appleId: appleId,
+      providerIdentities: providerIdentities,
+    );
     if (discordIdentity != null) {
-      if (_authMethodCount() <= 1) {
+      if (_authMethodCount(
+            hasPasswordLogin: hasPasswordLogin,
+            steamId: steamId,
+            appleId: appleId,
+            providerIdentities: providerIdentities,
+          ) <=
+          1) {
         AppToast.error(context, context.l10n.profileLastAuthMethodRequired);
         return;
       }
@@ -757,8 +956,8 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       );
       if (confirmed != true || !context.mounted) return;
       try {
-        await ref.read(profileRepositoryProvider).unlinkDiscord();
-        _refreshProviders(ref);
+        await ref.read(profileNotifierProvider.notifier).unlinkDiscord();
+        ref.invalidate(authNotifierProvider);
         if (context.mounted) {
           AppToast.success(
             context,
@@ -795,13 +994,13 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       if (!context.mounted) return;
       try {
         await ref
-            .read(profileRepositoryProvider)
+            .read(profileNotifierProvider.notifier)
             .linkDiscord(
               code: discordAuthResult.code,
               codeVerifier: discordAuthResult.codeVerifier,
               redirectUri: discordAuthResult.redirectUri,
             );
-        _refreshProviders(ref);
+        ref.invalidate(authNotifierProvider);
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileDiscordLinkedSuccess);
         }
@@ -818,10 +1017,28 @@ class _ConnectedAccountsCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _handleAppleTap(BuildContext context, WidgetRef ref) async {
-    final appleIdentity = _identityFor('apple');
+  Future<void> _handleAppleTap(
+    BuildContext context,
+    WidgetRef ref, {
+    required String? steamId,
+    required String? appleId,
+    required List<ProviderIdentity> providerIdentities,
+    required bool hasPasswordLogin,
+  }) async {
+    final appleIdentity = _identityFor(
+      'apple',
+      steamId: steamId,
+      appleId: appleId,
+      providerIdentities: providerIdentities,
+    );
     if (appleIdentity != null) {
-      if (_authMethodCount() <= 1) {
+      if (_authMethodCount(
+            hasPasswordLogin: hasPasswordLogin,
+            steamId: steamId,
+            appleId: appleId,
+            providerIdentities: providerIdentities,
+          ) <=
+          1) {
         AppToast.error(context, context.l10n.profileLastAuthMethodRequired);
         return;
       }
@@ -832,8 +1049,8 @@ class _ConnectedAccountsCard extends ConsumerWidget {
       );
       if (confirmed != true || !context.mounted) return;
       try {
-        await ref.read(profileRepositoryProvider).unlinkApple();
-        _refreshProviders(ref);
+        await ref.read(profileNotifierProvider.notifier).unlinkApple();
+        ref.invalidate(authNotifierProvider);
         if (context.mounted) {
           AppToast.success(
             context,
@@ -871,9 +1088,9 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 
       try {
         await ref
-            .read(profileRepositoryProvider)
+            .read(profileNotifierProvider.notifier)
             .linkApple(appleSignInResult.identityToken);
-        _refreshProviders(ref);
+        ref.invalidate(authNotifierProvider);
         if (context.mounted) {
           AppToast.success(context, context.l10n.profileAppleLinkedSuccess);
         }
@@ -892,12 +1109,48 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final steamIdentity = _identityFor('steam');
-    final discordIdentity = _identityFor('discord');
-    final appleIdentity = _identityFor('apple');
+    final connectedAccounts = ref.watch(
+      profileUserProvider.select(
+        (user) => (
+          appleId: user?.appleId,
+          email: user?.email,
+          hasPasswordLogin: user?.hasPasswordLogin ?? false,
+          providerIdentities:
+              user?.providerIdentities ?? const <ProviderIdentity>[],
+          steamId: user?.steamId,
+        ),
+      ),
+    );
+    final steamIdentity = _identityFor(
+      'steam',
+      steamId: connectedAccounts.steamId,
+      appleId: connectedAccounts.appleId,
+      providerIdentities: connectedAccounts.providerIdentities,
+    );
+    final discordIdentity = _identityFor(
+      'discord',
+      steamId: connectedAccounts.steamId,
+      appleId: connectedAccounts.appleId,
+      providerIdentities: connectedAccounts.providerIdentities,
+    );
+    final appleIdentity = _identityFor(
+      'apple',
+      steamId: connectedAccounts.steamId,
+      appleId: connectedAccounts.appleId,
+      providerIdentities: connectedAccounts.providerIdentities,
+    );
+    final authMethodCount = _authMethodCount(
+      hasPasswordLogin: connectedAccounts.hasPasswordLogin,
+      steamId: connectedAccounts.steamId,
+      appleId: connectedAccounts.appleId,
+      providerIdentities: connectedAccounts.providerIdentities,
+    );
     final steamConnected = steamIdentity != null;
     final discordConnected = discordIdentity != null;
     final appleConnected = appleIdentity != null;
+    final canDisconnectSteam = steamConnected && authMethodCount > 1;
+    final canDisconnectDiscord = discordConnected && authMethodCount > 1;
+    final canDisconnectApple = appleConnected && authMethodCount > 1;
     final showDiscordRow =
         discordConnected || OAuthLauncher.discordSignInAvailable;
     final showAppleRow = appleConnected || OAuthLauncher.appleSignInAvailable;
@@ -912,18 +1165,23 @@ class _ConnectedAccountsCard extends ConsumerWidget {
           _AccountRow(
             icon: ProviderVisuals.email.icon,
             label: context.l10n.profileConnectedAccountsEmailPassword,
-            connected: hasPasswordLogin,
+            connected: connectedAccounts.hasPasswordLogin,
             iconColor: ProviderVisuals.rowIconColor(
               'email',
-              connected: hasPasswordLogin,
+              connected: connectedAccounts.hasPasswordLogin,
             ),
             iconBackgroundColor: ProviderVisuals.rowIconBackground(
               'email',
-              connected: hasPasswordLogin,
+              connected: connectedAccounts.hasPasswordLogin,
             ),
-            onTap: hasPasswordLogin
+            onTap: connectedAccounts.hasPasswordLogin
                 ? null
-                : () => _handleEmailTap(context, ref),
+                : () => _handleEmailTap(
+                    context,
+                    ref,
+                    email: connectedAccounts.email,
+                    hasPasswordLogin: connectedAccounts.hasPasswordLogin,
+                  ),
           ),
           const Divider(height: 1),
           _AccountRow(
@@ -939,7 +1197,26 @@ class _ConnectedAccountsCard extends ConsumerWidget {
               connected: steamConnected,
             ),
             statusText: _identityStatus(steamIdentity),
-            onTap: () => _handleSteamTap(context, ref),
+            onTap: steamConnected
+                ? (canDisconnectSteam
+                      ? () => _handleSteamTap(
+                          context,
+                          ref,
+                          steamId: connectedAccounts.steamId,
+                          appleId: connectedAccounts.appleId,
+                          providerIdentities:
+                              connectedAccounts.providerIdentities,
+                          hasPasswordLogin: connectedAccounts.hasPasswordLogin,
+                        )
+                      : null)
+                : () => _handleSteamTap(
+                    context,
+                    ref,
+                    steamId: connectedAccounts.steamId,
+                    appleId: connectedAccounts.appleId,
+                    providerIdentities: connectedAccounts.providerIdentities,
+                    hasPasswordLogin: connectedAccounts.hasPasswordLogin,
+                  ),
           ),
           if (showDiscordRow) ...[
             const Divider(height: 1),
@@ -956,7 +1233,27 @@ class _ConnectedAccountsCard extends ConsumerWidget {
                 connected: discordConnected,
               ),
               statusText: _identityStatus(discordIdentity),
-              onTap: () => _handleDiscordTap(context, ref),
+              onTap: discordConnected
+                  ? (canDisconnectDiscord
+                        ? () => _handleDiscordTap(
+                            context,
+                            ref,
+                            steamId: connectedAccounts.steamId,
+                            appleId: connectedAccounts.appleId,
+                            providerIdentities:
+                                connectedAccounts.providerIdentities,
+                            hasPasswordLogin:
+                                connectedAccounts.hasPasswordLogin,
+                          )
+                        : null)
+                  : () => _handleDiscordTap(
+                      context,
+                      ref,
+                      steamId: connectedAccounts.steamId,
+                      appleId: connectedAccounts.appleId,
+                      providerIdentities: connectedAccounts.providerIdentities,
+                      hasPasswordLogin: connectedAccounts.hasPasswordLogin,
+                    ),
             ),
           ],
           if (showAppleRow) ...[
@@ -974,7 +1271,27 @@ class _ConnectedAccountsCard extends ConsumerWidget {
                 connected: appleConnected,
               ),
               statusText: _identityStatus(appleIdentity),
-              onTap: () => _handleAppleTap(context, ref),
+              onTap: appleConnected
+                  ? (canDisconnectApple
+                        ? () => _handleAppleTap(
+                            context,
+                            ref,
+                            steamId: connectedAccounts.steamId,
+                            appleId: connectedAccounts.appleId,
+                            providerIdentities:
+                                connectedAccounts.providerIdentities,
+                            hasPasswordLogin:
+                                connectedAccounts.hasPasswordLogin,
+                          )
+                        : null)
+                  : () => _handleAppleTap(
+                      context,
+                      ref,
+                      steamId: connectedAccounts.steamId,
+                      appleId: connectedAccounts.appleId,
+                      providerIdentities: connectedAccounts.providerIdentities,
+                      hasPasswordLogin: connectedAccounts.hasPasswordLogin,
+                    ),
             ),
           ],
         ],
@@ -984,21 +1301,24 @@ class _ConnectedAccountsCard extends ConsumerWidget {
 }
 
 class _SocialIdentitiesCard extends ConsumerWidget {
-  const _SocialIdentitiesCard({this.steamId, required this.providerIdentities});
+  const _SocialIdentitiesCard();
 
-  final String? steamId;
-  final List<ProviderIdentity> providerIdentities;
-
-  ProviderIdentity? _identityFor(String provider) {
+  ProviderIdentity? _identityFor(
+    String provider, {
+    required String? steamId,
+    required List<ProviderIdentity> providerIdentities,
+  }) {
     for (final identity in providerIdentities) {
       if (identity.provider == provider) {
         return identity;
       }
     }
     if (provider == 'steam' && steamId != null) {
-      return const ProviderIdentity(
+      return ProviderIdentity(
         provider: 'steam',
         authMode: 'official_openid',
+        externalId: steamId,
+        profileUrl: 'https://steamcommunity.com/profiles/$steamId',
         supportsLogin: true,
         supportsRefresh: true,
         supportsDirectProfileLink: true,
@@ -1028,16 +1348,63 @@ class _SocialIdentitiesCard extends ConsumerWidget {
   }) {
     if (identity == null) {
       if (provider == 'steam' || provider == 'discord') {
-        return context.l10n.profileSocialIdentityLinkInConnectedAccounts;
+        return context.l10n.profileNotConnected;
       }
-      return context.l10n.profileNotConnected;
+      return context.l10n.profileNotSet;
     }
 
-    return identity.displayName ??
-        identity.username ??
-        (identity.metadata?['friend_code'] as String?) ??
-        identity.externalId ??
-        context.l10n.profileConnected;
+    final friendCode = _nintendoFriendCode(identity);
+    final parts = switch (provider) {
+      'discord' => _distinctNonEmpty([
+        identity.displayName,
+        _discordHandle(identity.username),
+      ]),
+      'nintendo' => _distinctNonEmpty([identity.displayName, friendCode]),
+      'playstation' => () {
+        final preferred = _distinctNonEmpty([
+          identity.username,
+          identity.displayName,
+        ]);
+        return preferred.isNotEmpty
+            ? preferred
+            : _distinctNonEmpty([_socialProfileUrl(identity)]);
+      }(),
+      'steam' => () {
+        final preferred = _distinctNonEmpty([
+          identity.displayName,
+          identity.username,
+        ]);
+        return preferred.isNotEmpty
+            ? preferred
+            : _distinctNonEmpty([identity.externalId]);
+      }(),
+      _ => _distinctNonEmpty([
+        identity.displayName,
+        identity.username,
+        friendCode,
+        identity.externalId,
+      ]),
+    };
+    return parts.isEmpty ? context.l10n.profileConnected : parts.join(' • ');
+  }
+
+  List<String> _distinctNonEmpty(List<String?> values) {
+    final seen = <String>{};
+    final items = <String>[];
+    for (final value in values) {
+      final trimmed = value?.trim();
+      if (trimmed == null || trimmed.isEmpty) continue;
+      final key = trimmed.toLowerCase();
+      if (!seen.add(key)) continue;
+      items.add(trimmed);
+    }
+    return items;
+  }
+
+  String? _discordHandle(String? username) {
+    final trimmed = username?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed.startsWith('@') ? trimmed : '@$trimmed';
   }
 
   String? _socialProfileUrl(ProviderIdentity? identity) {
@@ -1058,6 +1425,63 @@ class _SocialIdentitiesCard extends ConsumerWidget {
         identity?.externalId?.trim();
     if (friendCode == null || friendCode.isEmpty) return null;
     return friendCode;
+  }
+
+  Future<void> _handleSteamTap(BuildContext context, WidgetRef ref) async {
+    try {
+      final params = await OAuthLauncher.launchSteamAuth();
+      if (!context.mounted) return;
+      await ref.read(profileNotifierProvider.notifier).linkSteam(params);
+      ref.invalidate(authNotifierProvider);
+      if (context.mounted) {
+        AppToast.success(context, context.l10n.profileSteamLinkedSuccess);
+      }
+      await ref.read(appHapticsProvider).success();
+    } catch (e) {
+      if (!context.mounted) return;
+      final msg = OAuthLauncher.toFailure(e).userMessage(context.l10n);
+      if (!OAuthLauncher.isCancellationError(e)) {
+        AppToast.error(context, context.l10n.profileLinkSteamFailed(msg));
+      }
+    }
+  }
+
+  Future<void> _handleDiscordTap(BuildContext context, WidgetRef ref) async {
+    final DiscordAuthResult? discordAuthResult;
+    try {
+      discordAuthResult = await OAuthLauncher.launchDiscordAuth();
+    } catch (e) {
+      if (!context.mounted || OAuthLauncher.isCancellationError(e)) return;
+      AppToast.error(
+        context,
+        OAuthLauncher.toFailure(e).userMessage(context.l10n),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    try {
+      await ref
+          .read(profileNotifierProvider.notifier)
+          .linkDiscord(
+            code: discordAuthResult.code,
+            codeVerifier: discordAuthResult.codeVerifier,
+            redirectUri: discordAuthResult.redirectUri,
+          );
+      ref.invalidate(authNotifierProvider);
+      if (context.mounted) {
+        AppToast.success(context, context.l10n.profileDiscordLinkedSuccess);
+      }
+      await ref.read(appHapticsProvider).success();
+    } catch (e) {
+      if (!context.mounted) return;
+      AppToast.error(
+        context,
+        context.l10n.profileLinkDiscordFailed(
+          ApiError.userMessage(e, context.l10n),
+        ),
+      );
+    }
   }
 
   Future<void> _openSocialProfile(
@@ -1128,14 +1552,84 @@ class _SocialIdentitiesCard extends ConsumerWidget {
     }
   }
 
+  Future<void> _linkSteam(BuildContext context, WidgetRef ref) async {
+    try {
+      final params = await OAuthLauncher.launchSteamAuth();
+      if (!context.mounted) return;
+      await ref.read(profileNotifierProvider.notifier).linkSteam(params);
+      ref.invalidate(authNotifierProvider);
+      if (context.mounted) {
+        AppToast.success(context, context.l10n.profileSteamLinkedSuccess);
+      }
+      await ref.read(appHapticsProvider).success();
+    } catch (error) {
+      if (!context.mounted) return;
+      final message = OAuthLauncher.toFailure(error).userMessage(context.l10n);
+      if (!OAuthLauncher.isCancellationError(error)) {
+        AppToast.error(context, context.l10n.profileLinkSteamFailed(message));
+      }
+    }
+  }
+
+  Future<void> _linkDiscord(BuildContext context, WidgetRef ref) async {
+    final DiscordAuthResult? discordAuthResult;
+    try {
+      discordAuthResult = await OAuthLauncher.launchDiscordAuth();
+    } catch (error) {
+      if (!context.mounted || OAuthLauncher.isCancellationError(error)) return;
+      AppToast.error(
+        context,
+        OAuthLauncher.toFailure(error).userMessage(context.l10n),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    try {
+      await ref
+          .read(profileNotifierProvider.notifier)
+          .linkDiscord(
+            code: discordAuthResult.code,
+            codeVerifier: discordAuthResult.codeVerifier,
+            redirectUri: discordAuthResult.redirectUri,
+          );
+      ref.invalidate(authNotifierProvider);
+      if (context.mounted) {
+        AppToast.success(context, context.l10n.profileDiscordLinkedSuccess);
+      }
+      await ref.read(appHapticsProvider).success();
+    } catch (error) {
+      if (!context.mounted) return;
+      AppToast.error(
+        context,
+        context.l10n.profileLinkDiscordFailed(
+          ApiError.userMessage(error, context.l10n),
+        ),
+      );
+    }
+  }
+
   Future<void> _handleManualSocialTap(
     BuildContext context,
     WidgetRef ref, {
     required String provider,
+    required String? steamId,
+    required List<ProviderIdentity> providerIdentities,
   }) async {
-    final identity = _identityFor(provider);
+    final identity = _identityFor(
+      provider,
+      steamId: steamId,
+      providerIdentities: providerIdentities,
+    );
     if (identity == null) {
-      await _handleManualIdentityTap(context, ref, provider: provider);
+      await _handleManualIdentityTap(
+        context,
+        ref,
+        provider: provider,
+        steamId: steamId,
+        providerIdentities: providerIdentities,
+      );
       return;
     }
 
@@ -1192,7 +1686,13 @@ class _SocialIdentitiesCard extends ConsumerWidget {
         await _copySocialValue(context, provider: provider, value: friendCode);
         return;
       default:
-        await _handleManualIdentityTap(context, ref, provider: provider);
+        await _handleManualIdentityTap(
+          context,
+          ref,
+          provider: provider,
+          steamId: steamId,
+          providerIdentities: providerIdentities,
+        );
         return;
     }
   }
@@ -1202,6 +1702,7 @@ class _SocialIdentitiesCard extends ConsumerWidget {
     required String provider,
     required ProviderIdentity? identity,
     required VoidCallback onEdit,
+    required VoidCallback onRemove,
   }) {
     if (identity == null) return null;
 
@@ -1218,30 +1719,84 @@ class _SocialIdentitiesCard extends ConsumerWidget {
           color: AppColors.textTertiary.withValues(alpha: 0.5),
           size: 20,
         ),
-        IconButton(
+        AppPopupMenuButton<_SocialRowAction>(
           tooltip: context.l10n.commonEdit,
-          onPressed: onEdit,
-          icon: const Icon(Icons.edit_outlined),
-          color: AppColors.textTertiary,
-          iconSize: 18,
-          visualDensity: VisualDensity.compact,
-          splashRadius: 18,
+          icon: const Icon(
+            Icons.more_horiz,
+            color: AppColors.textTertiary,
+            size: 18,
+          ),
+          padding: const EdgeInsets.all(6),
+          itemBuilder: (_) => [
+            PopupMenuItem<_SocialRowAction>(
+              value: _SocialRowAction.edit,
+              child: Text(context.l10n.commonEdit),
+            ),
+            PopupMenuItem<_SocialRowAction>(
+              value: _SocialRowAction.remove,
+              child: Text(
+                context.l10n.commonRemove,
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
+          ],
+          onSelected: (action) {
+            switch (action) {
+              case _SocialRowAction.edit:
+                onEdit();
+                break;
+              case _SocialRowAction.remove:
+                onRemove();
+                break;
+            }
+          },
         ),
       ],
     );
   }
 
-  void _refreshProviders(WidgetRef ref) {
-    ref.read(profileNotifierProvider.notifier).load();
-    ref.invalidate(authNotifierProvider);
+  Future<void> _removeManualIdentity(
+    BuildContext context,
+    WidgetRef ref, {
+    required String provider,
+  }) async {
+    try {
+      await ref
+          .read(profileNotifierProvider.notifier)
+          .deleteManualSocialIdentity(provider);
+      if (context.mounted) {
+        AppToast.success(
+          context,
+          context.l10n.profileSocialIdentityRemovedSuccess(
+            _providerLabel(context, provider),
+          ),
+        );
+      }
+      await ref.read(appHapticsProvider).destructiveConfirm();
+    } catch (e) {
+      if (!context.mounted) return;
+      AppToast.error(
+        context,
+        context.l10n.profileSocialIdentitySaveFailed(
+          _providerLabel(context, provider),
+          ApiError.userMessage(e, context.l10n),
+        ),
+      );
+    }
   }
 
   Future<void> _handleManualIdentityTap(
     BuildContext context,
     WidgetRef ref, {
     required String provider,
+    required String? steamId,
+    required List<ProviderIdentity> providerIdentities,
   }) async {
-    final existing = _identityFor(provider);
+    final existing = _identityFor(
+      provider,
+      steamId: steamId,
+      providerIdentities: providerIdentities,
+    );
     final result = await showDialog<_ManualSocialIdentityDialogResult>(
       context: context,
       useRootNavigator: true,
@@ -1256,9 +1811,8 @@ class _SocialIdentitiesCard extends ConsumerWidget {
     try {
       if (result.remove) {
         await ref
-            .read(profileRepositoryProvider)
+            .read(profileNotifierProvider.notifier)
             .deleteManualSocialIdentity(provider);
-        _refreshProviders(ref);
         if (context.mounted) {
           AppToast.success(
             context,
@@ -1272,7 +1826,7 @@ class _SocialIdentitiesCard extends ConsumerWidget {
       }
 
       await ref
-          .read(profileRepositoryProvider)
+          .read(profileNotifierProvider.notifier)
           .upsertManualSocialIdentity(
             provider: provider,
             externalId: result.externalId,
@@ -1280,7 +1834,6 @@ class _SocialIdentitiesCard extends ConsumerWidget {
             displayName: result.displayName,
             profileUrl: result.profileUrl,
           );
-      _refreshProviders(ref);
       if (context.mounted) {
         AppToast.success(
           context,
@@ -1304,161 +1857,191 @@ class _SocialIdentitiesCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final steamIdentity = _identityFor('steam');
-    final discordIdentity = _identityFor('discord');
-    final xboxIdentity = _identityFor('xbox');
-    final playStationIdentity = _identityFor('playstation');
-    final nintendoIdentity = _identityFor('nintendo');
+    final socialIdentities = ref.watch(
+      profileUserProvider.select(
+        (user) => (
+          providerIdentities:
+              user?.providerIdentities ?? const <ProviderIdentity>[],
+          steamId: user?.steamId,
+        ),
+      ),
+    );
+    final steamIdentity = _identityFor(
+      'steam',
+      steamId: socialIdentities.steamId,
+      providerIdentities: socialIdentities.providerIdentities,
+    );
+    final discordIdentity = _identityFor(
+      'discord',
+      steamId: socialIdentities.steamId,
+      providerIdentities: socialIdentities.providerIdentities,
+    );
+    final xboxIdentity = _identityFor(
+      'xbox',
+      steamId: socialIdentities.steamId,
+      providerIdentities: socialIdentities.providerIdentities,
+    );
+    final playStationIdentity = _identityFor(
+      'playstation',
+      steamId: socialIdentities.steamId,
+      providerIdentities: socialIdentities.providerIdentities,
+    );
+    final nintendoIdentity = _identityFor(
+      'nintendo',
+      steamId: socialIdentities.steamId,
+      providerIdentities: socialIdentities.providerIdentities,
+    );
     final steamProfileUrl = _socialProfileUrl(steamIdentity);
     final discordProfileUrl = _socialProfileUrl(discordIdentity);
-
-    return GlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(title: context.l10n.profileSectionSocials),
-          const SizedBox(height: AppSpacing.md),
-          if (steamIdentity != null) ...[
-            _AccountRow(
-              icon: ProviderVisuals.steam.icon,
-              label: context.l10n.profileConnectedAccountsSteam,
-              connected: true,
-              iconColor: ProviderVisuals.rowIconColor('steam', connected: true),
-              iconBackgroundColor: ProviderVisuals.rowIconBackground(
-                'steam',
-                connected: true,
-              ),
-              statusText: _identityStatus(
-                context,
-                provider: 'steam',
-                identity: steamIdentity,
-              ),
-              onTap: steamProfileUrl == null
+    final showDiscordRow =
+        discordIdentity != null || OAuthLauncher.discordSignInAvailable;
+    final entries = <SocialIdentityCardEntry>[
+      SocialIdentityCardEntry(
+        provider: 'steam',
+        label: context.l10n.profileConnectedAccountsSteam,
+        connected: steamIdentity != null,
+        subtitle: _identityStatus(
+          context,
+          provider: 'steam',
+          identity: steamIdentity,
+        ),
+        onTap: steamIdentity == null
+            ? () => _linkSteam(context, ref)
+            : (steamProfileUrl == null
                   ? null
                   : () => _openSocialProfile(
                       context,
                       provider: 'steam',
                       profileUrl: steamProfileUrl,
-                    ),
-            ),
-            const Divider(height: 1),
-          ],
-          if (discordIdentity != null) ...[
-            _AccountRow(
-              icon: ProviderVisuals.discord.icon,
-              label: context.l10n.profileConnectedAccountsDiscord,
-              connected: true,
-              iconColor: ProviderVisuals.rowIconColor(
-                'discord',
-                connected: true,
-              ),
-              iconBackgroundColor: ProviderVisuals.rowIconBackground(
-                'discord',
-                connected: true,
-              ),
-              statusText: _identityStatus(
-                context,
-                provider: 'discord',
-                identity: discordIdentity,
-              ),
-              onTap: discordProfileUrl == null
-                  ? null
-                  : () => _openSocialProfile(
-                      context,
-                      provider: 'discord',
-                      profileUrl: discordProfileUrl,
-                    ),
-            ),
-            const Divider(height: 1),
-          ],
-          _AccountRow(
-            icon: ProviderVisuals.xbox.icon,
-            label: context.l10n.profileConnectedAccountsXbox,
-            connected: xboxIdentity != null,
-            iconColor: ProviderVisuals.rowIconColor(
-              'xbox',
-              connected: xboxIdentity != null,
-            ),
-            iconBackgroundColor: ProviderVisuals.rowIconBackground(
-              'xbox',
-              connected: xboxIdentity != null,
-            ),
-            statusText: _identityStatus(
-              context,
-              provider: 'xbox',
-              identity: xboxIdentity,
-            ),
-            trailing: _manualSocialTrailing(
-              context,
-              provider: 'xbox',
-              identity: xboxIdentity,
-              onEdit: () {
-                _handleManualIdentityTap(context, ref, provider: 'xbox');
-              },
-            ),
-            onTap: () => _handleManualSocialTap(context, ref, provider: 'xbox'),
-          ),
-          const Divider(height: 1),
-          _AccountRow(
-            icon: ProviderVisuals.playstation.icon,
-            label: context.l10n.profileConnectedAccountsPlayStation,
-            connected: playStationIdentity != null,
-            iconColor: ProviderVisuals.rowIconColor(
-              'playstation',
-              connected: playStationIdentity != null,
-            ),
-            iconBackgroundColor: ProviderVisuals.rowIconBackground(
-              'playstation',
-              connected: playStationIdentity != null,
-            ),
-            statusText: _identityStatus(
-              context,
-              provider: 'playstation',
-              identity: playStationIdentity,
-            ),
-            trailing: _manualSocialTrailing(
-              context,
-              provider: 'playstation',
-              identity: playStationIdentity,
-              onEdit: () {
-                _handleManualIdentityTap(context, ref, provider: 'playstation');
-              },
-            ),
-            onTap: () =>
-                _handleManualSocialTap(context, ref, provider: 'playstation'),
-          ),
-          const Divider(height: 1),
-          _AccountRow(
-            icon: ProviderVisuals.nintendo.icon,
-            label: context.l10n.profileConnectedAccountsNintendo,
-            connected: nintendoIdentity != null,
-            iconColor: ProviderVisuals.rowIconColor(
-              'nintendo',
-              connected: nintendoIdentity != null,
-            ),
-            iconBackgroundColor: ProviderVisuals.rowIconBackground(
-              'nintendo',
-              connected: nintendoIdentity != null,
-            ),
-            statusText: _identityStatus(
-              context,
-              provider: 'nintendo',
-              identity: nintendoIdentity,
-            ),
-            trailing: _manualSocialTrailing(
-              context,
-              provider: 'nintendo',
-              identity: nintendoIdentity,
-              onEdit: () {
-                _handleManualIdentityTap(context, ref, provider: 'nintendo');
-              },
-            ),
-            onTap: () =>
-                _handleManualSocialTap(context, ref, provider: 'nintendo'),
-          ),
-        ],
+                    )),
       ),
+      if (showDiscordRow)
+        SocialIdentityCardEntry(
+          provider: 'discord',
+          label: context.l10n.profileConnectedAccountsDiscord,
+          connected: discordIdentity != null,
+          subtitle: _identityStatus(
+            context,
+            provider: 'discord',
+            identity: discordIdentity,
+          ),
+          onTap: discordIdentity == null
+              ? () => _linkDiscord(context, ref)
+              : (discordProfileUrl == null
+                    ? null
+                    : () => _openSocialProfile(
+                        context,
+                        provider: 'discord',
+                        profileUrl: discordProfileUrl,
+                      )),
+        ),
+      SocialIdentityCardEntry(
+        provider: 'xbox',
+        label: context.l10n.profileConnectedAccountsXbox,
+        connected: xboxIdentity != null,
+        subtitle: _identityStatus(
+          context,
+          provider: 'xbox',
+          identity: xboxIdentity,
+        ),
+        trailing: _manualSocialTrailing(
+          context,
+          provider: 'xbox',
+          identity: xboxIdentity,
+          onEdit: () {
+            _handleManualIdentityTap(
+              context,
+              ref,
+              provider: 'xbox',
+              steamId: socialIdentities.steamId,
+              providerIdentities: socialIdentities.providerIdentities,
+            );
+          },
+          onRemove: () {
+            _removeManualIdentity(context, ref, provider: 'xbox');
+          },
+        ),
+        onTap: () => _handleManualSocialTap(
+          context,
+          ref,
+          provider: 'xbox',
+          steamId: socialIdentities.steamId,
+          providerIdentities: socialIdentities.providerIdentities,
+        ),
+      ),
+      SocialIdentityCardEntry(
+        provider: 'playstation',
+        label: context.l10n.profileConnectedAccountsPlayStation,
+        connected: playStationIdentity != null,
+        subtitle: _identityStatus(
+          context,
+          provider: 'playstation',
+          identity: playStationIdentity,
+        ),
+        trailing: _manualSocialTrailing(
+          context,
+          provider: 'playstation',
+          identity: playStationIdentity,
+          onEdit: () {
+            _handleManualIdentityTap(
+              context,
+              ref,
+              provider: 'playstation',
+              steamId: socialIdentities.steamId,
+              providerIdentities: socialIdentities.providerIdentities,
+            );
+          },
+          onRemove: () {
+            _removeManualIdentity(context, ref, provider: 'playstation');
+          },
+        ),
+        onTap: () => _handleManualSocialTap(
+          context,
+          ref,
+          provider: 'playstation',
+          steamId: socialIdentities.steamId,
+          providerIdentities: socialIdentities.providerIdentities,
+        ),
+      ),
+      SocialIdentityCardEntry(
+        provider: 'nintendo',
+        label: context.l10n.profileConnectedAccountsNintendo,
+        connected: nintendoIdentity != null,
+        subtitle: _identityStatus(
+          context,
+          provider: 'nintendo',
+          identity: nintendoIdentity,
+        ),
+        trailing: _manualSocialTrailing(
+          context,
+          provider: 'nintendo',
+          identity: nintendoIdentity,
+          onEdit: () {
+            _handleManualIdentityTap(
+              context,
+              ref,
+              provider: 'nintendo',
+              steamId: socialIdentities.steamId,
+              providerIdentities: socialIdentities.providerIdentities,
+            );
+          },
+          onRemove: () {
+            _removeManualIdentity(context, ref, provider: 'nintendo');
+          },
+        ),
+        onTap: () => _handleManualSocialTap(
+          context,
+          ref,
+          provider: 'nintendo',
+          steamId: socialIdentities.steamId,
+          providerIdentities: socialIdentities.providerIdentities,
+        ),
+      ),
+    ];
+
+    return SocialIdentitiesCard(
+      title: context.l10n.profileSectionSocials,
+      entries: entries,
     );
   }
 }
@@ -1666,7 +2249,6 @@ class _AccountRow extends StatelessWidget {
     this.statusText,
     this.iconColor,
     this.iconBackgroundColor,
-    this.trailing,
     this.onTap,
   });
 
@@ -1676,7 +2258,6 @@ class _AccountRow extends StatelessWidget {
   final String? statusText;
   final Color? iconColor;
   final Color? iconBackgroundColor;
-  final Widget? trailing;
   final VoidCallback? onTap;
 
   @override
@@ -1736,9 +2317,7 @@ class _AccountRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (trailing != null)
-              trailing!
-            else if (onTap != null)
+            if (onTap != null)
               Icon(
                 Icons.chevron_right,
                 color: AppColors.textTertiary.withValues(alpha: 0.5),

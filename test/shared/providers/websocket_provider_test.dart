@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ingame/core/auth/auth_session.dart';
 import 'package:ingame/core/networking/websocket_client.dart';
+import 'package:ingame/core/storage/secure_storage.dart';
 import 'package:ingame/features/auth/domain/auth_state.dart';
 import 'package:ingame/features/auth/domain/user_model.dart';
 import 'package:ingame/features/auth/presentation/providers/auth_provider.dart';
@@ -69,7 +71,39 @@ class _ControllableAuthNotifier extends AuthNotifier {
   }
 }
 
+class _FakeSecureStorageService implements SecureStorageService {
+  @override
+  Future<void> clearTokens() async {}
+
+  @override
+  Future<String?> getAccessToken() async => 'token';
+
+  @override
+  Future<String?> getRefreshToken() async => 'refresh-token';
+
+  @override
+  Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {}
+}
+
 void main() {
+  test('session reset recreates the websocket client instance', () {
+    final container = ProviderContainer(
+      overrides: [
+        secureStorageProvider.overrideWithValue(_FakeSecureStorageService()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final initialClient = container.read(websocketClientProvider);
+    container.read(sessionResetSignalProvider.notifier).state++;
+    final resetClient = container.read(websocketClientProvider);
+
+    expect(identical(initialClient, resetClient), isFalse);
+  });
+
   test(
     'websocketConnectionStateProvider reflects client connection state',
     () async {

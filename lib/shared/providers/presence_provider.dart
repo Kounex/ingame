@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_session.dart';
 import '../../core/networking/websocket_client.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../widgets/status_indicator.dart';
@@ -49,6 +50,7 @@ class PresenceNotifier
 
   @override
   Map<String, Map<String, MemberPresenceState>> build() {
+    ref.watch(sessionResetSignalProvider);
     _subscription?.cancel();
     _cancelAllExpiryTimers();
     ref.onDispose(() {

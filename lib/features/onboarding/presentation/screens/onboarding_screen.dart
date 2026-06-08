@@ -239,22 +239,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         'preferred_gaming_hours': _selectedGamingHours,
     };
 
-    await ref.read(profileNotifierProvider.notifier).updateProfile(updates);
-
-    if (!mounted) return;
-
-    final profileState = ref.read(profileNotifierProvider);
-    if (profileState.hasError) {
+    try {
+      await ref.read(profileNotifierProvider.notifier).updateProfile(updates);
+      if (!mounted) return;
+      await ref.read(appHapticsProvider).success();
+      ref.invalidate(authNotifierProvider);
+    } catch (error) {
+      if (!mounted) return;
       setState(() => _isSaving = false);
-      AppToast.error(
-        context,
-        ApiError.userMessage(profileState.error!, context.l10n),
-      );
+      AppToast.error(context, ApiError.userMessage(error, context.l10n));
       return;
     }
-
-    await ref.read(appHapticsProvider).success();
-    ref.invalidate(authNotifierProvider);
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/networking/websocket_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/groups_repository.dart';
@@ -8,6 +9,7 @@ import '../../domain/group_model.dart';
 class GroupsNotifier extends AsyncNotifier<List<Group>> {
   @override
   Future<List<Group>> build() async {
+    ref.watch(sessionResetSignalProvider);
     final repo = ref.read(groupsRepositoryProvider);
     return await repo.listMyGroups();
   }

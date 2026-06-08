@@ -1,6 +1,6 @@
 import asyncio
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 from starlette.websockets import WebSocket
@@ -52,6 +52,46 @@ async def test_disconnect_last_connection_marks_user_offline():
             assert was_last is True
             remove_online.assert_awaited_once_with("group-1", str(user_id))
             assert user_id not in manager._connections
+
+
+@pytest.mark.asyncio
+async def test_connect_reconciles_group_online_membership_when_scope_expands():
+    manager = ConnectionManager()
+    user_id = uuid.uuid4()
+    ws_a = AsyncMock(spec=WebSocket)
+    ws_b = AsyncMock(spec=WebSocket)
+
+    with patch("app.ws.manager.add_to_group_online", new_callable=AsyncMock) as add_online:
+        with patch(
+            "app.ws.manager.remove_from_group_online", new_callable=AsyncMock
+        ) as remove_online:
+            await manager.connect(ws_a, user_id, ["group-1"])
+            await manager.connect(ws_b, user_id, ["group-1", "group-2"])
+
+            assert manager._user_groups[user_id] == ["group-1", "group-2"]
+            assert add_online.await_args_list == [
+                call("group-1", str(user_id)),
+                call("group-2", str(user_id)),
+            ]
+            remove_online.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_connect_reconciles_group_online_membership_when_scope_shrinks():
+    manager = ConnectionManager()
+    user_id = uuid.uuid4()
+    ws_a = AsyncMock(spec=WebSocket)
+    ws_b = AsyncMock(spec=WebSocket)
+
+    with patch("app.ws.manager.add_to_group_online", new_callable=AsyncMock):
+        with patch(
+            "app.ws.manager.remove_from_group_online", new_callable=AsyncMock
+        ) as remove_online:
+            await manager.connect(ws_a, user_id, ["group-1", "group-2"])
+            await manager.connect(ws_b, user_id, ["group-1"])
+
+            assert manager._user_groups[user_id] == ["group-1"]
+            remove_online.assert_awaited_once_with("group-2", str(user_id))
 
 
 @pytest.mark.asyncio

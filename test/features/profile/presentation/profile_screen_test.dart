@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,7 @@ import 'package:ingame/core/storage/preferences.dart';
 import 'package:ingame/core/theme/glass_components.dart';
 import 'package:ingame/features/auth/data/oauth_launcher.dart';
 import 'package:ingame/shared/widgets/provider_visuals.dart';
+import 'package:ingame/shared/widgets/loading_indicator.dart';
 import 'package:ingame/features/auth/domain/auth_state.dart';
 import 'package:ingame/features/auth/domain/provider_identity_model.dart';
 import 'package:ingame/features/auth/domain/user_model.dart';
@@ -37,9 +40,16 @@ class _FakeAuthNotifier extends AuthNotifier {
 }
 
 class _FakeProfileRepository extends ProfileRepository {
-  _FakeProfileRepository(this._user) : super(dio: Dio());
+  _FakeProfileRepository(
+    this._user, {
+    this.unlinkSteamCompleter,
+    this.subsequentGetProfileCompleter,
+  }) : super(dio: Dio());
 
   User _user;
+  final Completer<void>? unlinkSteamCompleter;
+  final Completer<void>? subsequentGetProfileCompleter;
+  int getProfileCalls = 0;
   int unlinkSteamCalls = 0;
   int updateProfileCalls = 0;
   int setEmailPasswordCalls = 0;
@@ -48,7 +58,13 @@ class _FakeProfileRepository extends ProfileRepository {
   String? lastSetEmailPasswordPassword;
 
   @override
-  Future<User> getProfile() async => _user;
+  Future<User> getProfile() async {
+    getProfileCalls++;
+    if (getProfileCalls > 1) {
+      await subsequentGetProfileCompleter?.future;
+    }
+    return _user;
+  }
 
   @override
   Future<User> updateProfile(Map<String, dynamic> updates) async {
@@ -84,6 +100,7 @@ class _FakeProfileRepository extends ProfileRepository {
   @override
   Future<User> unlinkSteam() async {
     unlinkSteamCalls++;
+    await unlinkSteamCompleter?.future;
     _user = _user.copyWith(steamId: null);
     return _user;
   }
@@ -231,7 +248,7 @@ void main() {
   }
 
   testWidgets(
-    'connected Steam row advertises disconnect and shows destructive dialog copy',
+    'connected Steam row shows a generic connected state and opens disconnect dialog',
     (tester) async {
       final repository = _FakeProfileRepository(
         const User(
@@ -246,10 +263,20 @@ void main() {
 
       await pumpProfile(tester, repository: repository);
       await _scrollToAccountRow(tester, 'Steam');
+      final steamRow = _accountRow('Steam');
+      expect(
+        find.descendant(of: steamRow, matching: find.text('Connected')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: steamRow,
+          matching: find.byIcon(Icons.chevron_right),
+        ),
+        findsOneWidget,
+      );
 
-      expect(find.text('Connected. Tap to disconnect.'), findsOneWidget);
-
-      await tester.tap(_accountRow('Steam'));
+      await tester.tap(steamRow);
       await tester.pumpAndSettle();
 
       expect(find.text('Disconnect Steam?'), findsOneWidget);
@@ -277,7 +304,7 @@ void main() {
     },
   );
 
-  testWidgets('profile keeps the primary action within a reading width', (
+  testWidgets('profile no longer shows a dedicated Edit Profile CTA', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -291,10 +318,97 @@ void main() {
 
     await pumpProfile(tester, repository: repository);
 
-    expect(
-      tester.getSize(find.widgetWithText(ElevatedButton, 'Edit Profile')).width,
-      lessThanOrEqualTo(912),
+    expect(find.text('Edit Profile'), findsNothing);
+  });
+
+  testWidgets('display name edits directly from the profile hub', (
+    tester,
+  ) async {
+    final repository = _FakeProfileRepository(
+      const User(
+        id: 'user-1',
+        displayName: 'Ready Player',
+        bio: 'Evening co-op player',
+        timezone: 'UTC',
+      ),
     );
+
+    await pumpProfile(tester, repository: repository);
+
+    await tester.tap(find.text('Ready Player').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit display name'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).first, 'Night Owl');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Save').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(repository.lastProfileUpdates?['display_name'], 'Night Owl');
+    expect(find.text('Night Owl'), findsWidgets);
+  });
+
+  testWidgets('gaming hours edits directly from the profile hub', (
+    tester,
+  ) async {
+    final repository = _FakeProfileRepository(
+      const User(id: 'user-1', displayName: 'Schedule User', timezone: 'UTC'),
+    );
+
+    await pumpProfile(tester, repository: repository);
+    await tester.scrollUntilVisible(
+      find.text('GAMING HOURS'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('GAMING HOURS'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('weekly-availability-chip-monday-morning')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('saving unchanged gaming hours keeps the existing schedule', (
+    tester,
+  ) async {
+    final repository = _FakeProfileRepository(
+      const User(
+        id: 'user-1',
+        displayName: 'Schedule User',
+        timezone: 'UTC',
+        preferredGamingHours: {
+          'monday': [
+            {'start': '06:00', 'end': '12:00'},
+          ],
+        },
+      ),
+    );
+
+    await pumpProfile(tester, repository: repository);
+    await tester.scrollUntilVisible(
+      find.text('GAMING HOURS'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('GAMING HOURS'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Save').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(repository.lastProfileUpdates?['preferred_gaming_hours'], {
+      'monday': [
+        {'start': '06:00', 'end': '12:00'},
+      ],
+    });
   });
 
   testWidgets('successful Steam unlink shows success feedback', (tester) async {
@@ -334,6 +448,63 @@ void main() {
       ProviderVisuals.rowIconBackground('steam', connected: false),
     );
 
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('pending Steam unlink keeps profile content mounted', (
+    tester,
+  ) async {
+    final unlinkCompleter = Completer<void>();
+    final reloadCompleter = Completer<void>();
+    final repository = _FakeProfileRepository(
+      const User(
+        id: 'user-1',
+        displayName: 'Steam User',
+        email: 'steam@test.com',
+        hasPasswordLogin: true,
+        steamId: 'steam-123',
+        timezone: 'UTC',
+      ),
+      unlinkSteamCompleter: unlinkCompleter,
+      subsequentGetProfileCompleter: reloadCompleter,
+    );
+
+    await pumpProfile(tester, repository: repository);
+    await _scrollToAccountRow(tester, 'Steam');
+
+    final scrollable = find.byType(Scrollable).first;
+    final beforeOffset = tester
+        .state<ScrollableState>(scrollable)
+        .position
+        .pixels;
+    expect(beforeOffset, greaterThan(0));
+
+    await tester.tap(_accountRow('Steam'));
+    await tester.pumpAndSettle();
+    await tester.tap(_dialogTextButton('Disconnect'));
+    await tester.pump();
+
+    expect(repository.unlinkSteamCalls, 1);
+
+    unlinkCompleter.complete();
+    await tester.pump();
+
+    expect(find.byType(LoadingIndicator), findsNothing);
+    expect(_accountRow('Steam'), findsOneWidget);
+    expect(
+      tester.state<ScrollableState>(scrollable).position.pixels,
+      closeTo(beforeOffset, 0.1),
+    );
+
+    reloadCompleter.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Steam disconnected.'), findsOneWidget);
+    expect(
+      tester.state<ScrollableState>(scrollable).position.pixels,
+      closeTo(beforeOffset, 0.1),
+    );
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   });
@@ -521,16 +692,42 @@ void main() {
     expect(find.text('SOCIALS'), findsOneWidget);
     expect(find.text('Email & Password'), findsOneWidget);
     expect(find.text('Steam'), findsNWidgets(2));
-    expect(find.text('Steam Hero'), findsNWidgets(2));
     expect(find.text('Apple'), findsOneWidget);
     expect(find.text('Discord'), findsNWidgets(2));
-    expect(find.text('Discord Hero'), findsNWidgets(2));
     expect(find.text('Xbox'), findsOneWidget);
     expect(find.text('MasterChief117'), findsOneWidget);
     expect(find.text('PlayStation'), findsOneWidget);
     expect(find.text('PSNHero'), findsOneWidget);
     expect(find.text('Nintendo'), findsOneWidget);
-    expect(find.text('Switch Buddy'), findsOneWidget);
+    expect(find.text('Switch Buddy • SW-1234-5678-9012'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: _accountRowInSection('CONNECTED ACCOUNTS', 'Steam'),
+        matching: find.text('Connected'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _accountRowInSection('SOCIALS', 'Steam'),
+        matching: find.text('Steam Hero • steam_user'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _accountRowInSection('CONNECTED ACCOUNTS', 'Discord'),
+        matching: find.text('Connected'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _accountRowInSection('SOCIALS', 'Discord'),
+        matching: find.text('Discord Hero • @discord_user'),
+      ),
+      findsOneWidget,
+    );
 
     final steamConnectedIcon = _rowLeadingIcon(
       tester,
@@ -555,7 +752,7 @@ void main() {
     expect(
       find.descendant(
         of: _accountRowInSection('CONNECTED ACCOUNTS', 'Apple'),
-        matching: find.text('Connected. Tap to disconnect.'),
+        matching: find.text('Connected'),
       ),
       findsOneWidget,
     );
@@ -639,14 +836,27 @@ void main() {
   );
 
   testWidgets(
-    'mirrored official socials stay read-only when no profile link is available',
+    'official socials stay read-only when no profile link is available',
     (tester) async {
       final repository = _FakeProfileRepository(
         const User(
           id: 'user-1',
-          displayName: 'Steam User',
+          displayName: 'Discord User',
           timezone: 'UTC',
-          steamId: 'steam-123',
+          providerIdentities: [
+            ProviderIdentity(
+              provider: 'discord',
+              authMode: 'official_oauth',
+              externalId: 'discord-123',
+              displayName: 'Discord Hero',
+              supportsLogin: true,
+              supportsRefresh: true,
+              supportsDirectProfileLink: true,
+              supportsManualEntry: false,
+              supportsCopyOnlyAction: false,
+              isSocialIdentity: true,
+            ),
+          ],
         ),
       );
 
@@ -658,17 +868,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final steamSocialRow = _accountRowInSection('SOCIALS', 'Steam');
+      final discordSocialRow = _accountRowInSection('SOCIALS', 'Discord');
       expect(
         find.descendant(
-          of: steamSocialRow,
+          of: discordSocialRow,
           matching: find.byIcon(Icons.chevron_right),
         ),
         findsNothing,
       );
       expect(
         find.descendant(
-          of: steamSocialRow,
+          of: discordSocialRow,
           matching: find.byIcon(Icons.check_circle),
         ),
         findsOneWidget,
@@ -677,7 +887,7 @@ void main() {
   );
 
   testWidgets(
-    'connected Xbox social row opens its generated profile action and keeps edit affordance',
+    'connected Xbox social row opens its generated profile action and keeps overflow affordance',
     (tester) async {
       final repository = _FakeProfileRepository(
         const User(
@@ -722,7 +932,7 @@ void main() {
       expect(
         find.descendant(
           of: xboxRow,
-          matching: find.byIcon(Icons.edit_outlined),
+          matching: find.byIcon(Icons.more_horiz),
         ),
         findsOneWidget,
       );
@@ -853,35 +1063,31 @@ void main() {
     expect(find.text('6 PM – 10 PM'), findsNothing);
   });
 
-  testWidgets(
-    'last remaining login method shows explicit guidance instead of disconnect flow',
-    (tester) async {
-      final repository = _FakeProfileRepository(
-        const User(
-          id: 'user-1',
-          displayName: 'Steam Only',
-          steamId: 'steam-123',
-          timezone: 'UTC',
-        ),
-      );
+  testWidgets('last remaining login method is not shown as tappable', (
+    tester,
+  ) async {
+    final repository = _FakeProfileRepository(
+      const User(
+        id: 'user-1',
+        displayName: 'Steam Only',
+        steamId: 'steam-123',
+        timezone: 'UTC',
+      ),
+    );
 
-      await pumpProfile(tester, repository: repository);
-      await _scrollToAccountRow(tester, 'Steam');
-
-      await tester.tap(_accountRow('Steam'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Add another sign-in method before disconnecting this one.'),
-        findsOneWidget,
-      );
-      expect(find.text('Disconnect Steam?'), findsNothing);
-      expect(repository.unlinkSteamCalls, 0);
-
-      await tester.pump(const Duration(seconds: 6));
-      await tester.pumpAndSettle();
-    },
-  );
+    await pumpProfile(tester, repository: repository);
+    await _scrollToAccountRow(tester, 'Steam');
+    final steamRow = _accountRow('Steam');
+    expect(
+      find.descendant(of: steamRow, matching: find.text('Connected')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: steamRow, matching: find.byIcon(Icons.chevron_right)),
+      findsNothing,
+    );
+    expect(repository.unlinkSteamCalls, 0);
+  });
 
   testWidgets('logout requires confirmation before ending the session', (
     tester,
@@ -930,7 +1136,10 @@ void main() {
       await _scrollToAccountRow(tester, 'Steam');
 
       expect(find.text('Apple'), findsNothing);
-      expect(find.text('Steam'), findsOneWidget);
+      expect(
+        _accountRowInSection('CONNECTED ACCOUNTS', 'Steam'),
+        findsOneWidget,
+      );
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.android,
@@ -1022,11 +1231,17 @@ void main() {
 
     expect(
       find.descendant(of: socialsCard, matching: find.text('Steam')),
-      findsNothing,
+      findsOneWidget,
     );
     expect(
-      find.descendant(of: socialsCard, matching: find.text('Discord')),
-      findsNothing,
+      find.descendant(of: socialsCard, matching: find.text('Not connected')),
+      findsOneWidget,
     );
+    if (OAuthLauncher.discordSignInAvailable) {
+      expect(
+        find.descendant(of: socialsCard, matching: find.text('Discord')),
+        findsOneWidget,
+      );
+    }
   });
 }

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../auth/auth_session.dart';
 import '../storage/secure_storage.dart';
 import 'api_endpoints.dart';
 
@@ -175,6 +176,7 @@ class WebSocketClient {
 }
 
 final websocketClientProvider = Provider<WebSocketClient>((ref) {
+  ref.watch(sessionResetSignalProvider);
   final storage = ref.read(secureStorageProvider);
   final client = WebSocketClient(
     baseUrl: ApiEndpoints.websocketUrl,

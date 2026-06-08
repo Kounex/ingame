@@ -1,8 +1,8 @@
 ---
 spec: marketing-site
-version: "1.7"
+version: "1.8"
 status: active
-last_updated: "2026-06-05"
+last_updated: "2026-06-08"
 sub_project: Marketing Site
 ---
 
@@ -27,7 +27,7 @@ The marketing site is a standalone Astro project under `marketing/site/` with:
 
 Marketing copy must stay aligned with shipped product capabilities only:
 
-- email/password, Steam, and Apple authentication
+- email/password, Steam, Discord, and Apple authentication
 - onboarding and profiles
 - private groups
 - invite links and join requests
@@ -92,6 +92,7 @@ The deployment pipeline must also include a dedicated marketing runtime image an
 
 | date | section | what changed | why |
 |------|---------|--------------|-----|
+| 2026-06-08 | product positioning | Added Discord to the shipped-authentication capability list | Keeps the marketing spec aligned with the repo's delivered auth surface and current roadmap summary |
 | 2026-06-04 | initial | Added the standalone marketing site spec covering Astro structure, app-aligned branding, and nginx join-link proxying | Tracks the new base-domain marketing surface in the maintained spec set |
 | 2026-06-04 | deployment contract | Clarified that `marketing/site/public/.well-known/*` must mirror the canonical files in `web/.well-known/*` | Prevents the base-domain marketing host from drifting away from the verified mobile deep-link identifiers |
 | 2026-06-04 | nginx config | Clarified that the marketing nginx file should be self-contained enough for local syntax validation outside the final container network | Keeps deployment config easier to verify during local development |

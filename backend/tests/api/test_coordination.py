@@ -228,6 +228,52 @@ async def test_commit_failure_prevents_session_fanout(
 
 
 @pytest.mark.asyncio
+async def test_post_commit_publish_failure_does_not_fail_session_create(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    group_id, owner_token, _ = await _create_group_with_member(client)
+    starts_at = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=2)
+
+    async def failing_publish_session_proposed(payload: dict) -> None:
+        raise RuntimeError("publish failed")
+
+    async def failing_publish_activity_recorded(payload: dict) -> None:
+        raise RuntimeError("publish failed")
+
+    monkeypatch.setattr(
+        coordination_service.manager,
+        "publish_session_proposed",
+        failing_publish_session_proposed,
+    )
+    monkeypatch.setattr(
+        coordination_service.manager,
+        "publish_activity_recorded",
+        failing_publish_activity_recorded,
+    )
+
+    create_resp = await client.post(
+        f"/api/v1/groups/{group_id}/sessions",
+        headers=_auth(owner_token),
+        json={
+            "title": "Resilient Session",
+            "game": "Valheim",
+            "starts_at": starts_at.isoformat(),
+        },
+    )
+
+    assert create_resp.status_code == 201
+    created_session = create_resp.json()
+
+    list_resp = await client.get(
+        f"/api/v1/groups/{group_id}/sessions",
+        headers=_auth(owner_token),
+    )
+    assert list_resp.status_code == 200
+    assert [item["id"] for item in list_resp.json()] == [created_session["id"]]
+
+
+@pytest.mark.asyncio
 async def test_owner_can_update_another_members_session(client: AsyncClient):
     group_id, owner_token, member_token = await _create_group_with_member(client)
     starts_at = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=2)

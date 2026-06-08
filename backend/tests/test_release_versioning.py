@@ -1,8 +1,10 @@
 from scripts.release import stack_version
 from scripts.release.stack_version import (
+    cmd_check_aligned,
     normalize_release_tag,
     read_pubspec_semver,
     cmd_prepare_release,
+    cmd_validate_tag,
     sync_chart_versions,
     sync_fastapi_version,
     sync_api_values_image_refs,
@@ -100,3 +102,79 @@ def test_prepare_release_syncs_backend_chart_and_values(tmp_path, monkeypatch):
     assert "repository: ghcr.io/kounex/ingame-web" in web_values.read_text()
     assert "tag: 0.5.0" in api_values.read_text()
     assert "tag: 0.5.0" in web_values.read_text()
+
+
+def test_check_aligned_includes_helm_values(tmp_path, monkeypatch):
+    pubspec = tmp_path / "pubspec.yaml"
+    backend = tmp_path / "main.py"
+    api_chart = tmp_path / "api-chart.yaml"
+    web_chart = tmp_path / "web-chart.yaml"
+    api_values = tmp_path / "api-values.yaml"
+    web_values = tmp_path / "web-values.yaml"
+
+    pubspec.write_text("name: ingame\nversion: 0.6.0+1\n")
+    backend.write_text('app = FastAPI(version="0.6.0")\n')
+    api_chart.write_text('apiVersion: v2\nversion: 0.6.0\nappVersion: "0.6.0"\n')
+    web_chart.write_text('apiVersion: v2\nversion: 0.6.0\nappVersion: "0.6.0"\n')
+    api_values.write_text(
+        "image:\n"
+        "  repository: ghcr.io/kounex/ingame-api\n"
+        "  tag: 0.5.9\n"
+    )
+    web_values.write_text(
+        "image:\n"
+        "  repository: ghcr.io/kounex/ingame-web\n"
+        "  tag: 0.6.0\n"
+    )
+
+    monkeypatch.setattr(stack_version, "PUBSPEC_PATH", pubspec)
+    monkeypatch.setattr(stack_version, "BACKEND_MAIN_PATH", backend)
+    monkeypatch.setattr(stack_version, "API_HELM_CHART_PATH", api_chart)
+    monkeypatch.setattr(stack_version, "WEB_HELM_CHART_PATH", web_chart)
+    monkeypatch.setattr(stack_version, "API_HELM_VALUES_PATH", api_values)
+    monkeypatch.setattr(stack_version, "WEB_HELM_VALUES_PATH", web_values)
+
+    try:
+        cmd_check_aligned()
+    except ValueError as error:
+        assert "deploy/helm/ingame-api/values.yaml" in str(error)
+    else:
+        raise AssertionError("expected values.yaml alignment failure")
+
+
+def test_validate_tag_check_aligned_includes_helm_values(tmp_path, monkeypatch):
+    pubspec = tmp_path / "pubspec.yaml"
+    backend = tmp_path / "main.py"
+    api_chart = tmp_path / "api-chart.yaml"
+    web_chart = tmp_path / "web-chart.yaml"
+    api_values = tmp_path / "api-values.yaml"
+    web_values = tmp_path / "web-values.yaml"
+
+    pubspec.write_text("name: ingame\nversion: 0.6.0+1\n")
+    backend.write_text('app = FastAPI(version="0.6.0")\n')
+    api_chart.write_text('apiVersion: v2\nversion: 0.6.0\nappVersion: "0.6.0"\n')
+    web_chart.write_text('apiVersion: v2\nversion: 0.6.0\nappVersion: "0.6.0"\n')
+    api_values.write_text(
+        "image:\n"
+        "  repository: ghcr.io/kounex/ingame-api\n"
+        "  tag: 0.6.0\n"
+    )
+    web_values.write_text(
+        "image:\n"
+        "  repository: ghcr.io/kounex/ingame-web\n"
+        "  tag: 0.5.9\n"
+    )
+
+    monkeypatch.setattr(stack_version, "PUBSPEC_PATH", pubspec)
+    monkeypatch.setattr(stack_version, "BACKEND_MAIN_PATH", backend)
+    monkeypatch.setattr(stack_version, "API_HELM_CHART_PATH", api_chart)
+    monkeypatch.setattr(stack_version, "WEB_HELM_CHART_PATH", web_chart)
+    monkeypatch.setattr(stack_version, "API_HELM_VALUES_PATH", api_values)
+    monkeypatch.setattr(stack_version, "WEB_HELM_VALUES_PATH", web_values)
+
+    try:
+        cmd_validate_tag("v0.6.0", check_aligned=True)
+    except ValueError as error:
+        assert "deploy/helm/ingame-web/values.yaml" in str(error)
+    else:
+        raise AssertionError("expected values.yaml alignment failure")

@@ -76,9 +76,9 @@ if [ -z "$SPEC_CHANGES" ]; then
     echo "If this is an intentional change, update the relevant spec document and"
     echo "add an entry to its Change Log table."
     echo ""
-    echo "If this is a non-structural change (bug fix, refactor, etc.) that does"
-    echo "not affect the API contract, you can skip this check by adding"
-    echo "[skip-spec-check] to your commit message."
+    echo "If this is a non-structural change (bug fix, refactor, etc.) that truly"
+    echo "does not affect the maintained contract, narrow the contract-zone rules"
+    echo "in this script in a separate change instead of relying on a hidden skip."
     exit 1
 fi
 

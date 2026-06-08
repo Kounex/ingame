@@ -1,8 +1,8 @@
 ---
 spec: real-time-coordination-transport-presence
-version: "1.2"
+version: "1.3"
 status: complete
-last_updated: "2026-06-06"
+last_updated: "2026-06-08"
 sub_project: 2
 ---
 
@@ -95,6 +95,13 @@ When a client connects:
 4. send an initial `presence_snapshot` event to the connecting client for all relevant groups
 5. broadcast `user_online` to other connected members
 
+If a reconnect happens while another socket for the same user is still open, the
+newly authenticated group scope becomes the effective scope immediately:
+
+- add the user to any newly gained `group:{id}:online` sets
+- remove the user from any groups they no longer belong to
+- keep the user online overall until their last active socket disconnects
+
 The snapshot payload contains, per group:
 
 - members who are currently connected and/or currently ready, with derived `connection`
@@ -152,6 +159,7 @@ The legacy `status_change` command is not part of phase 1 and must not be used f
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-08 | Bootstrap strategy | Clarified that reconnects with changed memberships must reconcile Redis group-online scope even when another socket for the same user is still open | Prevents stale online presence after create/join/leave flows refresh realtime scope before older sockets have fully disconnected |
 | 2026-06-04 | Spec topology | Created a dedicated transport-and-presence spec by extracting the live transport, Redis, bootstrap, command, and phase-1 presence rules from the larger SP2 realtime spec | Keeps the most contract-sensitive realtime behavior focused and easier to update during phase-1 delivery |
 | 2026-06-06 | Multi-replica rule | Required replica subscriber loops to use a dedicated blocking Redis pub/sub connection instead of the generic command timeout | Prevents idle pub/sub reads from failing on healthy Redis replicas and breaking cross-instance websocket fan-out |
 | 2026-06-06 | Completion status sync | Marked the transport-and-presence child spec complete to match the shipped SP2 overview and roadmap state | Removes stale in-progress metadata now that the presence-first transport slice is part of the delivered realtime coordination set |

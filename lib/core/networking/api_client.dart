@@ -133,6 +133,7 @@ final dioProvider = Provider<Dio>((ref) {
     baseUrl: ApiEndpoints.baseUrl,
     storage: storage,
     onAuthInvalidated: () {
+      ref.read(sessionResetSignalProvider.notifier).state++;
       ref.read(authInvalidationSignalProvider.notifier).state++;
     },
   );

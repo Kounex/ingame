@@ -1,8 +1,8 @@
 ---
 spec: core-platform-implementation
-version: "1.64"
+version: "1.66"
 status: complete
-last_updated: "2026-06-07"
+last_updated: "2026-06-08"
 sub_project: 1
 ---
 
@@ -61,6 +61,7 @@ lib/
 ### Key Patterns
 
 - Riverpod providers live in `presentation/providers/`
+- user-scoped Riverpod caches must watch the shared session-reset signal so logout or forced auth invalidation clears stale in-memory data before another account signs in
 - repositories use handwritten Dio calls and map JSON into Freezed/domain models
 - user-visible failures that survive rebuilds are modeled as typed `AppFailure` values
 - locale changes revalidate already-visible form errors, while untouched forms stay quiet
@@ -222,7 +223,10 @@ Inside the shell:
 - Home / Groups
 - Discover
 - Profile
-- nested routes such as create-group, group-detail, settings, and edit-profile stay within the shell
+- nested routes such as create-group, group-detail, and settings stay within the shell
+- the profile tab itself is the maintained post-onboarding settings hub; routine
+  profile edits should prefer in-place sheets/dialogs/selectors over a separate
+  dedicated `edit-profile` route
 
 Outside the shell:
 - login
@@ -256,6 +260,8 @@ Outside the shell:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-08 | Navigation structure | Retired the dedicated `edit-profile` route from the maintained shell-navigation contract and clarified that post-onboarding profile edits should prefer in-place settings surfaces on the profile tab | Keeps the implementation-facing routing contract aligned with the approved profile UX simplification instead of preserving a redundant full-screen edit destination |
+| 2026-06-08 | Key patterns | Added the shared session-reset requirement for user-scoped Riverpod providers and realtime clients on logout or forced auth invalidation | Keeps the maintained Flutter state-lifecycle contract aligned with the logout hardening that prevents stale account data from surviving across sign-ins |
 | 2026-06-07 | Navigation structure and redirect rules | Added the dedicated Discord auth callback flow beside Steam and documented that focused auth callback routes preserve `from` while still allowing a clean cancel path back to login | Keeps the routing contract aligned with the maintained cancellable provider-auth handoff UX instead of treating Discord as a special direct-launch exception |
 | 2026-06-07 | Shared primitives and interaction conventions | Added `AppPopupMenuButton` as the maintained wrapper for ellipsis/action menus and documented the no-gray hover/highlight/splash contract for popup action rows | Keeps action menus visually aligned with the glass system instead of falling back to default Material ink states in different features |
 | 2026-06-07 | Runtime storage integration and local image builds | Added the maintained requirement that containerized Flutter web builds ignore host-generated artifacts like `.dart_tool/` so Podman/Docker rebuilds regenerate package config inside the container | Keeps the deployment/build contract aligned with the local stack path needed to rebuild the current workspace successfully |

@@ -4,7 +4,7 @@ InGame is a social gaming coordination app for finding time to play with friends
 
 ## What ships today
 
-- Email/password, Steam, and Apple authentication
+- Email/password, Steam, Discord, and Apple authentication
 - English and German localization via Flutter `gen_l10n`
 - First-time onboarding and user profiles
 - Groups, invite links, discoverable groups, and join requests
@@ -12,6 +12,7 @@ InGame is a social gaming coordination app for finding time to play with friends
 - Split deployment runtimes for:
   - `ingame-api`
   - `ingame-web`
+  - `ingame-marketing`
 
 ## Repository layout
 
@@ -46,7 +47,7 @@ InGame is a social gaming coordination app for finding time to play with friends
 - Docker or Podman with Compose
 - Helm
 
-### Start backend dependencies and the web runtime
+### Start the local stack
 
 ```bash
 docker compose up --build
@@ -56,6 +57,7 @@ This starts:
 
 - API on `http://localhost:8000`
 - Web runtime on `http://localhost:8080`
+- Marketing runtime on `http://localhost:8081`
 - PostgreSQL on `localhost:5432`
 - Redis on `localhost:6379`
 - MinIO S3 API on `http://localhost:9000`
@@ -242,6 +244,7 @@ The `Release Images` GitHub Actions workflow:
 - builds and pushes:
   - `ghcr.io/kounex/ingame-api:<version>`
   - `ghcr.io/kounex/ingame-web:<version>`
+  - `ghcr.io/kounex/ingame-marketing:<version>`
 - also pushes immutable SHA tags
 
 The semver tag is pushed after the SHA tag so GHCR surfaces the release version as the primary pull reference.
@@ -283,9 +286,20 @@ INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY=replace-me
 INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL=https://assets.example.com/ingame-avatars
 ```
 
-If you use the bundled MinIO release stack on a non-`app.in-game.app` host,
-set `MINIO_API_CORS_ALLOW_ORIGIN` to the browser origin you actually serve the
-app from, or leave the compose default `*` in place for a broad self-hosted setup.
+If you use the bundled MinIO release stack on a non-canonical host, set
+`MINIO_API_CORS_ALLOW_ORIGIN` to the browser origin you actually serve the app
+from, or leave the compose default `*` in place for a broad self-hosted setup.
+
+The checked-in `docker-compose.release.yml` defaults target the canonical
+production hosts (`api.in-game.app`, `app.in-game.app`, `in-game.app`). For a
+custom-domain self-hosted deployment, also update:
+
+- `INGAME_CORS_ALLOW_ORIGINS` for the API browser origin you actually serve
+- the web and marketing image build-time host values if you are not using the
+  canonical production domains
+
+Without those host updates, the release stack can start successfully while the
+browser app still points at the wrong origins.
 
 Then start the release stack with:
 
@@ -368,4 +382,4 @@ Useful project-local agent assets:
 ## Current release
 
 - Repository: [github.com/Kounex/ingame](https://github.com/Kounex/ingame)
-- Latest release: `v0.3.4`
+- Latest release: `v0.6.0`
