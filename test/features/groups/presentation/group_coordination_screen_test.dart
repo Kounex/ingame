@@ -322,6 +322,11 @@ void main() {
     'activity journal shows recent highlights and collapsed history groups by default',
     (tester) async {
       final now = DateTime.now().toUtc();
+      final yesterdayNoon = DateTime(
+        now.toLocal().year,
+        now.toLocal().month,
+        now.toLocal().day,
+      ).subtract(const Duration(hours: 12)).toUtc();
       final notifier = _FakeCoordinationNotifier(
         GroupCoordinationState(
           activity: [
@@ -354,7 +359,7 @@ void main() {
               actorUserId: 'member-3',
               actorDisplayName: 'Scout',
               type: 'session_deleted',
-              createdAt: now.subtract(const Duration(days: 1, hours: 1)),
+              createdAt: yesterdayNoon,
               sessionId: 'session-2',
             ),
           ],
@@ -436,6 +441,11 @@ void main() {
     'activity history excludes entries already surfaced in recent highlights',
     (tester) async {
       final now = DateTime.now().toUtc();
+      final yesterdayNoon = DateTime(
+        now.toLocal().year,
+        now.toLocal().month,
+        now.toLocal().day,
+      ).subtract(const Duration(hours: 12)).toUtc();
       final notifier = _FakeCoordinationNotifier(
         GroupCoordinationState(
           activity: [
@@ -468,7 +478,7 @@ void main() {
               actorUserId: 'member-3',
               actorDisplayName: 'Scout',
               type: 'session_deleted',
-              createdAt: now.subtract(const Duration(days: 1, hours: 1)),
+              createdAt: yesterdayNoon,
               sessionId: 'session-2',
             ),
           ],

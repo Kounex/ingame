@@ -1427,63 +1427,6 @@ class _SocialIdentitiesCard extends ConsumerWidget {
     return friendCode;
   }
 
-  Future<void> _handleSteamTap(BuildContext context, WidgetRef ref) async {
-    try {
-      final params = await OAuthLauncher.launchSteamAuth();
-      if (!context.mounted) return;
-      await ref.read(profileNotifierProvider.notifier).linkSteam(params);
-      ref.invalidate(authNotifierProvider);
-      if (context.mounted) {
-        AppToast.success(context, context.l10n.profileSteamLinkedSuccess);
-      }
-      await ref.read(appHapticsProvider).success();
-    } catch (e) {
-      if (!context.mounted) return;
-      final msg = OAuthLauncher.toFailure(e).userMessage(context.l10n);
-      if (!OAuthLauncher.isCancellationError(e)) {
-        AppToast.error(context, context.l10n.profileLinkSteamFailed(msg));
-      }
-    }
-  }
-
-  Future<void> _handleDiscordTap(BuildContext context, WidgetRef ref) async {
-    final DiscordAuthResult? discordAuthResult;
-    try {
-      discordAuthResult = await OAuthLauncher.launchDiscordAuth();
-    } catch (e) {
-      if (!context.mounted || OAuthLauncher.isCancellationError(e)) return;
-      AppToast.error(
-        context,
-        OAuthLauncher.toFailure(e).userMessage(context.l10n),
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-    try {
-      await ref
-          .read(profileNotifierProvider.notifier)
-          .linkDiscord(
-            code: discordAuthResult.code,
-            codeVerifier: discordAuthResult.codeVerifier,
-            redirectUri: discordAuthResult.redirectUri,
-          );
-      ref.invalidate(authNotifierProvider);
-      if (context.mounted) {
-        AppToast.success(context, context.l10n.profileDiscordLinkedSuccess);
-      }
-      await ref.read(appHapticsProvider).success();
-    } catch (e) {
-      if (!context.mounted) return;
-      AppToast.error(
-        context,
-        context.l10n.profileLinkDiscordFailed(
-          ApiError.userMessage(e, context.l10n),
-        ),
-      );
-    }
-  }
-
   Future<void> _openSocialProfile(
     BuildContext context, {
     required String provider,
