@@ -1,0 +1,13 @@
+---
+description: Check Docker and Podman before container-dependent commands
+alwaysApply: true
+---
+
+# Container Runtime Detection
+
+- Do not assume Docker is the available container runtime in this repo.
+- Before container-dependent verification or local stack commands, check both `docker` and `podman`.
+- If Docker is unavailable but Podman is available, use Podman instead of stopping on a false blocker.
+- For compose-style commands, check both `docker compose` and `podman compose`; prefer the runtime that exists on this machine.
+- When a local CI or release workflow mentions Docker-based validation, adapt it to the available runtime rather than skipping the step.
+- When checking whether a required local service exists, inspect existing Podman containers before starting a duplicate one.
