@@ -5,8 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../widgets/avatar_editor_dialog.dart';
 
-class AvatarEditResult {
-  const AvatarEditResult({
+typedef AvatarSourceCallback = Future<Uint8List?> Function();
+
+sealed class AvatarEditResult {
+  const AvatarEditResult();
+}
+
+class AvatarEditSave extends AvatarEditResult {
+  const AvatarEditSave({
     required this.bytes,
     required this.filename,
     required this.contentType,
@@ -15,6 +21,10 @@ class AvatarEditResult {
   final Uint8List bytes;
   final String filename;
   final String contentType;
+}
+
+class AvatarEditRemoval extends AvatarEditResult {
+  const AvatarEditRemoval();
 }
 
 abstract class AvatarImageEditor {

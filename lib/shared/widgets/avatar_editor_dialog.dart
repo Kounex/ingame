@@ -42,7 +42,7 @@ class _AvatarEditorDialogState extends State<AvatarEditorDialog> {
     }
   }
 
-  AvatarEditResult _buildEditResult() {
+  AvatarEditSave _buildEditResult() {
     final editorState = _editorController.state;
     final cropRect = _editorController.getCropRect();
     final rawImageData = editorState?.rawImageData;
@@ -67,7 +67,7 @@ class _AvatarEditorDialogState extends State<AvatarEditorDialog> {
       height: bottom - top,
     );
 
-    return AvatarEditResult(
+    return AvatarEditSave(
       bytes: Uint8List.fromList(img.encodeJpg(cropped, quality: 90)),
       filename: 'avatar.jpg',
       contentType: 'image/jpeg',
