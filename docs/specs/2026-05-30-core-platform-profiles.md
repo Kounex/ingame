@@ -1,8 +1,8 @@
 ---
 spec: core-platform-profiles
-version: "1.18"
+version: "1.22"
 status: complete
-last_updated: "2026-06-08"
+last_updated: "2026-06-13"
 sub_project: 1
 ---
 
@@ -54,6 +54,12 @@ This spec covers the SP1 user-profile contract:
 - PostgreSQL stores only the final URL reference.
 - Avatar bytes are **not** stored in the database or embedded as base64 in profile JSON.
 - Official provider login/link flows may seed `avatar_url` once from fetched provider metadata when the canonical profile avatar is still empty, but later provider syncs must not overwrite an avatar the user already has.
+- `POST /api/v1/users/me/avatar-upload/init` records each issued app-managed upload in a pending server-side ledger, but does not change the canonical persisted `avatar_url` on its own.
+- When a user replaces or clears a storage-backed profile avatar, the backend deletes the previously active app-managed object after the profile change commits.
+- The same post-commit cleanup also sweeps the user's app-managed avatar prefix so stale sibling uploads and abandoned upload-init objects are removed, while preserving the currently active managed object if one remains.
+- A background janitor deletes tracked app-managed uploads that were never committed through `PATCH /api/v1/users/me` once they have remained unclaimed for 24 hours, then removes their ledger rows for retry-safe cleanup.
+- If onboarding or another flow is abandoned after upload-init, the previously persisted canonical avatar remains the fallback returned by `GET /api/v1/users/me` until a later successful profile update actually stores a new `avatar_url`.
+- External/provider-hosted avatar URLs are never deleted by this cleanup path.
 
 ### Allowed Sources
 
@@ -82,6 +88,8 @@ All image sources except `Remove photo` follow this flow:
 5. Flutter uploads the prepared image directly to S3-compatible object storage.
 6. Flutter persists the returned `avatar_url` through `PATCH /api/v1/users/me`.
 
+The upload-init step only creates a pending upload plus direct-upload contract. The backend treats that object as disposable until a later successful profile update commits the returned `avatar_url`.
+
 ### Storage Topology
 
 - Local development composes in a self-hosted MinIO service, bootstraps the
@@ -107,6 +115,8 @@ All image sources except `Remove photo` follow this flow:
 ### Clearing Rule
 
 `PATCH /api/v1/users/me` distinguishes omitted fields from explicit nulls. Sending `avatar_url: null` clears the current avatar instead of being ignored.
+
+If the cleared avatar previously pointed at app-managed object storage, the backend removes that old object after the successful profile update commit and sweeps any remaining objects under the same user avatar prefix so no superseded managed avatar upload remains retained.
 
 ## Profile Endpoints
 
@@ -146,13 +156,17 @@ Flutter treats these codes as contract-sensitive and resolves user-facing copy f
 
 `EditableAvatarField` is the reusable avatar editor used by both onboarding and profile editing. It is responsible for:
 
-- rendering the current avatar preview
-- opening the shared square editor when the current avatar is tapped
-- presenting the source chooser separately through the `Change photo` action
+- rendering the current avatar preview with a camera badge affordance
+- opening the source chooser when tapped without an existing avatar
+- opening the shared square editor directly when tapped with an existing avatar
 - normalizing every supported source into the shared editor flow before upload
 - local URL-entry validation
 - upload progress display
 - direct-to-storage upload orchestration through `AvatarUploadService`
+
+The shared square editor (`AvatarEditorDialog`) provides an in-editor toolbar
+with source-switching and avatar removal, so the field itself renders only the
+avatar and upload progress — no standalone buttons or hint text.
 
 It is **not** responsible for form submission timing or overall profile persistence ownership; screens still decide when to call `updateProfile(...)`.
 
@@ -228,8 +242,8 @@ preferences continue using their own maintained persistence path.
 The profile screen:
 
 - shows the avatar at the top
-- treats the avatar hero as directly editable on tap and may keep a secondary
-  `Change photo` action once an avatar exists
+- treats the avatar hero as directly editable on tap; the crop editor itself
+  provides source-switching and removal through an in-editor toolbar
 - acts as the primary post-onboarding settings surface instead of routing common
   profile edits through a separate dedicated edit screen
 - keeps high-frequency personal fields such as display name, bio, timezone, and
@@ -265,6 +279,10 @@ The profile screen:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-13 | Shared avatar editor and profile rendering | Moved source-switching and avatar removal into the crop editor toolbar; removed the standalone `Change photo` button and hint text from `EditableAvatarField` so the camera badge is the sole avatar-editing affordance | Simplifies the profile header layout by placing name and bio directly beneath the avatar with no interstitial UI |
+| 2026-06-10 | Avatar contract and upload flow | Added the pending upload ledger, 24-hour unclaimed-upload janitor rule, and the clarification that upload-init alone never replaces the persisted canonical/provider avatar | Keeps the profile/avatar contract aligned with the new TTL cleanup path while preserving the expected fallback avatar when onboarding is abandoned before profile save |
+| 2026-06-10 | Avatar contract and clearing rule | Documented that committed avatar save/clear now sweeps stale sibling uploads and abandoned upload-init objects in the same user avatar prefix while still preserving the active managed object and ignoring external/provider URLs | Keeps the profile/avatar storage contract aligned with the new opportunistic orphan cleanup behavior without changing the client upload contract |
+| 2026-06-10 | Avatar contract and clearing rule | Documented that replacing or clearing an app-managed canonical avatar deletes the previous stored object after the profile update commits, while external/provider URLs are left untouched | Keeps the profile/avatar storage contract aligned with the new backend cleanup behavior and avoids unbounded growth of superseded avatar objects |
 | 2026-06-08 | Profile settings hub and profile rendering | Replaced the dedicated post-onboarding edit-profile-screen expectation with a mixed in-page settings hub contract: direct taps for obvious fields, focused sheets/dialogs/selectors where needed, and overflow menus only for secondary multi-action cases | Keeps the written profile UX aligned with the approved shift toward faster, more polished in-place editing instead of routing most changes through a redundant full-screen form |
 | 2026-06-08 | Shared components and profile rendering | Added the reusable `SocialIdentitiesCard` contract and clarified the maintained subtitle/tap rules for connected accounts plus login-based versus manual social rows | Keeps the written profile UI contract aligned with the shared social-card refactor and the approved connected/not-connected/not-set subtitle behavior |
 | 2026-06-07 | Avatar contract | Documented that official provider login/link flows may seed the canonical profile avatar once when it is empty, while later provider syncs must not overwrite an existing avatar | Keeps the written profile/avatar contract aligned with the new Discord avatar bootstrap behavior without weakening user control over custom profile photos |
