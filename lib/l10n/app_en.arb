@@ -111,8 +111,6 @@
   "avatarEditorUrlLabel": "Image URL",
   "avatarEditorUrlHint": "https://example.com/avatar.jpg",
   "avatarEditorChangePhoto": "Change photo",
-  "avatarEditorHint": "Choose a photo, upload one, or paste an image URL.",
-  "avatarEditorEditHint": "Tap the avatar to edit it, or choose a different photo below.",
   "avatarEditorUploading": "Uploading avatar... {percent}%",
   "@avatarEditorUploading": {
     "placeholders": {
