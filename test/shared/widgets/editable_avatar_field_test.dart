@@ -76,15 +76,21 @@ class _FakeAvatarImageEditor implements AvatarImageEditor {
   final AvatarEditResult? result;
   Uint8List? lastSourceBytes;
   String? lastSourceFilename;
+  AvatarSourceCallback? lastOnChangeSource;
+  bool? lastShowRemove;
 
   @override
   Future<AvatarEditResult?> editSquareAvatar(
     BuildContext context, {
     required Uint8List sourceBytes,
     required String sourceFilename,
+    AvatarSourceCallback? onChangeSource,
+    bool showRemove = false,
   }) async {
     lastSourceBytes = sourceBytes;
     lastSourceFilename = sourceFilename;
+    lastOnChangeSource = onChangeSource;
+    lastShowRemove = showRemove;
     return result;
   }
 }
@@ -172,7 +178,7 @@ void main() {
       ),
     );
     final editor = _FakeAvatarImageEditor(
-      AvatarEditResult(
+      AvatarEditSave(
         bytes: Uint8List.fromList([9, 8, 7]),
         filename: 'avatar.jpg',
         contentType: 'image/jpeg',
@@ -218,23 +224,34 @@ void main() {
     expect(changedAvatarUrl, 'https://cdn.test/avatar.jpg');
   });
 
-  testWidgets('editable avatar field can remove the current avatar', (
+  testWidgets('editor removal result clears the current avatar', (
     tester,
   ) async {
+    final editor = _FakeAvatarImageEditor(const AvatarEditRemoval());
+    final loader = _FakeAvatarSourceLoader(
+      XFile.fromData(
+        _pngBytes(),
+        name: 'current.png',
+        mimeType: 'image/png',
+      ),
+    );
     String? changedAvatarUrl = 'https://cdn.test/original.webp';
 
     await pumpAvatarField(
       tester,
       initialAvatarUrl: changedAvatarUrl,
       onChanged: (value) => changedAvatarUrl = value,
+      overrides: [
+        avatarSourceLoaderProvider.overrideWithValue(loader),
+        avatarImageEditorProvider.overrideWithValue(editor),
+      ],
     );
 
-    await tester.tap(find.byKey(const Key('editable-avatar-change-photo')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('editable-avatar-action-remove')));
+    await tester.tap(find.byKey(const Key('editable-avatar-field-trigger')));
     await tester.pumpAndSettle();
 
     expect(changedAvatarUrl, isNull);
+    expect(editor.lastShowRemove, isTrue);
   });
 
   testWidgets('upload photo uses injected editor result and uploads it', (
@@ -248,7 +265,7 @@ void main() {
       ),
     );
     final editor = _FakeAvatarImageEditor(
-      AvatarEditResult(
+      AvatarEditSave(
         bytes: Uint8List.fromList([9, 8, 7]),
         filename: 'avatar.jpg',
         contentType: 'image/jpeg',
@@ -313,11 +330,10 @@ void main() {
         allowedContentTypes: ['image/jpeg'],
       ),
     );
-    String? changedAvatarUrl = 'https://cdn.test/original.webp';
+    String? changedAvatarUrl;
 
     await pumpAvatarField(
       tester,
-      initialAvatarUrl: changedAvatarUrl,
       onChanged: (value) => changedAvatarUrl = value,
       overrides: [
         avatarImagePickerProvider.overrideWithValue(picker),
@@ -326,7 +342,7 @@ void main() {
       ],
     );
 
-    await tester.tap(find.byKey(const Key('editable-avatar-change-photo')));
+    await tester.tap(find.byKey(const Key('editable-avatar-field-trigger')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('editable-avatar-action-upload')));
     await tester.pumpAndSettle();
@@ -334,7 +350,7 @@ void main() {
     expect(picker.uploadCalls, 1);
     expect(editor.lastSourceBytes, isNotNull);
     expect(uploadService.lastFilename, isNull);
-    expect(changedAvatarUrl, 'https://cdn.test/original.webp');
+    expect(changedAvatarUrl, isNull);
   });
 
   testWidgets('existing avatar tap edits current image directly', (tester) async {
@@ -346,7 +362,7 @@ void main() {
       ),
     );
     final editor = _FakeAvatarImageEditor(
-      AvatarEditResult(
+      AvatarEditSave(
         bytes: Uint8List.fromList([6, 6, 6]),
         filename: 'avatar.jpg',
         contentType: 'image/jpeg',
@@ -386,22 +402,33 @@ void main() {
     expect(changedAvatarUrl, 'https://cdn.test/avatar.jpg');
   });
 
-  testWidgets('change photo action opens source chooser for existing avatar', (
+  testWidgets('editor receives onChangeSource callback for existing avatar', (
     tester,
   ) async {
+    final editor = _FakeAvatarImageEditor(null);
+    final loader = _FakeAvatarSourceLoader(
+      XFile.fromData(
+        _pngBytes(),
+        name: 'current.png',
+        mimeType: 'image/png',
+      ),
+    );
+
     await pumpAvatarField(
       tester,
       initialAvatarUrl: 'https://cdn.test/original.webp',
       onChanged: (_) {},
+      overrides: [
+        avatarSourceLoaderProvider.overrideWithValue(loader),
+        avatarImageEditorProvider.overrideWithValue(editor),
+      ],
     );
 
-    expect(find.byKey(const Key('editable-avatar-change-photo')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('editable-avatar-change-photo')));
+    await tester.tap(find.byKey(const Key('editable-avatar-field-trigger')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('editable-avatar-action-upload')), findsOneWidget);
-    expect(find.byKey(const Key('editable-avatar-action-url')), findsOneWidget);
+    expect(editor.lastOnChangeSource, isNotNull);
+    expect(editor.lastShowRemove, isTrue);
   });
 
   testWidgets('photo library uses picker and routes through editor on mobile', (
@@ -417,7 +444,7 @@ void main() {
       ),
     );
     final editor = _FakeAvatarImageEditor(
-      AvatarEditResult(
+      AvatarEditSave(
         bytes: Uint8List.fromList([7, 7, 7]),
         filename: 'avatar.jpg',
         contentType: 'image/jpeg',
@@ -469,7 +496,7 @@ void main() {
       ),
     );
     final editor = _FakeAvatarImageEditor(
-      AvatarEditResult(
+      AvatarEditSave(
         bytes: Uint8List.fromList([5, 5, 5]),
         filename: 'avatar.jpg',
         contentType: 'image/jpeg',
