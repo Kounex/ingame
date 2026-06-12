@@ -103,7 +103,7 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
     }
   }
 
-  List<Widget> _buildActionTiles() {
+  List<Widget> _buildActionTiles({bool includeRemove = true}) {
     final tiles = <Widget>[
       if (!kIsWeb && _isMobilePlatform)
         _actionTile(
@@ -131,7 +131,7 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
         label: context.l10n.avatarEditorUseUrl,
         action: _AvatarAction.useUrl,
       ),
-      if (_hasAvatar)
+      if (includeRemove && _hasAvatar)
         _actionTile(
           key: const Key('editable-avatar-action-remove'),
           icon: Icons.delete_outline,
@@ -205,18 +205,22 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
     );
     if (!mounted) return;
     final editor = ref.read(avatarImageEditorProvider);
-    final edited = await editor.editSquareAvatar(
+    final result = await editor.editSquareAvatar(
       context,
       sourceBytes: originalBytes,
       sourceFilename: normalizedFile.name,
+      onChangeSource: _acquireNewSourceBytes,
     );
-    if (edited == null || !mounted) return;
+    if (!mounted) return;
 
-    await _uploadBytes(
-      edited.bytes,
-      filename: edited.filename,
-      contentType: edited.contentType,
-    );
+    switch (result) {
+      case AvatarEditSave(:final bytes, :final filename, :final contentType):
+        await _uploadBytes(bytes, filename: filename, contentType: contentType);
+      case AvatarEditRemoval():
+        _removeAvatar();
+      case null:
+        break;
+    }
   }
 
   Future<void> _editCurrentAvatar() async {
@@ -245,7 +249,34 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
     }
 
     if (sourceFile == null || !mounted) return;
-    await _editAndUploadSourceFile(sourceFile);
+
+    final originalBytes = await sourceFile.readAsBytes();
+    final originalMime =
+        lookupMimeType(sourceFile.name, headerBytes: originalBytes) ?? '';
+    if (!const {'image/jpeg', 'image/png', 'image/webp'}.contains(originalMime)) {
+      if (!mounted) return;
+      AppToast.error(context, context.l10n.avatarEditorInvalidFileType);
+      return;
+    }
+
+    final editor = ref.read(avatarImageEditorProvider);
+    final result = await editor.editSquareAvatar(
+      context,
+      sourceBytes: originalBytes,
+      sourceFilename: sourceFile.name.isEmpty ? 'current-avatar' : sourceFile.name,
+      onChangeSource: _acquireNewSourceBytes,
+      showRemove: true,
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case AvatarEditSave(:final bytes, :final filename, :final contentType):
+        await _uploadBytes(bytes, filename: filename, contentType: contentType);
+      case AvatarEditRemoval():
+        _removeAvatar();
+      case null:
+        break;
+    }
   }
 
   Future<void> _uploadBytes(
@@ -301,9 +332,9 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
     }
   }
 
-  Future<void> _showUrlDialog() async {
+  Future<String?> _showUrlInputDialog() async {
     final controller = TextEditingController(text: _avatarUrl ?? '');
-    final url = await showDialog<String>(
+    return showDialog<String>(
       context: context,
       useRootNavigator: true,
       builder: (dialogContext) {
@@ -334,7 +365,10 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
         );
       },
     );
+  }
 
+  Future<void> _showUrlDialog() async {
+    final url = await _showUrlInputDialog();
     if (!mounted || url == null) return;
 
     if (url.isEmpty) {
@@ -362,6 +396,76 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
       if (!mounted) return;
       AppToast.error(context, context.l10n.avatarEditorUploadFailed);
     }
+  }
+
+  Future<Uint8List?> _acquireNewSourceBytes() async {
+    final action = context.isMobile
+        ? await showModalBottomSheet<_AvatarAction>(
+            context: context,
+            useRootNavigator: true,
+            backgroundColor: AppColors.backgroundLight,
+            builder: (_) => SafeArea(
+              child: Wrap(children: _buildActionTiles(includeRemove: false)),
+            ),
+          )
+        : await showDialog<_AvatarAction>(
+            context: context,
+            useRootNavigator: true,
+            builder: (_) => AlertDialog(
+              title: Text(context.l10n.avatarEditorActionTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _buildActionTiles(includeRemove: false),
+              ),
+            ),
+          );
+
+    if (action == null || !mounted) return null;
+
+    XFile? file;
+    switch (action) {
+      case _AvatarAction.photoLibrary:
+        file = await ref.read(avatarImagePickerProvider).pickFromLibrary();
+      case _AvatarAction.uploadPhoto:
+        file = await ref.read(avatarImagePickerProvider).pickUploadFile();
+      case _AvatarAction.takePhoto:
+        file = await ref.read(avatarImagePickerProvider).pickFromCamera();
+      case _AvatarAction.useUrl:
+        final url = await _showUrlInputDialog();
+        if (!mounted || url == null || url.isEmpty) return null;
+        final parsed = Uri.tryParse(url);
+        if (parsed == null || !parsed.hasScheme || !parsed.hasAuthority) {
+          AppToast.error(context, context.l10n.avatarEditorInvalidUrl);
+          return null;
+        }
+        try {
+          final sourceLoader = ref.read(avatarSourceLoaderProvider);
+          file = await sourceLoader.loadRemoteImage(
+            url,
+            suggestedFilename: parsed.pathSegments.isNotEmpty
+                ? parsed.pathSegments.last
+                : 'avatar-url',
+          );
+        } catch (_) {
+          if (!mounted) return null;
+          AppToast.error(context, context.l10n.avatarEditorUploadFailed);
+          return null;
+        }
+      case _AvatarAction.remove:
+        return null;
+    }
+
+    if (file == null || !mounted) return null;
+
+    final bytes = await file.readAsBytes();
+    final mime = lookupMimeType(file.name, headerBytes: bytes) ?? '';
+    if (!const {'image/jpeg', 'image/png', 'image/webp'}.contains(mime)) {
+      if (mounted) {
+        AppToast.error(context, context.l10n.avatarEditorInvalidFileType);
+      }
+      return null;
+    }
+    return bytes;
   }
 
   void _removeAvatar() {
@@ -414,23 +518,6 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 12),
-        if (_hasAvatar) ...[
-          TextButton.icon(
-            key: const Key('editable-avatar-change-photo'),
-            onPressed: _isUploading ? null : _openSourceChooser,
-            icon: const Icon(Icons.photo_library_outlined, size: 18),
-            label: Text(context.l10n.avatarEditorChangePhoto),
-          ),
-          const SizedBox(height: 8),
-        ],
-        Text(
-          _hasAvatar
-              ? context.l10n.avatarEditorEditHint
-              : context.l10n.avatarEditorHint,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          textAlign: TextAlign.center,
         ),
         if (_isUploading && progressPercent != null) ...[
           const SizedBox(height: 8),
