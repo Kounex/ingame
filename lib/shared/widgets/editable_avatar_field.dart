@@ -259,6 +259,7 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
       return;
     }
 
+    if (!mounted) return;
     final editor = ref.read(avatarImageEditorProvider);
     final result = await editor.editSquareAvatar(
       context,
