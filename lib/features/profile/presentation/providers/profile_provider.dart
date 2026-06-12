@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/auth/auth_session.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/domain/user_model.dart';
 import '../../data/profile_repository.dart';
 
@@ -9,12 +9,14 @@ class ProfileNotifier extends AsyncNotifier<User?> {
 
   @override
   Future<User?> build() async {
-    ref.watch(sessionResetSignalProvider);
-    try {
-      return await _repo.getProfile();
-    } catch (_) {
-      return null;
-    }
+    final authState = ref.watch(authNotifierProvider).asData?.value;
+    final isAuthenticated =
+        authState?.maybeWhen(authenticated: (_) => true, orElse: () => false) ??
+        false;
+
+    if (!isAuthenticated) return null;
+
+    return await _repo.getProfile();
   }
 
   Future<void> load() async {
