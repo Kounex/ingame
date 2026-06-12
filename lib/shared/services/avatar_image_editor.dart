@@ -32,6 +32,8 @@ abstract class AvatarImageEditor {
     BuildContext context, {
     required Uint8List sourceBytes,
     required String sourceFilename,
+    AvatarSourceCallback? onChangeSource,
+    bool showRemove = false,
   });
 }
 
@@ -43,6 +45,8 @@ class DialogAvatarImageEditor implements AvatarImageEditor {
     BuildContext context, {
     required Uint8List sourceBytes,
     required String sourceFilename,
+    AvatarSourceCallback? onChangeSource,
+    bool showRemove = false,
   }) {
     return showDialog<AvatarEditResult>(
       context: context,
@@ -51,6 +55,8 @@ class DialogAvatarImageEditor implements AvatarImageEditor {
       builder: (_) => AvatarEditorDialog(
         sourceBytes: sourceBytes,
         sourceFilename: sourceFilename,
+        onChangeSource: onChangeSource,
+        showRemove: showRemove,
       ),
     );
   }

@@ -13,18 +13,30 @@ class AvatarEditorDialog extends StatefulWidget {
     super.key,
     required this.sourceBytes,
     required this.sourceFilename,
+    this.onChangeSource,
+    this.showRemove = false,
   });
 
   final Uint8List sourceBytes;
   final String sourceFilename;
+  final AvatarSourceCallback? onChangeSource;
+  final bool showRemove;
 
   @override
   State<AvatarEditorDialog> createState() => _AvatarEditorDialogState();
 }
 
 class _AvatarEditorDialogState extends State<AvatarEditorDialog> {
-  final _editorController = ImageEditorController();
+  ImageEditorController _editorController = ImageEditorController();
   bool _isSaving = false;
+  late Uint8List _currentBytes;
+  int _sourceVersion = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentBytes = widget.sourceBytes;
+  }
 
   Future<void> _save() async {
     if (_isSaving) return;
@@ -74,30 +86,72 @@ class _AvatarEditorDialogState extends State<AvatarEditorDialog> {
     );
   }
 
+  Future<void> _handleChangeSource() async {
+    final newBytes = await widget.onChangeSource?.call();
+    if (newBytes == null || !mounted) return;
+    setState(() {
+      _currentBytes = newBytes;
+      _sourceVersion++;
+      _editorController = ImageEditorController();
+    });
+  }
+
+  void _handleRemove() {
+    Navigator.of(context).pop(const AvatarEditRemoval());
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(context.l10n.avatarEditorCropTitle),
       content: SizedBox(
         width: 420,
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: ExtendedImage.memory(
-            widget.sourceBytes,
-            fit: BoxFit.contain,
-            mode: ExtendedImageMode.editor,
-            cacheRawData: true,
-            initEditorConfigHandler: (_) {
-              return EditorConfig(
-                maxScale: 8.0,
-                cropAspectRatio: 1.0,
-                cropRectPadding: const EdgeInsets.all(20),
-                hitTestSize: 20,
-                initCropRectType: InitCropRectType.imageRect,
-                controller: _editorController,
-              );
-            },
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: ExtendedImage.memory(
+                _currentBytes,
+                key: ValueKey(_sourceVersion),
+                fit: BoxFit.contain,
+                mode: ExtendedImageMode.editor,
+                cacheRawData: true,
+                initEditorConfigHandler: (_) {
+                  return EditorConfig(
+                    maxScale: 8.0,
+                    cropAspectRatio: 1.0,
+                    cropRectPadding: const EdgeInsets.all(20),
+                    hitTestSize: 20,
+                    initCropRectType: InitCropRectType.imageRect,
+                    controller: _editorController,
+                  );
+                },
+              ),
+            ),
+            if (widget.onChangeSource != null || widget.showRemove) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (widget.onChangeSource != null)
+                    TextButton.icon(
+                      onPressed: _isSaving ? null : _handleChangeSource,
+                      icon: const Icon(Icons.photo_library_outlined, size: 18),
+                      label: Text(context.l10n.avatarEditorChangePhoto),
+                    ),
+                  if (widget.onChangeSource != null && widget.showRemove)
+                    const SizedBox(width: 16),
+                  if (widget.showRemove)
+                    TextButton.icon(
+                      onPressed: _isSaving ? null : _handleRemove,
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: Text(context.l10n.avatarEditorRemovePhoto),
+                    ),
+                ],
+              ),
+            ],
+          ],
         ),
       ),
       actions: [
