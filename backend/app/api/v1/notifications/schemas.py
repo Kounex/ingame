@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class DeviceRegistrationRequest(BaseModel):
-    platform: str = Field(pattern="^(ios|android)$")
+    platform: str = Field(pattern="^(ios|android|web)$")
     token: str = Field(min_length=1)
     device_label: str | None = Field(None, max_length=128)
     app_version: str | None = Field(None, max_length=32)

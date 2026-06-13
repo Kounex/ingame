@@ -2,12 +2,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/firebase/firebase_config.dart';
+
 class NotificationService {
   NotificationService._();
 
   static final instance = NotificationService._();
 
-  bool get isSupported => !kIsWeb;
+  bool get isSupported => !kIsWeb || FirebaseConfig.hasWebConfig;
 
   FirebaseMessaging get _messaging => FirebaseMessaging.instance;
 
@@ -18,7 +20,11 @@ class NotificationService {
 
   Future<String?> getToken() async {
     try {
-      return await _messaging.getToken();
+      final vapidKey =
+          kIsWeb && FirebaseConfig.vapidKey.isNotEmpty
+              ? FirebaseConfig.vapidKey
+              : null;
+      return await _messaging.getToken(vapidKey: vapidKey);
     } catch (e) {
       debugPrint('Failed to get FCM token: $e');
       return null;
@@ -38,6 +44,7 @@ class NotificationService {
   }
 
   String get platform {
+    if (kIsWeb) return 'web';
     return switch (defaultTargetPlatform) {
       TargetPlatform.iOS => 'ios',
       TargetPlatform.android => 'android',
