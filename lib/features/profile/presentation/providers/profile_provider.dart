@@ -118,6 +118,6 @@ final profileNotifierProvider = AsyncNotifierProvider<ProfileNotifier, User?>(
 
 final profileUserProvider = Provider<User?>((ref) {
   return ref.watch(
-    profileNotifierProvider.select((state) => state.asData?.value),
+    profileNotifierProvider.select((state) => state.value),
   );
 });
