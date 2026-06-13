@@ -34,8 +34,14 @@ RUN flutter build web --release \
     --dart-define=FIREBASE_WEB_APP_ID=${FIREBASE_WEB_APP_ID} \
     --dart-define=FIREBASE_WEB_VAPID_KEY=${FIREBASE_WEB_VAPID_KEY}
 
-RUN envsubst '${FIREBASE_WEB_API_KEY} ${FIREBASE_WEB_AUTH_DOMAIN} ${FIREBASE_WEB_PROJECT_ID} ${FIREBASE_WEB_STORAGE_BUCKET} ${FIREBASE_WEB_MESSAGING_SENDER_ID} ${FIREBASE_WEB_APP_ID}' \
-    < web/firebase-messaging-sw.js > build/web/firebase-messaging-sw.js
+RUN sed \
+    -e "s|\${FIREBASE_WEB_API_KEY}|${FIREBASE_WEB_API_KEY}|g" \
+    -e "s|\${FIREBASE_WEB_AUTH_DOMAIN}|${FIREBASE_WEB_AUTH_DOMAIN}|g" \
+    -e "s|\${FIREBASE_WEB_PROJECT_ID}|${FIREBASE_WEB_PROJECT_ID}|g" \
+    -e "s|\${FIREBASE_WEB_STORAGE_BUCKET}|${FIREBASE_WEB_STORAGE_BUCKET}|g" \
+    -e "s|\${FIREBASE_WEB_MESSAGING_SENDER_ID}|${FIREBASE_WEB_MESSAGING_SENDER_ID}|g" \
+    -e "s|\${FIREBASE_WEB_APP_ID}|${FIREBASE_WEB_APP_ID}|g" \
+    web/firebase-messaging-sw.js > build/web/firebase-messaging-sw.js
 
 FROM nginx:1.27-alpine
 
