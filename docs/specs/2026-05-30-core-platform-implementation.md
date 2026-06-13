@@ -1,8 +1,8 @@
 ---
 spec: core-platform-implementation
-version: "1.66"
+version: "1.67"
 status: complete
-last_updated: "2026-06-08"
+last_updated: "2026-06-10"
 sub_project: 1
 ---
 
@@ -102,6 +102,16 @@ lib/
 - Local development uses bundled MinIO plus automatic avatar-bucket bootstrap
   and server-level CORS so browser upload flows work without manual
   object-storage setup.
+- The API records each issued avatar upload in a database-backed ledger keyed by
+  user, object key, and public `avatar_url` so unclaimed direct uploads can be
+  cleaned without bucket-wide scans.
+- Successful `PATCH /api/v1/users/me` avatar persistence marks the matching
+  ledger row committed in the same database transaction as the profile update so
+  the janitor never treats the active canonical avatar as disposable.
+- The API runtime owns an in-process janitor loop that periodically deletes
+  uncommitted avatar uploads older than
+  `INGAME_AVATAR_UPLOAD_UNCLAIMED_TTL_HOURS` (default `24`) and removes their
+  ledger rows; storage failures are logged and retried on later passes.
 - Runtime config may split the API's internal object-storage endpoint from the
   browser-facing upload base URL when uploads need to traverse a different
   public host than the backend uses internally.
@@ -260,6 +270,7 @@ Outside the shell:
 
 | Date | Section | What changed | Why |
 |------|---------|--------------|-----|
+| 2026-06-10 | Runtime storage integration | Added the avatar upload ledger plus the in-process 24-hour unclaimed-upload janitor and documented the new TTL runtime setting | Keeps the implementation-facing storage/runtime contract aligned with the new backend cleanup path instead of relying on implicit bucket state |
 | 2026-06-08 | Navigation structure | Retired the dedicated `edit-profile` route from the maintained shell-navigation contract and clarified that post-onboarding profile edits should prefer in-place settings surfaces on the profile tab | Keeps the implementation-facing routing contract aligned with the approved profile UX simplification instead of preserving a redundant full-screen edit destination |
 | 2026-06-08 | Key patterns | Added the shared session-reset requirement for user-scoped Riverpod providers and realtime clients on logout or forced auth invalidation | Keeps the maintained Flutter state-lifecycle contract aligned with the logout hardening that prevents stale account data from surviving across sign-ins |
 | 2026-06-07 | Navigation structure and redirect rules | Added the dedicated Discord auth callback flow beside Steam and documented that focused auth callback routes preserve `from` while still allowing a clean cancel path back to login | Keeps the routing contract aligned with the maintained cancellable provider-auth handoff UX instead of treating Discord as a special direct-launch exception |

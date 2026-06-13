@@ -167,6 +167,7 @@ Avatar uploads require runtime values for:
 - `INGAME_AVATAR_STORAGE_ACCESS_KEY_ID`
 - `INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY`
 - `INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL`
+- `INGAME_AVATAR_UPLOAD_UNCLAIMED_TTL_HOURS` (optional; defaults to `24` and controls when the API janitor deletes upload-init objects that were never committed through `PATCH /api/v1/users/me`)
 
 These avatar-storage and MinIO values are backend/runtime configuration only.
 Flutter does not have a separate MinIO `--dart-define`; it talks to the API and
@@ -174,6 +175,12 @@ uses the backend-provided `upload_url` / `avatar_url` contract.
 
 If those are intentionally left unset, `POST /api/v1/users/me/avatar-upload/init`
 will return the structured fallback `503 user.avatar_upload_unavailable`.
+
+When avatar storage is configured, `POST /api/v1/users/me/avatar-upload/init`
+creates a pending upload ledger row. A later successful `PATCH /api/v1/users/me`
+marks that upload committed; otherwise the API janitor deletes the unclaimed
+object after the configured TTL while leaving the previously persisted current
+avatar URL unchanged.
 
 ## Release workflow
 
@@ -284,6 +291,7 @@ INGAME_AVATAR_STORAGE_UPLOAD_BASE_URL=https://assets.example.com
 INGAME_AVATAR_STORAGE_ACCESS_KEY_ID=ingame
 INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY=replace-me
 INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL=https://assets.example.com/ingame-avatars
+INGAME_AVATAR_UPLOAD_UNCLAIMED_TTL_HOURS=24
 ```
 
 If you use the bundled MinIO release stack on a non-canonical host, set

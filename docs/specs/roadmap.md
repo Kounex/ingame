@@ -1,8 +1,8 @@
 ---
 spec: roadmap
-version: "1.98"
+version: "1.99"
 status: active
-last_updated: "2026-06-08"
+last_updated: "2026-06-13"
 ---
 
 # InGame -- Product Roadmap
@@ -37,11 +37,12 @@ Full SP1 architectural details are documented in the [Core Platform overview](20
 
 ```mermaid
 graph LR
-    SP1["SP1: Core Platform\n(COMPLETE)"] --> SP2["SP2: Real-Time\nCoordination"]
-    SP2 --> SP3["SP3: Settings &\nNotifications"]
+    SP1["SP1: Core Platform\n(COMPLETE)"] --> SP2["SP2: Real-Time\nCoordination\n(COMPLETE)"]
+    SP2 --> SP3a["SP3a: Push\nNotifications"]
+    SP3a --> SP3b["SP3b: Settings &\nAccount Mgmt"]
     SP1 --> SP4["SP4: Game\nMatching"]
     SP2 --> SP4
-    SP3 --> SP5["SP5: Open\nMatching"]
+    SP3b --> SP5["SP5: Open\nMatching"]
     SP4 --> SP5
 ```
 
@@ -49,9 +50,10 @@ graph LR
 |---|-------------|--------|------|------------|
 | 1 | Core Platform | Complete | [spec](2026-05-30-core-platform-design.md) | -- |
 | 2 | Real-Time Coordination | Complete | [spec](2026-05-30-real-time-coordination-design.md) | SP1 |
-| 3 | Settings & Notifications | Planned | [spec](2026-06-05-notifications-design.md) | SP2 |
+| 3a | Push Notifications | Planned | [spec](2026-06-13-push-notifications-design.md) | SP2 |
+| 3b | Settings & Account Management | Planned | -- | SP3a |
 | 4 | Game Matching | Planned | [spec](2026-06-02-game-matching-design.md) | SP1, SP2 |
-| 5 | Open Matching (V2) | Planned | -- | SP3, SP4 |
+| 5 | Open Matching (V2) | Planned | -- | SP3b, SP4 |
 
 ---
 
@@ -130,31 +132,55 @@ SP2 intentionally distinguishes two coordination models:
 
 ---
 
-### SP3: Settings & Notifications
+### SP3a: Push Notifications
 
-**Goal:** Push notifications for offline users and comprehensive user settings/preferences.
+**Goal:** Deliver push notifications for SP2 coordination events so offline users stay informed about group activity.
 
 **Key features:**
-- **Push notifications (FCM/APNs)** -- notify offline users when someone in their group goes "ready to game", when a session is proposed, when a join request needs approval
-- **Notification preferences** -- per-group mute, quiet hours (don't notify between 11 PM - 8 AM), toggle by event type (status changes, sessions, join requests)
-- **Account management** -- change password, account deletion (GDPR compliance), export user data
-- **Privacy settings** -- control who can see online status, game library visibility (friends only / public)
-- **App preferences** -- theme selection (if we add light mode), default status on app open
+- **Push delivery via FCM** -- notify offline users when someone goes ready, when a session is proposed, when RSVPs change, when a join request needs approval
+- **Device token lifecycle** -- register, refresh, and revoke FCM tokens for iOS and Android
+- **Granular preference data model** -- global defaults, per-event-type toggles, per-group mute, quiet hours, and conditional filters (e.g. "only if I RSVPed in") -- ready for SP3b's settings UI without schema changes
+- **In-process async dispatch** -- `asyncio.create_task` after durable writes, no separate worker deployment
+- **Token-based APNs auth** -- `.p8` key, no certificate expiry
 
 **Technical scope:**
-- Firebase Cloud Messaging (FCM) for Android/web, APNs for iOS
-- Device token registration endpoint, notification dispatch service
-- Notification preferences data model (per-user, per-group overrides)
-- Settings screens in Flutter (notification, privacy, account sections)
-- Backend: notification worker that checks preferences before dispatching
+- `firebase-admin` SDK on the backend for FCM delivery
+- `firebase_core` + `firebase_messaging` Flutter plugins for token bootstrap and foreground handling
+- `DeviceRegistration` and `NotificationPreference` PostgreSQL models with JSONB conditions column
+- Preference evaluator (quiet hours, mute, event-type, conditional filters) runs server-side before dispatch
+- Notification hooks wired into existing `coordination/service.py` event production
+- Stale token cleanup janitor (same pattern as avatar upload janitor)
 
-**Rationale for being a separate sub-project:** Notifications are the next highest-leverage layer after SP2 because they turn newly-delivered ready/session events into useful offline follow-through. Account management and privacy settings also need a maintained home before any public-facing features in SP5.
+**Rationale for splitting:** Push infrastructure and settings UI have no technical dependency. Push is higher leverage -- it makes SP2 coordination useful for offline users immediately. Settings UI can follow without schema changes.
 
 **Depends on:** SP2
 
-**Estimated effort:** Medium (FCM/APNs setup is boilerplate-heavy but well-documented; settings UI is straightforward)
+**Estimated effort:** Medium (Firebase/APNs setup is boilerplate-heavy but well-documented; preference model is the main design work)
 
-**Spec:** [docs/specs/2026-06-05-notifications-design.md](2026-06-05-notifications-design.md) (v1.0)
+**Spec:** [docs/specs/2026-06-13-push-notifications-design.md](2026-06-13-push-notifications-design.md) (v1.0)
+
+---
+
+### SP3b: Settings & Account Management
+
+**Goal:** User-facing settings screens for notification preferences, account management, and privacy controls.
+
+**Key features:**
+- **Notification preference UI** -- global event-type toggles, per-group mute, quiet hours, conditional drill-down filters
+- **Account management** -- change password, account deletion (GDPR compliance), export user data
+- **Privacy settings** -- control who can see online status, game library visibility (friends only / public)
+- **App preferences** -- theme selection (if light mode is added), default status on app open
+
+**Technical scope:**
+- `PUT` endpoints for notification preferences (global and per-group)
+- Flutter settings screens (notification, privacy, account sections) as separate routes from profile
+- Preference mutation providers and repository layer
+
+**Depends on:** SP3a (preference data model and evaluation engine)
+
+**Estimated effort:** Medium-small (preference model exists, mostly UI and API endpoints)
+
+**Spec:** To be written before implementation
 
 ---
 
@@ -232,6 +258,7 @@ These patterns and practices apply across all sub-projects:
 
 | Date | Change | Detail |
 |------|--------|--------|
+| 2026-06-13 | SP3 split into SP3a/SP3b | Split Settings & Notifications into SP3a (Push Notifications) and SP3b (Settings & Account Management); wrote dedicated push notification spec with granular preference model, in-process async dispatch, and FCM/APNs integration | Push is higher leverage and has no dependency on settings UI; preference data model ships in SP3a so SP3b adds only UI |
 | 2026-06-09 | Marketing CI path fix | Corrected the marketing nginx validation workflow step so it resolves the checked-in nginx config from the repo root instead of inheriting `marketing/site` as the working directory | Keeps the documented PR CI marketing verification contract aligned with the actual workflow path resolution used on GitHub Actions |
 | 2026-06-08 | SP2 reconnect scope reconciliation | Refreshed the SP2 Transport & Presence pointer after documenting that membership-refresh reconnects must reconcile Redis group-online scope even when another socket for the same user is still open | Keeps the roadmap entry point aligned with the fixed realtime presence contract instead of leaving the spec set behind the shipped manager behavior |
 | 2026-06-08 | SP2 coordination delivery semantics | Refreshed the SP2 Implementation pointer after documenting non-fatal post-commit fan-out failures for durable writes and fail-loudly `/activity` bootstrap expectations in Flutter/provider coverage | Keeps the roadmap entry point aligned with the maintained coordination delivery contract instead of leaving the implementation spec pointer behind the shipped behavior |
