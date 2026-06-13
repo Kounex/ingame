@@ -51,7 +51,7 @@ void main() {
       overrides: [
         profileRepositoryProvider.overrideWithValue(repository),
         authNotifierProvider.overrideWith(
-          () => _FakeAuthNotifier(AuthState.authenticated(user)),
+          () => _FakeAuthNotifier(const AuthState.authenticated(user)),
         ),
       ],
     );
@@ -107,7 +107,7 @@ void main() {
       overrides: [
         profileRepositoryProvider.overrideWithValue(repository),
         authNotifierProvider.overrideWith(() {
-          authNotifier = _FakeAuthNotifier(AuthState.authenticated(user1));
+          authNotifier = _FakeAuthNotifier(const AuthState.authenticated(user1));
           return authNotifier;
         }),
       ],
@@ -119,7 +119,7 @@ void main() {
     expect(initialProfile?.displayName, 'First User');
 
     repository.setUser(user2);
-    authNotifier.setAuthState(AuthState.authenticated(user2));
+    authNotifier.setAuthState(const AuthState.authenticated(user2));
 
     // Allow the provider graph to settle after auth state change.
     await Future<void>.delayed(Duration.zero);

@@ -70,7 +70,10 @@ python3 -m scripts.release.stack_version prepare-release --owner kounex --write
 
 ```bash
 flutter pub get
-flutter analyze
+# Use lib/ test/ scope to avoid false positives from build-cache package
+# sources (e.g. firebase_messaging examples). Info lints ARE fatal in CI,
+# so they must be zero here too.
+flutter analyze lib/ test/
 flutter test
 python -m pip install -r backend/requirements.txt
 python -m pytest backend/tests
@@ -83,6 +86,8 @@ python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 # In another shell, once the backend is up:
 python scripts/ci/validate-api-contract.py --api-url http://127.0.0.1:8000/api/v1
 ```
+
+**Important:** `flutter analyze` exits non-zero on info-level lints. The local check must also treat infos as failures — do not ignore them. Fix all reported issues before proceeding.
 
 If Redis or another local dependency required by the contract checks is not running, start it first or stop and report the blocker. Do not continue to `git push`, `main`, tagging, or GitHub release creation until this local `main` CI pass is green.
 
