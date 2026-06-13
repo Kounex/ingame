@@ -63,3 +63,6 @@ class ErrorCode(str, Enum):
     COORDINATION_SESSION_TIME_INVALID = "coordination.session_time_invalid"
     COORDINATION_SESSION_STATUS_INVALID = "coordination.session_status_invalid"
     COORDINATION_RSVP_INVALID = "coordination.rsvp_invalid"
+
+    NOTIFICATION_DEVICE_NOT_FOUND = "notification.device_not_found"
+    NOTIFICATION_INVALID_PLATFORM = "notification.invalid_platform"
