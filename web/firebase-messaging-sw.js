@@ -1,9 +1,9 @@
 importScripts(
-  "https://www.gstatic.com/firebasejs/11.0.0/firebase-app-compat.js",
-  "https://www.gstatic.com/firebasejs/11.0.0/firebase-messaging-compat.js"
+  "https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/12.14.0/firebase-messaging-compat.js"
 );
 
-// Populated at build time by Dockerfile.web via envsubst.
+// Populated at build time by Dockerfile.web via sed.
 // For local dev, replace these with your Firebase project values.
 const firebaseConfig = {
   apiKey: "${FIREBASE_WEB_API_KEY}",

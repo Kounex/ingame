@@ -9,6 +9,7 @@ import 'core/localization/locale_controller.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
+import 'features/notifications/presentation/providers/notification_provider.dart';
 import 'shared/providers/presence_lifecycle_binder.dart';
 import 'shared/providers/presence_provider.dart';
 import 'shared/providers/websocket_provider.dart';
@@ -21,6 +22,7 @@ class InGameApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(websocketConnectionProvider);
     ref.watch(presenceNotifierProvider);
+    ref.watch(notificationNotifierProvider);
     final router = ref.watch(routerProvider);
     final locale = ref.watch(localeControllerProvider);
     final resolvedLocale = ref.watch(resolvedLocaleProvider);
