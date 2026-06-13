@@ -276,12 +276,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get avatarEditorChangePhoto => 'Foto ändern';
 
   @override
-  String get avatarEditorHint => 'Wähle ein Foto aus, lade eins hoch oder füge eine Bild-URL ein.';
-
-  @override
-  String get avatarEditorEditHint => 'Tippe auf den Avatar, um ihn zu bearbeiten, oder wähle unten ein anderes Foto aus.';
-
-  @override
   String avatarEditorUploading(int percent) {
     return 'Avatar wird hochgeladen... $percent %';
   }
@@ -294,6 +288,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get avatarEditorInvalidUrl => 'Gib eine gültige Bild-URL ein.';
+
+  @override
+  String get avatarEditorRemoveConfirmTitle => 'Avatar entfernen?';
+
+  @override
+  String get avatarEditorRemoveConfirmMessage => 'Dein aktueller Avatar wird dauerhaft entfernt.';
 
   @override
   String get avatarEditorCropTitle => 'Avatar zuschneiden';

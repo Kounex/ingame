@@ -122,6 +122,8 @@
   "avatarEditorUploadFailed": "Avatar upload failed. Please try again.",
   "avatarEditorInvalidFileType": "Use a JPEG, PNG, or WebP image.",
   "avatarEditorInvalidUrl": "Enter a valid image URL.",
+  "avatarEditorRemoveConfirmTitle": "Remove avatar?",
+  "avatarEditorRemoveConfirmMessage": "Your current avatar will be permanently removed.",
   "avatarEditorCropTitle": "Crop avatar",
   "onboardingAvatarUrlLabel": "Avatar URL",
   "onboardingAvatarUrlHint": "Link to your avatar image (optional)",

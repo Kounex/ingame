@@ -154,11 +154,14 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
     required String label,
     required _AvatarAction action,
   }) {
-    return ListTile(
-      key: key,
-      leading: Icon(icon, color: AppColors.textPrimary),
-      title: Text(label, style: const TextStyle(color: AppColors.textPrimary)),
-      onTap: () => Navigator.of(context).pop(action),
+    return Builder(
+      builder: (tileContext) => ListTile(
+        key: key,
+        leading: Icon(icon, color: AppColors.textPrimary),
+        title:
+            Text(label, style: const TextStyle(color: AppColors.textPrimary)),
+        onTap: () => Navigator.of(tileContext).pop(action),
+      ),
     );
   }
 

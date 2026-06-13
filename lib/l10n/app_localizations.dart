@@ -617,18 +617,6 @@ abstract class AppLocalizations {
   /// **'Change photo'**
   String get avatarEditorChangePhoto;
 
-  /// No description provided for @avatarEditorHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a photo, upload one, or paste an image URL.'**
-  String get avatarEditorHint;
-
-  /// No description provided for @avatarEditorEditHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the avatar to edit it, or choose a different photo below.'**
-  String get avatarEditorEditHint;
-
   /// No description provided for @avatarEditorUploading.
   ///
   /// In en, this message translates to:
@@ -652,6 +640,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid image URL.'**
   String get avatarEditorInvalidUrl;
+
+  /// No description provided for @avatarEditorRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove avatar?'**
+  String get avatarEditorRemoveConfirmTitle;
+
+  /// No description provided for @avatarEditorRemoveConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current avatar will be permanently removed.'**
+  String get avatarEditorRemoveConfirmMessage;
 
   /// No description provided for @avatarEditorCropTitle.
   ///

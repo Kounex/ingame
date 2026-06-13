@@ -17,7 +17,6 @@ void main() {
 
     await haptics.selection();
     await haptics.success();
-    await haptics.refreshComplete();
     await haptics.destructiveConfirm();
 
     expect(selectionCalls, 0);
@@ -39,11 +38,10 @@ void main() {
 
     await haptics.selection();
     await haptics.success();
-    await haptics.refreshComplete();
     await haptics.destructiveConfirm();
 
     expect(selectionCalls, 1);
-    expect(lightCalls, 2);
+    expect(lightCalls, 1);
     expect(mediumCalls, 1);
   });
 }

@@ -40,13 +40,6 @@ class AppHaptics {
     } catch (_) {}
   }
 
-  Future<void> refreshComplete() async {
-    if (!_isSupportedMobilePlatform) return;
-    try {
-      await lightImpactCallback();
-    } catch (_) {}
-  }
-
   Future<void> destructiveConfirm() async {
     if (!_isSupportedMobilePlatform) return;
     try {

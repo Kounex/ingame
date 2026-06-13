@@ -122,6 +122,8 @@
   "avatarEditorUploadFailed": "Der Avatar konnte nicht hochgeladen werden. Bitte versuche es erneut.",
   "avatarEditorInvalidFileType": "Verwende ein JPEG-, PNG- oder WebP-Bild.",
   "avatarEditorInvalidUrl": "Gib eine gültige Bild-URL ein.",
+  "avatarEditorRemoveConfirmTitle": "Avatar entfernen?",
+  "avatarEditorRemoveConfirmMessage": "Dein aktueller Avatar wird dauerhaft entfernt.",
   "avatarEditorCropTitle": "Avatar zuschneiden",
   "onboardingAvatarUrlLabel": "Avatar-URL",
   "onboardingAvatarUrlHint": "Link zu deinem Avatarbild (optional)",

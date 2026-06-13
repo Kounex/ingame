@@ -228,7 +228,7 @@ async def test_discover_excludes_member_groups(client: AsyncClient):
     )
 
     token2 = await _register_and_get_token(client, "disco_other@test.com")
-    create_resp = await client.post(
+    await client.post(
         "/api/v1/groups",
         headers=_auth(token2),
         json={"name": "My Own Group", "is_discoverable": True},

@@ -4,8 +4,10 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/extensions.dart';
 import '../services/avatar_image_editor.dart';
+import 'app_confirmation_dialog.dart';
 import 'app_toast.dart';
 
 class AvatarEditorDialog extends StatefulWidget {
@@ -96,7 +98,16 @@ class _AvatarEditorDialogState extends State<AvatarEditorDialog> {
     });
   }
 
-  void _handleRemove() {
+  Future<void> _handleRemove() async {
+    final confirmed = await showAppConfirmationDialog(
+      context,
+      title: context.l10n.avatarEditorRemoveConfirmTitle,
+      message: context.l10n.avatarEditorRemoveConfirmMessage,
+      confirmLabel: context.l10n.commonRemove,
+      cancelLabel: context.l10n.commonCancel,
+      variant: AppConfirmationVariant.destructive,
+    );
+    if (!confirmed || !mounted) return;
     Navigator.of(context).pop(const AvatarEditRemoval());
   }
 
@@ -145,6 +156,9 @@ class _AvatarEditorDialogState extends State<AvatarEditorDialog> {
                   if (widget.showRemove)
                     TextButton.icon(
                       onPressed: _isSaving ? null : _handleRemove,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                      ),
                       icon: const Icon(Icons.delete_outline, size: 18),
                       label: Text(context.l10n.avatarEditorRemovePhoto),
                     ),

@@ -1,5 +1,4 @@
 import asyncio
-import time
 from datetime import datetime, timedelta, timezone
 import uuid
 
@@ -512,7 +511,7 @@ async def test_handle_connect_does_not_republish_ready_state_for_reconnecting_me
 ):
     owner, member, group = await _create_group_with_members(db_session)
     token = create_access_token(member.id)
-    ready_payload = await status_store.set_group_ready(str(group.id), str(member.id))
+    await status_store.set_group_ready(str(group.id), str(member.id))
 
     published_online: list[tuple[str, str, list[str]]] = []
     published_ready: list[dict[str, object]] = []
