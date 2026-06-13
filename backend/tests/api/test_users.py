@@ -1,3 +1,5 @@
+import logging
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 from types import SimpleNamespace
 from uuid import uuid4
@@ -7,6 +9,8 @@ import httpx
 from httpx import AsyncClient
 from sqlalchemy import text
 
+from app.db.repositories.avatar_upload_ledger_repo import AvatarUploadLedgerRepository
+from app.jobs.avatar_upload_janitor import run_avatar_upload_janitor_once
 from app.storage.avatar_uploads import generate_avatar_upload
 async def _register_and_get_token(
     client: AsyncClient, email: str = "user@test.com"
@@ -141,6 +145,321 @@ async def test_update_me_can_clear_avatar_url(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_update_me_replacing_managed_avatar_deletes_previous_object(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+    old_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/original.webp"
+    new_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/updated.webp"
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            create=True,
+        ) as delete_avatar,
+    ):
+        seeded = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": old_avatar_url},
+        )
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": new_avatar_url},
+        )
+
+    assert seeded.status_code == 200
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == new_avatar_url
+    delete_avatar.assert_called_once_with(old_avatar_url)
+
+
+@pytest.mark.asyncio
+async def test_update_me_clearing_managed_avatar_deletes_previous_object(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+    old_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/original.webp"
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            create=True,
+        ) as delete_avatar,
+    ):
+        seeded = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": old_avatar_url},
+        )
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": None},
+        )
+
+    assert seeded.status_code == 200
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] is None
+    delete_avatar.assert_called_once_with(old_avatar_url)
+
+
+@pytest.mark.asyncio
+async def test_update_me_replacing_external_avatar_does_not_delete_it(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+    external_avatar_url = "https://steamcdn.test/avatar.jpg"
+    new_managed_avatar_url = (
+        "https://cdn.test/ingame-avatars/users/test/avatars/updated.webp"
+    )
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            create=True,
+        ) as delete_avatar,
+    ):
+        seeded = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": external_avatar_url},
+        )
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": new_managed_avatar_url},
+        )
+
+    assert seeded.status_code == 200
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == new_managed_avatar_url
+    delete_avatar.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_me_avatar_cleanup_failure_does_not_fail_request(
+    client: AsyncClient,
+    caplog: pytest.LogCaptureFixture,
+):
+    token = await _register_and_get_token(client)
+    old_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/original.webp"
+    new_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/updated.webp"
+
+    caplog.set_level(logging.ERROR, logger="app.api.v1.users.routes")
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            side_effect=RuntimeError("cleanup failed"),
+            create=True,
+        ) as delete_avatar,
+    ):
+        seeded = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": old_avatar_url},
+        )
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": new_avatar_url},
+        )
+        refreshed = await client.get("/api/v1/users/me", headers=_auth(token))
+
+    assert seeded.status_code == 200
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == new_avatar_url
+    assert refreshed.status_code == 200
+    assert refreshed.json()["avatar_url"] == new_avatar_url
+    delete_avatar.assert_called_once_with(old_avatar_url)
+    assert "Avatar cleanup failed" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_update_me_replacing_managed_avatar_sweeps_user_avatar_prefix(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+    old_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/original.webp"
+    new_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/updated.webp"
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            create=True,
+        ),
+        patch(
+            "app.api.v1.users.service.sweep_user_avatar_prefix",
+            create=True,
+        ) as sweep_avatar_prefix,
+    ):
+        await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": old_avatar_url},
+        )
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": new_avatar_url},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == new_avatar_url
+    sweep_avatar_prefix.assert_called()
+    assert sweep_avatar_prefix.call_args.args[1] == new_avatar_url
+
+
+@pytest.mark.asyncio
+async def test_update_me_clearing_managed_avatar_sweeps_whole_user_avatar_prefix(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+    old_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/original.webp"
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            create=True,
+        ),
+        patch(
+            "app.api.v1.users.service.sweep_user_avatar_prefix",
+            create=True,
+        ) as sweep_avatar_prefix,
+    ):
+        await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": old_avatar_url},
+        )
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": None},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] is None
+    sweep_avatar_prefix.assert_called()
+    assert sweep_avatar_prefix.call_args.args[1] is None
+
+
+@pytest.mark.asyncio
+async def test_update_me_without_avatar_url_does_not_sweep_user_avatar_prefix(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+
+    with patch(
+        "app.api.v1.users.service.sweep_user_avatar_prefix",
+        create=True,
+    ) as sweep_avatar_prefix:
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"display_name": "Updated Name"},
+        )
+
+    assert response.status_code == 200
+    sweep_avatar_prefix.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_me_avatar_sweep_failure_does_not_fail_request(
+    client: AsyncClient,
+    caplog: pytest.LogCaptureFixture,
+):
+    token = await _register_and_get_token(client)
+    old_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/original.webp"
+    new_avatar_url = "https://cdn.test/ingame-avatars/users/test/avatars/updated.webp"
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            create=True,
+        ),
+        patch(
+            "app.api.v1.users.service.sweep_user_avatar_prefix",
+            create=True,
+        ),
+    ):
+        await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": old_avatar_url},
+        )
+
+    caplog.set_level(logging.ERROR, logger="app.api.v1.users.routes")
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.api.v1.users.service.delete_avatar_object_by_public_url",
+            create=True,
+        ),
+        patch(
+            "app.api.v1.users.service.sweep_user_avatar_prefix",
+            side_effect=RuntimeError("sweep failed"),
+            create=True,
+        ) as sweep_avatar_prefix,
+    ):
+        response = await client.patch(
+            "/api/v1/users/me",
+            headers=_auth(token),
+            json={"avatar_url": new_avatar_url},
+        )
+        refreshed = await client.get("/api/v1/users/me", headers=_auth(token))
+
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == new_avatar_url
+    assert refreshed.status_code == 200
+    assert refreshed.json()["avatar_url"] == new_avatar_url
+    sweep_avatar_prefix.assert_called_once()
+    assert "Avatar cleanup failed" in caplog.text
+
+
+@pytest.mark.asyncio
 async def test_avatar_upload_init_returns_presigned_upload_contract(
     client: AsyncClient,
 ):
@@ -179,6 +498,189 @@ async def test_avatar_upload_init_returns_presigned_upload_contract(
         "allowed_content_types": ["image/jpeg", "image/png", "image/webp"],
     }
     generate_upload.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_avatar_upload_init_records_pending_ledger_entry(
+    client: AsyncClient,
+    db_session,
+):
+    token = await _register_and_get_token(client)
+    user_response = await client.get("/api/v1/users/me", headers=_auth(token))
+    user_id = user_response.json()["id"]
+
+    with patch(
+        "app.api.v1.users.service.generate_avatar_upload",
+        return_value={
+            "upload_url": "https://uploads.test/bucket",
+            "upload_fields": {"key": "users/test/avatars/avatar.webp"},
+            "object_key": "users/test/avatars/avatar.webp",
+            "avatar_url": "https://cdn.test/users/test/avatars/avatar.webp",
+            "expires_in_seconds": 300,
+            "max_file_size_bytes": 2097152,
+            "allowed_content_types": ["image/jpeg", "image/png", "image/webp"],
+        },
+    ):
+        response = await client.post(
+            "/api/v1/users/me/avatar-upload/init",
+            headers=_auth(token),
+            json={
+                "filename": "avatar.webp",
+                "content_type": "image/webp",
+                "byte_size": 182000,
+            },
+        )
+
+    assert response.status_code == 200
+    ledger = await AvatarUploadLedgerRepository(db_session).get_by_avatar_url(
+        "https://cdn.test/users/test/avatars/avatar.webp"
+    )
+    assert ledger is not None
+    assert str(ledger.user_id) == user_id
+    assert ledger.object_key == "users/test/avatars/avatar.webp"
+    assert ledger.committed_at is None
+
+
+@pytest.mark.asyncio
+async def test_update_me_marks_pending_avatar_upload_committed(
+    client: AsyncClient,
+    db_session,
+):
+    token = await _register_and_get_token(client)
+
+    with patch(
+        "app.api.v1.users.service.generate_avatar_upload",
+        return_value={
+            "upload_url": "https://uploads.test/bucket",
+            "upload_fields": {"key": "users/test/avatars/avatar.webp"},
+            "object_key": "users/test/avatars/avatar.webp",
+            "avatar_url": "https://cdn.test/users/test/avatars/avatar.webp",
+            "expires_in_seconds": 300,
+            "max_file_size_bytes": 2097152,
+            "allowed_content_types": ["image/jpeg", "image/png", "image/webp"],
+        },
+    ):
+        init_response = await client.post(
+            "/api/v1/users/me/avatar-upload/init",
+            headers=_auth(token),
+            json={
+                "filename": "avatar.webp",
+                "content_type": "image/webp",
+                "byte_size": 182000,
+            },
+        )
+
+    avatar_url = init_response.json()["avatar_url"]
+    response = await client.patch(
+        "/api/v1/users/me",
+        headers=_auth(token),
+        json={"avatar_url": avatar_url},
+    )
+
+    assert init_response.status_code == 200
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == avatar_url
+    ledger = await AvatarUploadLedgerRepository(db_session).get_by_avatar_url(avatar_url)
+    assert ledger is not None
+    assert ledger.committed_at is not None
+
+
+@pytest.mark.asyncio
+async def test_avatar_upload_janitor_preserves_provider_avatar_when_custom_upload_expires(
+    client: AsyncClient,
+    db_session,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    provider_avatar_url = "https://cdn.discord.test/provider-avatar.png"
+    custom_object_key = "users/test/avatars/abandoned.webp"
+    custom_avatar_url = f"https://cdn.test/{custom_object_key}"
+    monkeypatch.setattr("app.config.settings.discord_client_id", "discord-client-id")
+
+    with (
+        patch(
+            "app.api.v1.auth.service.exchange_discord_code",
+            new_callable=AsyncMock,
+            return_value={
+                "access_token": "discord-access",
+                "refresh_token": "discord-refresh",
+                "expires_in": 3600,
+            },
+        ),
+        patch(
+            "app.api.v1.auth.service.get_discord_profile",
+            new_callable=AsyncMock,
+            return_value={
+                "external_id": "discord-user-ttl",
+                "username": "discord_user",
+                "display_name": "Discord TTL",
+                "email": "discord-ttl@example.com",
+                "avatar_url": provider_avatar_url,
+                "profile_url": "https://discord.com/users/discord-user-ttl",
+            },
+        ),
+    ):
+        auth_response = await client.post(
+            "/api/v1/auth/discord",
+            json={
+                "code": "discord-auth-code",
+                "code_verifier": "discord-code-verifier-discord-code-verifier-12345",
+                "redirect_uri": "ingame://auth/discord/callback",
+            },
+        )
+
+    token = auth_response.json()["access_token"]
+    assert auth_response.status_code == 200
+    assert auth_response.json()["user"]["avatar_url"] == provider_avatar_url
+
+    with patch(
+        "app.api.v1.users.service.generate_avatar_upload",
+        return_value={
+            "upload_url": "https://uploads.test/bucket",
+            "upload_fields": {"key": custom_object_key},
+            "object_key": custom_object_key,
+            "avatar_url": custom_avatar_url,
+            "expires_in_seconds": 300,
+            "max_file_size_bytes": 2097152,
+            "allowed_content_types": ["image/jpeg", "image/png", "image/webp"],
+        },
+    ):
+        init_response = await client.post(
+            "/api/v1/users/me/avatar-upload/init",
+            headers=_auth(token),
+            json={
+                "filename": "avatar.webp",
+                "content_type": "image/webp",
+                "byte_size": 182000,
+            },
+        )
+
+    assert init_response.status_code == 200
+    await db_session.execute(
+        text(
+            "update avatar_upload_ledgers "
+            "set created_at = :created_at "
+            "where avatar_url = :avatar_url"
+        ),
+        {
+            "created_at": datetime.now(timezone.utc) - timedelta(days=2),
+            "avatar_url": custom_avatar_url,
+        },
+    )
+    await db_session.commit()
+
+    with patch("app.jobs.avatar_upload_janitor.delete_avatar_object_by_key") as delete_avatar:
+        deleted_count = await run_avatar_upload_janitor_once(db_session)
+
+    me_response = await client.get("/api/v1/users/me", headers=_auth(token))
+
+    assert deleted_count == 1
+    assert me_response.status_code == 200
+    assert me_response.json()["avatar_url"] == provider_avatar_url
+    delete_avatar.assert_called_once_with(custom_object_key)
+    ledger = await AvatarUploadLedgerRepository(db_session).get_by_avatar_url(
+        custom_avatar_url
+    )
+    assert ledger is None
 
 
 @pytest.mark.asyncio

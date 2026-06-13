@@ -56,6 +56,10 @@ backend/.pytest_cache/
 /macos/Flutter/ephemeral/
 /macos/Podfile.lock
 
+# Firebase client configs (keep local, not in repo)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 # Agent-generated planning artifacts
 /docs/superpowers/
 /.superpowers/

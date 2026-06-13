@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 import httpx
@@ -24,13 +25,24 @@ from app.core.exceptions import (
     ValidationError,
 )
 from app.db.models.user import User
+from app.db.repositories.avatar_upload_ledger_repo import AvatarUploadLedgerRepository
 from app.db.repositories.provider_identity_repo import ProviderIdentityRepository
 from app.db.repositories.revoked_auth_link_repo import RevokedAuthLinkRepository
 from app.db.repositories.user_repo import UserRepository
 from app.storage.avatar_uploads import (
     ALLOWED_AVATAR_CONTENT_TYPES,
+    delete_avatar_object_by_public_url,
     generate_avatar_upload as create_presigned_avatar_upload,
+    managed_avatar_object_key_from_public_url,
+    sweep_user_avatar_prefix,
 )
+
+
+@dataclass(slots=True)
+class ProfileUpdateResult:
+    user: User
+    avatar_url_to_cleanup: str | None = None
+    should_sweep_avatar_prefix: bool = False
 
 
 async def _count_auth_methods(db: AsyncSession, user: User) -> int:
@@ -67,7 +79,69 @@ async def get_current_user_profile(db: AsyncSession, user: User) -> dict[str, ob
     return await build_user_response(db, refreshed_user)
 
 
-async def update_profile(db: AsyncSession, user: User, **kwargs) -> User:
+def _avatar_url_to_cleanup(
+    previous_avatar_url: str | None,
+    next_avatar_url: str | None,
+) -> str | None:
+    if not previous_avatar_url or previous_avatar_url == next_avatar_url:
+        return None
+    if managed_avatar_object_key_from_public_url(previous_avatar_url) is None:
+        return None
+    return previous_avatar_url
+
+
+async def cleanup_previous_avatar(avatar_url: str | None) -> None:
+    if not avatar_url:
+        return
+    delete_avatar_object_by_public_url(avatar_url)
+
+
+async def cleanup_orphaned_avatar_uploads(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+) -> None:
+    refreshed_user = await UserRepository(db).get_by_id(user_id)
+    if refreshed_user is None:
+        return
+
+    sweep_user_avatar_prefix(refreshed_user.id, refreshed_user.avatar_url)
+
+
+async def record_pending_avatar_upload(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    object_key: str,
+    avatar_url: str,
+) -> None:
+    await AvatarUploadLedgerRepository(db).create_pending(
+        user_id=user_id,
+        object_key=object_key,
+        avatar_url=avatar_url,
+    )
+
+
+async def mark_avatar_upload_committed(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    avatar_url: str,
+) -> None:
+    await AvatarUploadLedgerRepository(db).mark_committed(
+        user_id=user_id,
+        avatar_url=avatar_url,
+    )
+
+
+def avatar_upload_unclaimed_cutoff(now: datetime | None = None) -> datetime:
+    from app.config import settings
+
+    reference_time = now or datetime.now(timezone.utc)
+    return reference_time - timedelta(hours=settings.avatar_upload_unclaimed_ttl_hours)
+
+
+async def update_profile(db: AsyncSession, user: User, **kwargs) -> ProfileUpdateResult:
     repo = UserRepository(db)
     update_data = {
         key: value
@@ -75,7 +149,7 @@ async def update_profile(db: AsyncSession, user: User, **kwargs) -> User:
         if value is not None or key == "avatar_url"
     }
     if not update_data:
-        return user
+        return ProfileUpdateResult(user=user)
 
     email = update_data.get("email")
     if email is not None and email != user.email:
@@ -86,10 +160,28 @@ async def update_profile(db: AsyncSession, user: User, **kwargs) -> User:
                 code=ErrorCode.USER_EMAIL_TAKEN,
             )
 
+    avatar_url_to_cleanup = None
+    if "avatar_url" in update_data:
+        avatar_url_to_cleanup = _avatar_url_to_cleanup(
+            user.avatar_url,
+            update_data["avatar_url"],
+        )
+
     updated = await repo.update(user.id, **update_data)
     if updated is None:
         raise NotFoundError("User not found", code=ErrorCode.USER_NOT_FOUND)
-    return updated
+    avatar_url = update_data.get("avatar_url")
+    if isinstance(avatar_url, str) and avatar_url:
+        await mark_avatar_upload_committed(
+            db,
+            user_id=user.id,
+            avatar_url=avatar_url,
+        )
+    return ProfileUpdateResult(
+        user=updated,
+        avatar_url_to_cleanup=avatar_url_to_cleanup,
+        should_sweep_avatar_prefix="avatar_url" in update_data,
+    )
 
 
 def generate_avatar_upload(
@@ -105,6 +197,7 @@ def generate_avatar_upload(
 
 
 async def init_avatar_upload(
+    db: AsyncSession,
     user: User,
     *,
     filename: str,
@@ -119,7 +212,17 @@ async def init_avatar_upload(
             code=ErrorCode.USER_AVATAR_FILE_TOO_LARGE,
         )
 
-    return generate_avatar_upload(filename, content_type, user)
+    upload = generate_avatar_upload(filename, content_type, user)
+    object_key = upload.get("object_key")
+    avatar_url = upload.get("avatar_url")
+    if isinstance(object_key, str) and isinstance(avatar_url, str):
+        await record_pending_avatar_upload(
+            db,
+            user_id=user.id,
+            object_key=object_key,
+            avatar_url=avatar_url,
+        )
+    return upload
 
 
 async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User:

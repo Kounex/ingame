@@ -9,6 +9,7 @@ from alembic import context
 from app.config import settings
 from app.db.database import Base
 from app.db.models import (  # noqa: F401
+    AvatarUploadLedger,
     Group,
     GroupActivityEvent,
     GroupMembership,

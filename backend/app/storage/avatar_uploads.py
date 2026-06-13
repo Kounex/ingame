@@ -63,6 +63,111 @@ def _resolve_upload_url(presigned_url: str) -> str:
     )
 
 
+def managed_avatar_object_key_from_public_url(avatar_url: str | None) -> str | None:
+    if not avatar_url:
+        return None
+
+    public_base_url = settings.avatar_storage_public_base_url.strip().rstrip("/")
+    if not public_base_url:
+        return None
+
+    base_parts = urlsplit(public_base_url)
+    avatar_parts = urlsplit(avatar_url)
+    if (
+        not base_parts.scheme
+        or not base_parts.netloc
+        or (avatar_parts.scheme, avatar_parts.netloc)
+        != (base_parts.scheme, base_parts.netloc)
+        or avatar_parts.query
+        or avatar_parts.fragment
+    ):
+        return None
+
+    base_path = base_parts.path.rstrip("/")
+    path_prefix = f"{base_path}/" if base_path else "/"
+    if not avatar_parts.path.startswith(path_prefix):
+        return None
+
+    object_key = avatar_parts.path.removeprefix(path_prefix).lstrip("/")
+    return object_key or None
+
+
+def avatar_object_prefix(*, user_id: uuid.UUID) -> str:
+    return f"users/{user_id}/avatars/"
+
+
+def delete_avatar_object_by_key(object_key: str | None) -> None:
+    if object_key is None or not settings.avatar_storage_bucket:
+        return
+
+    try:
+        _avatar_upload_client().delete_object(
+            Bucket=settings.avatar_storage_bucket,
+            Key=object_key,
+        )
+    except ServiceUnavailableError:
+        raise
+    except Exception as exc:
+        raise ServiceUnavailableError(
+            "Avatar uploads are temporarily unavailable",
+            code=ErrorCode.USER_AVATAR_UPLOAD_UNAVAILABLE,
+        ) from exc
+
+
+def delete_avatar_object_by_public_url(avatar_url: str | None) -> None:
+    delete_avatar_object_by_key(managed_avatar_object_key_from_public_url(avatar_url))
+
+
+def sweep_user_avatar_prefix(user_id: uuid.UUID, keep_avatar_url: str | None) -> None:
+    if (
+        not settings.avatar_storage_bucket
+        or not settings.avatar_storage_public_base_url
+    ):
+        return
+
+    keep_object_key = managed_avatar_object_key_from_public_url(keep_avatar_url)
+    client = _avatar_upload_client()
+    prefix = avatar_object_prefix(user_id=user_id)
+    stale_keys: list[str] = []
+    continuation_token: str | None = None
+
+    try:
+        while True:
+            request: dict[str, object] = {
+                "Bucket": settings.avatar_storage_bucket,
+                "Prefix": prefix,
+            }
+            if continuation_token:
+                request["ContinuationToken"] = continuation_token
+
+            response = client.list_objects_v2(**request)
+            for item in response.get("Contents", []):
+                key = item.get("Key")
+                if isinstance(key, str) and key != keep_object_key:
+                    stale_keys.append(key)
+
+            if not response.get("IsTruncated"):
+                break
+            continuation_token = response.get("NextContinuationToken")
+            if not continuation_token:
+                break
+
+        if not stale_keys:
+            return
+
+        client.delete_objects(
+            Bucket=settings.avatar_storage_bucket,
+            Delete={"Objects": [{"Key": key} for key in stale_keys]},
+        )
+    except ServiceUnavailableError:
+        raise
+    except Exception as exc:
+        raise ServiceUnavailableError(
+            "Avatar uploads are temporarily unavailable",
+            code=ErrorCode.USER_AVATAR_UPLOAD_UNAVAILABLE,
+        ) from exc
+
+
 def generate_avatar_upload(
     *,
     user_id: uuid.UUID,
@@ -78,7 +183,7 @@ def generate_avatar_upload(
         )
 
     extension = ALLOWED_AVATAR_CONTENT_TYPES[content_type]
-    object_key = f"users/{user_id}/avatars/{uuid.uuid4()}.{extension}"
+    object_key = f"{avatar_object_prefix(user_id=user_id)}{uuid.uuid4()}.{extension}"
     try:
         presigned = _avatar_upload_client().generate_presigned_post(
             Bucket=settings.avatar_storage_bucket,

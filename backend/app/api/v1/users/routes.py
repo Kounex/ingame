@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends
@@ -21,6 +22,7 @@ from app.db.database import get_db
 from app.db.models.user import User
 
 router = APIRouter(prefix="/users", tags=["users"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -37,18 +39,33 @@ async def update_me(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    updated = await service.update_profile(
+    result = await service.update_profile(
         db, current_user, **data.model_dump(exclude_unset=True)
     )
-    return await build_user_response(db, updated)
+    await db.commit()
+    try:
+        await service.cleanup_previous_avatar(result.avatar_url_to_cleanup)
+    except Exception:
+        logger.exception("Avatar cleanup failed")
+    if result.should_sweep_avatar_prefix:
+        try:
+            await service.cleanup_orphaned_avatar_uploads(
+                db,
+                user_id=result.user.id,
+            )
+        except Exception:
+            logger.exception("Avatar cleanup failed")
+    return await build_user_response(db, result.user)
 
 
 @router.post("/me/avatar-upload/init", response_model=AvatarUploadInitResponse)
 async def init_avatar_upload(
     data: AvatarUploadInitRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     return await service.init_avatar_upload(
+        db,
         current_user,
         filename=data.filename,
         content_type=data.content_type,
