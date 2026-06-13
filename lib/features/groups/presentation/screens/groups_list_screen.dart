@@ -12,8 +12,8 @@ import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
-import '../../../../shared/services/app_haptics.dart';
 import '../providers/groups_provider.dart';
 import '../widgets/group_card.dart';
 
@@ -56,13 +56,9 @@ class GroupsListScreen extends ConsumerWidget {
 
             return DesktopContentRegion(
               width: DesktopContentWidth.reading,
-              child: RefreshIndicator(
-                color: AppColors.primary,
-                backgroundColor: AppColors.backgroundLight,
-                onRefresh: () async {
-                  await ref.read(groupsNotifierProvider.notifier).load();
-                  await ref.read(appHapticsProvider).refreshComplete();
-                },
+              child: AppRefreshIndicator(
+                onRefresh: () =>
+                    ref.read(groupsNotifierProvider.notifier).load(),
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   itemCount: groups.length,

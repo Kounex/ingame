@@ -16,9 +16,12 @@ import '../../../../shared/widgets/app_popup_menu_button.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
+import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/tappable.dart';
 import '../../../../shared/services/app_haptics.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/coordination_model.dart';
@@ -102,19 +105,14 @@ class _GroupCoordinationScreenState
             final currentUserRole = detailState?.currentUserRole;
             return DesktopContentRegion(
               width: DesktopContentWidth.reading,
-              child: RefreshIndicator(
-                color: AppColors.primary,
-                backgroundColor: AppColors.backgroundLight,
-                onRefresh: () async {
-                  await ref
-                      .read(
-                        groupCoordinationNotifierProvider(
-                          widget.groupId,
-                        ).notifier,
-                      )
-                      .refresh();
-                  await ref.read(appHapticsProvider).refreshComplete();
-                },
+              child: AppRefreshIndicator(
+                onRefresh: () => ref
+                    .read(
+                      groupCoordinationNotifierProvider(
+                        widget.groupId,
+                      ).notifier,
+                    )
+                    .refresh(),
                 child: ListView(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   children: [
@@ -174,10 +172,8 @@ class _GroupCoordinationScreenState
     WidgetRef ref, {
     ScheduledReadyWindow? initialWindow,
   }) async {
-    await showModalBottomSheet<void>(
+    await showAppBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.only(
@@ -226,10 +222,8 @@ class _GroupCoordinationScreenState
     WidgetRef ref, {
     GroupSession? initialSession,
   }) async {
-    await showModalBottomSheet<void>(
+    await showAppBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.only(
@@ -304,10 +298,8 @@ class _GroupCoordinationScreenState
     BuildContext context,
     List<ScheduledReadyWindow> windows,
   ) async {
-    await showModalBottomSheet<void>(
+    await showAppBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final currentUserId = ref
             .read(authNotifierProvider)
@@ -492,36 +484,32 @@ class _UpcomingWindowsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: GlassCard(
-        margin: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.l10n.groupCoordinationUpcomingWindowsSheetTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+    return AppBottomSheet(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.groupCoordinationUpcomingWindowsSheetTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: ListView(
+              children: _buildReadyWindowAgenda(
+                context,
+                windows,
+                currentUserId: currentUserId,
+                currentUserRole: currentUserRole,
+                onEdit: onEdit,
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            Expanded(
-              child: ListView(
-                children: _buildReadyWindowAgenda(
-                  context,
-                  windows,
-                  currentUserId: currentUserId,
-                  currentUserRole: currentUserRole,
-                  onEdit: onEdit,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -799,9 +787,8 @@ class _SessionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final counts = _countSessionRsvps(session.rsvps);
 
-    return GestureDetector(
+    return Tappable(
       key: Key('session-card-${session.id}'),
-      behavior: HitTestBehavior.opaque,
       onTap: () {
         ref.read(appHapticsProvider).selection();
         onOpenDetails();
@@ -979,10 +966,8 @@ class _SessionDetailSheet extends ConsumerWidget {
     required GroupSession session,
     required Future<void> Function(String sessionId, String response) onRsvp,
   }) {
-    return showModalBottomSheet<void>(
+    return showAppBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (_) {
         return FractionallySizedBox(
           heightFactor: 0.82,
@@ -1025,173 +1010,169 @@ class _SessionDetailSheet extends ConsumerWidget {
       'out': session.rsvps.where((item) => item.response == 'out').toList(),
     };
 
-    return SafeArea(
-      top: false,
-      child: GlassCard(
+    return AppBottomSheet(
+      child: Column(
         key: Key('session-detail-sheet-${session.id}'),
-        margin: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        session.title ??
-                            session.game ??
-                            context.l10n.groupCoordinationUntitledSession,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session.title ??
+                          session.game ??
+                          context.l10n.groupCoordinationUntitledSession,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
-                      if (session.game != null && session.title != session.game)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.xs),
-                          child: Text(
-                            session.game!,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                            ),
+                    ),
+                    if (session.game != null && session.title != session.game)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        child: Text(
+                          session.game!,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        _formatDateTime(context, session.startsAt),
-                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        context.l10n.groupCoordinationProposedBy(
-                          session.proposedByDisplayName,
-                        ),
-                        style: const TextStyle(color: AppColors.textTertiary),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                _Pill(label: _statusLabel(context, session.status)),
-                _SessionRsvpCountChip(
-                  icon: Icons.check_circle_outline,
-                  count: groupedResponses['in']!.length,
-                ),
-                _SessionRsvpCountChip(
-                  icon: Icons.help_outline,
-                  count: groupedResponses['maybe']!.length,
-                ),
-                _SessionRsvpCountChip(
-                  icon: Icons.cancel_outlined,
-                  count: groupedResponses['out']!.length,
-                ),
-              ],
-            ),
-            if (session.notes != null && session.notes!.trim().isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                context.l10n.groupCoordinationFieldNotes,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                session.notes!,
-                key: Key('session-notes-full-${session.id}'),
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              context.l10n.groupCoordinationYourResponseTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                _RsvpButton(
-                  label: context.l10n.groupCoordinationRsvpIn,
-                  isSelected: currentRsvp?.response == 'in',
-                  onPressed: currentUserId == null || isUpdating
-                      ? null
-                      : () => onRsvp(session.id, 'in'),
-                ),
-                _RsvpButton(
-                  label: context.l10n.groupCoordinationRsvpMaybe,
-                  isSelected: currentRsvp?.response == 'maybe',
-                  onPressed: currentUserId == null || isUpdating
-                      ? null
-                      : () => onRsvp(session.id, 'maybe'),
-                ),
-                _RsvpButton(
-                  label: context.l10n.groupCoordinationRsvpOut,
-                  isSelected: currentRsvp?.response == 'out',
-                  onPressed: currentUserId == null || isUpdating
-                      ? null
-                      : () => onRsvp(session.id, 'out'),
-                ),
-              ],
-            ),
-            if (isUpdating) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                context.l10n.groupCoordinationRsvpUpdating,
-                style: const TextStyle(color: AppColors.textTertiary),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              context.l10n.groupCoordinationResponsesTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: session.rsvps.isEmpty
-                  ? Text(
-                      context.l10n.groupCoordinationResponsesEmpty,
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      _formatDateTime(context, session.startsAt),
                       style: const TextStyle(color: AppColors.textSecondary),
-                    )
-                  : ListView(
-                      children: [
-                        for (final entry in ['in', 'maybe', 'out']) ...[
-                          if (groupedResponses[entry]!.isNotEmpty)
-                            _SessionResponseSection(
-                              title: _rsvpLabel(context, entry),
-                              entries: groupedResponses[entry]!,
-                            ),
-                        ],
-                      ],
                     ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      context.l10n.groupCoordinationProposedBy(
+                        session.proposedByDisplayName,
+                      ),
+                      style: const TextStyle(color: AppColors.textTertiary),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _Pill(label: _statusLabel(context, session.status)),
+              _SessionRsvpCountChip(
+                icon: Icons.check_circle_outline,
+                count: groupedResponses['in']!.length,
+              ),
+              _SessionRsvpCountChip(
+                icon: Icons.help_outline,
+                count: groupedResponses['maybe']!.length,
+              ),
+              _SessionRsvpCountChip(
+                icon: Icons.cancel_outlined,
+                count: groupedResponses['out']!.length,
+              ),
+            ],
+          ),
+          if (session.notes != null && session.notes!.trim().isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              context.l10n.groupCoordinationFieldNotes,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              session.notes!,
+              key: Key('session-notes-full-${session.id}'),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
-        ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            context.l10n.groupCoordinationYourResponseTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _RsvpButton(
+                label: context.l10n.groupCoordinationRsvpIn,
+                isSelected: currentRsvp?.response == 'in',
+                onPressed: currentUserId == null || isUpdating
+                    ? null
+                    : () => onRsvp(session.id, 'in'),
+              ),
+              _RsvpButton(
+                label: context.l10n.groupCoordinationRsvpMaybe,
+                isSelected: currentRsvp?.response == 'maybe',
+                onPressed: currentUserId == null || isUpdating
+                    ? null
+                    : () => onRsvp(session.id, 'maybe'),
+              ),
+              _RsvpButton(
+                label: context.l10n.groupCoordinationRsvpOut,
+                isSelected: currentRsvp?.response == 'out',
+                onPressed: currentUserId == null || isUpdating
+                    ? null
+                    : () => onRsvp(session.id, 'out'),
+              ),
+            ],
+          ),
+          if (isUpdating) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              context.l10n.groupCoordinationRsvpUpdating,
+              style: const TextStyle(color: AppColors.textTertiary),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            context.l10n.groupCoordinationResponsesTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Expanded(
+            child: session.rsvps.isEmpty
+                ? Text(
+                    context.l10n.groupCoordinationResponsesEmpty,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  )
+                : ListView(
+                    children: [
+                      for (final entry in ['in', 'maybe', 'out']) ...[
+                        if (groupedResponses[entry]!.isNotEmpty)
+                          _SessionResponseSection(
+                            title: _rsvpLabel(context, entry),
+                            entries: groupedResponses[entry]!,
+                          ),
+                      ],
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -1903,94 +1884,61 @@ class _WindowEditorSheetState extends State<_WindowEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return SafeArea(
-      top: false,
-      child: GlassCard(
-        margin: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.initialWindow == null
-                  ? l10n.groupCoordinationAddWindowTitle
-                  : l10n.groupCoordinationEditWindowTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
+    return AppBottomSheet(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.initialWindow == null
+                ? l10n.groupCoordinationAddWindowTitle
+                : l10n.groupCoordinationEditWindowTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: AppSpacing.md),
-            _DateTimeField(
-              label: l10n.groupCoordinationStartsAt,
-              value: _startsAt,
-              onChanged: (value) => setState(() => _startsAt = value),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _DateTimeField(
-              label: l10n.groupCoordinationEndsAt,
-              value: _endsAt,
-              onChanged: (value) => setState(() => _endsAt = value),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                if (widget.onDelete != null)
-                  Expanded(
-                    child: GlassButton(
-                      variant: GlassButtonVariant.ghost,
-                      onPressed: _isSaving
-                          ? null
-                          : () async {
-                              final confirmed = await showAppConfirmationDialog(
-                                context,
-                                title: context
-                                    .l10n
-                                    .groupCoordinationDeleteWindowConfirmTitle,
-                                message: context
-                                    .l10n
-                                    .groupCoordinationDeleteWindowConfirmMessage,
-                                confirmLabel: context.l10n.commonDelete,
-                                cancelLabel: context.l10n.commonCancel,
-                                variant: AppConfirmationVariant.destructive,
-                              );
-                              if (!confirmed || !context.mounted) return;
-                              final navigator = Navigator.of(context);
-                              final l10n = context.l10n;
-                              setState(() => _isSaving = true);
-                              try {
-                                await widget.onDelete!.call();
-                                if (!mounted) return;
-                                navigator.pop();
-                              } catch (error) {
-                                if (!mounted) return;
-                                AppToast.error(
-                                  navigator.context,
-                                  ApiError.userMessage(error, l10n),
-                                );
-                              } finally {
-                                if (mounted) setState(() => _isSaving = false);
-                              }
-                            },
-                      child: Text(l10n.commonDelete),
-                    ),
-                  ),
-                if (widget.onDelete != null)
-                  const SizedBox(width: AppSpacing.sm),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _DateTimeField(
+            label: l10n.groupCoordinationStartsAt,
+            value: _startsAt,
+            onChanged: (value) => setState(() => _startsAt = value),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _DateTimeField(
+            label: l10n.groupCoordinationEndsAt,
+            value: _endsAt,
+            onChanged: (value) => setState(() => _endsAt = value),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              if (widget.onDelete != null)
                 Expanded(
                   child: GlassButton(
-                    onPressed: _isSaving || !_endsAt.isAfter(_startsAt)
+                    variant: GlassButtonVariant.ghost,
+                    onPressed: _isSaving
                         ? null
                         : () async {
+                            final confirmed = await showAppConfirmationDialog(
+                              context,
+                              title: context
+                                  .l10n
+                                  .groupCoordinationDeleteWindowConfirmTitle,
+                              message: context
+                                  .l10n
+                                  .groupCoordinationDeleteWindowConfirmMessage,
+                              confirmLabel: context.l10n.commonDelete,
+                              cancelLabel: context.l10n.commonCancel,
+                              variant: AppConfirmationVariant.destructive,
+                            );
+                            if (!confirmed || !context.mounted) return;
                             final navigator = Navigator.of(context);
                             final l10n = context.l10n;
                             setState(() => _isSaving = true);
                             try {
-                              await widget.onSave(
-                                _startsAt.toUtc(),
-                                _endsAt.toUtc(),
-                              );
+                              await widget.onDelete!.call();
                               if (!mounted) return;
                               navigator.pop();
                             } catch (error) {
@@ -2003,14 +1951,42 @@ class _WindowEditorSheetState extends State<_WindowEditorSheet> {
                               if (mounted) setState(() => _isSaving = false);
                             }
                           },
-                    isLoading: _isSaving,
-                    child: Text(l10n.commonSave),
+                    child: Text(l10n.commonDelete),
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              if (widget.onDelete != null) const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: GlassButton(
+                  onPressed: _isSaving || !_endsAt.isAfter(_startsAt)
+                      ? null
+                      : () async {
+                          final navigator = Navigator.of(context);
+                          final l10n = context.l10n;
+                          setState(() => _isSaving = true);
+                          try {
+                            await widget.onSave(
+                              _startsAt.toUtc(),
+                              _endsAt.toUtc(),
+                            );
+                            if (!mounted) return;
+                            navigator.pop();
+                          } catch (error) {
+                            if (!mounted) return;
+                            AppToast.error(
+                              navigator.context,
+                              ApiError.userMessage(error, l10n),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _isSaving = false);
+                          }
+                        },
+                  isLoading: _isSaving,
+                  child: Text(l10n.commonSave),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -2068,143 +2044,139 @@ class _SessionEditorSheetState extends State<_SessionEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return SafeArea(
-      top: false,
-      child: GlassCard(
-        margin: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.initialSession == null
-                  ? l10n.groupCoordinationAddSessionTitle
-                  : l10n.groupCoordinationEditSessionTitle,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
+    return AppBottomSheet(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.initialSession == null
+                ? l10n.groupCoordinationAddSessionTitle
+                : l10n.groupCoordinationEditSessionTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
             ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          GlassInput(
+            controller: _titleController,
+            label: l10n.groupCoordinationFieldTitle,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          GlassInput(
+            controller: _gameController,
+            label: l10n.groupCoordinationFieldGame,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          GlassInput(
+            controller: _notesController,
+            label: l10n.groupCoordinationFieldNotes,
+            maxLines: 3,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _DateTimeField(
+            label: l10n.groupCoordinationStartsAt,
+            value: _startsAt,
+            onChanged: (value) => setState(() => _startsAt = value),
+          ),
+          if (widget.initialSession != null) ...[
             const SizedBox(height: AppSpacing.md),
-            GlassInput(
-              controller: _titleController,
-              label: l10n.groupCoordinationFieldTitle,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            GlassInput(
-              controller: _gameController,
-              label: l10n.groupCoordinationFieldGame,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            GlassInput(
-              controller: _notesController,
-              label: l10n.groupCoordinationFieldNotes,
-              maxLines: 3,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _DateTimeField(
-              label: l10n.groupCoordinationStartsAt,
-              value: _startsAt,
-              onChanged: (value) => setState(() => _startsAt = value),
-            ),
-            if (widget.initialSession != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              Builder(
-                builder: (context) {
-                  final statusOptions = <({String value, String label})>[
-                    (
-                      value: 'proposed',
-                      label: l10n.groupCoordinationStatusProposed,
-                    ),
-                    (
-                      value: 'confirmed',
-                      label: l10n.groupCoordinationStatusConfirmed,
-                    ),
-                    (
-                      value: 'cancelled',
-                      label: l10n.groupCoordinationStatusCancelled,
-                    ),
-                  ];
+            Builder(
+              builder: (context) {
+                final statusOptions = <({String value, String label})>[
+                  (
+                    value: 'proposed',
+                    label: l10n.groupCoordinationStatusProposed,
+                  ),
+                  (
+                    value: 'confirmed',
+                    label: l10n.groupCoordinationStatusConfirmed,
+                  ),
+                  (
+                    value: 'cancelled',
+                    label: l10n.groupCoordinationStatusCancelled,
+                  ),
+                ];
 
-                  return AppDropdownSelector<String>.field(
-                    value: _status ?? statusOptions.first.value,
-                    labelText: l10n.groupCoordinationFieldStatus,
-                    options: statusOptions
-                        .map(
-                          (option) => AppDropdownOption(
-                            value: option.value,
-                            label: option.label,
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() => _status = value);
-                    },
-                  );
-                },
-              ),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            GlassButton(
-              onPressed: _isSaving
-                  ? null
-                  : () async {
-                      final shouldConfirmCancellation =
-                          widget.initialSession != null &&
-                          widget.initialSession!.status != 'cancelled' &&
-                          _status == 'cancelled';
-                      if (shouldConfirmCancellation) {
-                        final confirmed = await showAppConfirmationDialog(
-                          context,
-                          title: context
-                              .l10n
-                              .groupCoordinationCancelSessionConfirmTitle,
-                          message: context
-                              .l10n
-                              .groupCoordinationCancelSessionConfirmMessage,
-                          confirmLabel: context
-                              .l10n
-                              .groupCoordinationCancelSessionConfirmAction,
-                          cancelLabel: context.l10n.commonCancel,
-                          variant: AppConfirmationVariant.destructive,
-                        );
-                        if (!confirmed || !context.mounted) return;
-                      }
-                      final navigator = Navigator.of(context);
-                      final l10n = context.l10n;
-                      setState(() => _isSaving = true);
-                      try {
-                        await widget.onSave(
-                          _titleController.text.trim().isEmpty
-                              ? null
-                              : _titleController.text.trim(),
-                          _gameController.text.trim().isEmpty
-                              ? null
-                              : _gameController.text.trim(),
-                          _notesController.text.trim().isEmpty
-                              ? null
-                              : _notesController.text.trim(),
-                          _startsAt.toUtc(),
-                          _status,
-                        );
-                        if (!mounted) return;
-                        navigator.pop();
-                      } catch (error) {
-                        if (!mounted) return;
-                        AppToast.error(
-                          navigator.context,
-                          ApiError.userMessage(error, l10n),
-                        );
-                      } finally {
-                        if (mounted) setState(() => _isSaving = false);
-                      }
-                    },
-              isLoading: _isSaving,
-              child: Text(l10n.commonSave),
+                return AppDropdownSelector<String>.field(
+                  value: _status ?? statusOptions.first.value,
+                  labelText: l10n.groupCoordinationFieldStatus,
+                  options: statusOptions
+                      .map(
+                        (option) => AppDropdownOption(
+                          value: option.value,
+                          label: option.label,
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() => _status = value);
+                  },
+                );
+              },
             ),
           ],
-        ),
+          const SizedBox(height: AppSpacing.lg),
+          GlassButton(
+            onPressed: _isSaving
+                ? null
+                : () async {
+                    final shouldConfirmCancellation =
+                        widget.initialSession != null &&
+                        widget.initialSession!.status != 'cancelled' &&
+                        _status == 'cancelled';
+                    if (shouldConfirmCancellation) {
+                      final confirmed = await showAppConfirmationDialog(
+                        context,
+                        title: context
+                            .l10n
+                            .groupCoordinationCancelSessionConfirmTitle,
+                        message: context
+                            .l10n
+                            .groupCoordinationCancelSessionConfirmMessage,
+                        confirmLabel: context
+                            .l10n
+                            .groupCoordinationCancelSessionConfirmAction,
+                        cancelLabel: context.l10n.commonCancel,
+                        variant: AppConfirmationVariant.destructive,
+                      );
+                      if (!confirmed || !context.mounted) return;
+                    }
+                    final navigator = Navigator.of(context);
+                    final l10n = context.l10n;
+                    setState(() => _isSaving = true);
+                    try {
+                      await widget.onSave(
+                        _titleController.text.trim().isEmpty
+                            ? null
+                            : _titleController.text.trim(),
+                        _gameController.text.trim().isEmpty
+                            ? null
+                            : _gameController.text.trim(),
+                        _notesController.text.trim().isEmpty
+                            ? null
+                            : _notesController.text.trim(),
+                        _startsAt.toUtc(),
+                        _status,
+                      );
+                      if (!mounted) return;
+                      navigator.pop();
+                    } catch (error) {
+                      if (!mounted) return;
+                      AppToast.error(
+                        navigator.context,
+                        ApiError.userMessage(error, l10n),
+                      );
+                    } finally {
+                      if (mounted) setState(() => _isSaving = false);
+                    }
+                  },
+            isLoading: _isSaving,
+            child: Text(l10n.commonSave),
+          ),
+        ],
       ),
     );
   }

@@ -12,6 +12,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/providers/websocket_provider.dart';
 import '../../../../shared/widgets/app_background.dart';
+import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../../shared/widgets/app_chip.dart';
 import '../../../../shared/widgets/app_confirmation_dialog.dart';
 import '../../../../shared/widgets/app_popup_menu_button.dart';
@@ -19,6 +20,7 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/services/app_haptics.dart';
 import '../../domain/coordination_model.dart';
@@ -27,6 +29,7 @@ import '../providers/group_detail_provider.dart';
 import '../providers/groups_provider.dart';
 import '../widgets/invite_link_share.dart';
 import '../widgets/member_list.dart';
+import '../widgets/member_profile_sheet.dart';
 
 class GroupDetailScreen extends ConsumerWidget {
   const GroupDetailScreen({super.key, required this.groupId});
@@ -110,15 +113,11 @@ class GroupDetailScreen extends ConsumerWidget {
           ),
           data: (detail) => DesktopContentRegion(
             width: DesktopContentWidth.reading,
-            child: RefreshIndicator(
-              color: AppColors.primary,
-              backgroundColor: AppColors.backgroundLight,
-              onRefresh: () async {
-                await ref
-                    .read(groupDetailNotifierProvider(groupId).notifier)
-                    .refresh();
-                await ref.read(appHapticsProvider).refreshComplete();
-              },
+            child: AppRefreshIndicator(
+              onRefresh: () =>
+                  ref
+                      .read(groupDetailNotifierProvider(groupId).notifier)
+                      .refresh(),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -225,7 +224,14 @@ class GroupDetailScreen extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          MemberList(groupId: groupId, members: detail.members),
+                          MemberList(
+                            groupId: groupId,
+                            members: detail.members,
+                            onMemberTap: (member) => showMemberProfileSheet(
+                              context,
+                              member: member,
+                            ),
+                          ),
                           const SizedBox(height: AppSpacing.lg),
                         ],
                       ),
@@ -263,38 +269,13 @@ class GroupDetailScreen extends ConsumerWidget {
   }
 
   void _showInviteSheet(BuildContext context, String inviteCode) {
-    showModalBottomSheet(
+    showAppBottomSheet(
       context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.backgroundLight,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border(
-            top: BorderSide(color: AppColors.glassBorder),
-            left: BorderSide(color: AppColors.glassBorder),
-            right: BorderSide(color: AppColors.glassBorder),
-          ),
-        ),
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.sm,
-          AppSpacing.lg,
-          AppSpacing.xl,
-        ),
+      isScrollControlled: false,
+      builder: (_) => AppBottomSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
             InviteLinkShare(inviteCode: inviteCode),
             const SizedBox(height: AppSpacing.md),
           ],

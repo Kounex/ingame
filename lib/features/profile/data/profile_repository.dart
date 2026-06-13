@@ -91,6 +91,11 @@ class ProfileRepository {
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<User> getUserById(String userId) async {
+    final response = await dio.get(ApiEndpoints.user(userId));
+    return User.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<User> setEmailPassword({
     required String email,
     required String password,

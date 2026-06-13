@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_anchored_popover_selector.dart';
+import '../../../../shared/widgets/tappable.dart';
 
 class TimezoneSelector extends StatelessWidget {
   const TimezoneSelector({
@@ -87,10 +88,9 @@ class TimezoneSelector extends StatelessWidget {
               },
               child: Semantics(
                 button: true,
-                child: GestureDetector(
+                child: Tappable(
                   key: const ValueKey('timezone-selector-trigger'),
                   onTap: togglePopover,
-                  behavior: HitTestBehavior.opaque,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: AppColors.glassSurface,

@@ -7,6 +7,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../shared/providers/presence_provider.dart';
 import '../../../../shared/widgets/avatar_with_status.dart';
 import '../../../../shared/widgets/status_indicator.dart';
+import '../../../../shared/widgets/tappable.dart';
 import '../../domain/membership_model.dart';
 
 class MemberList extends StatelessWidget {
@@ -14,10 +15,12 @@ class MemberList extends StatelessWidget {
     super.key,
     required this.groupId,
     required this.members,
+    this.onMemberTap,
   });
 
   final String groupId;
   final List<GroupMember> members;
+  final void Function(GroupMember member)? onMemberTap;
 
   static const _roleOrder = {'owner': 0, 'admin': 1, 'member': 2};
 
@@ -40,7 +43,13 @@ class MemberList extends StatelessWidget {
       children: [
         for (var index = 0; index < sorted.length; index++) ...[
           if (index > 0) const Divider(height: 1),
-          _MemberTile(groupId: groupId, member: sorted[index]),
+          _MemberTile(
+            groupId: groupId,
+            member: sorted[index],
+            onTap: onMemberTap != null
+                ? () => onMemberTap!(sorted[index])
+                : null,
+          ),
         ],
       ],
     );
@@ -51,10 +60,12 @@ class _MemberTile extends ConsumerWidget {
   const _MemberTile({
     required this.groupId,
     required this.member,
+    this.onTap,
   });
 
   final String groupId;
   final GroupMember member;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,57 +74,60 @@ class _MemberTile extends ConsumerWidget {
     );
     final roleBadge = _roleBadge(context);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: AppSpacing.sm,
-        horizontal: AppSpacing.xs,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          AvatarWithStatus(
-            imageUrl: member.avatarUrl,
-            displayName: member.displayName,
-            status: status,
-            size: 36,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        member.displayName,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (roleBadge != null) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      roleBadge,
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _statusLabel(context, status),
-                  style: TextStyle(
-                    color: _statusColor(status),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+    return Tappable(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xs,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AvatarWithStatus(
+              imageUrl: member.avatarUrl,
+              displayName: member.displayName,
+              status: status,
+              size: 36,
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          member.displayName,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (roleBadge != null) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        roleBadge,
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _statusLabel(context, status),
+                    style: TextStyle(
+                      color: _statusColor(status),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

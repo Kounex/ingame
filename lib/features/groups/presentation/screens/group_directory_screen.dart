@@ -15,6 +15,8 @@ import '../../../../shared/widgets/app_background.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/widgets/error_display.dart';
+import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/services/app_haptics.dart';
 import '../../data/groups_repository.dart';
@@ -156,22 +158,9 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
     if (_isLoading) return const LoadingIndicator();
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _error!.userMessage(context.l10n),
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            GlassButton(
-              onPressed: _loadGroups,
-              variant: GlassButtonVariant.secondary,
-              child: Text(context.l10n.commonRetry),
-            ),
-          ],
-        ),
+      return ErrorDisplay(
+        message: _error!.userMessage(context.l10n),
+        onRetry: () => _loadGroups(search: _currentSearchQuery),
       );
     }
 
@@ -200,13 +189,16 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      itemCount: _groups!.length,
-      itemBuilder: (context, index) {
+    return AppRefreshIndicator(
+      onRefresh: () => _loadGroups(search: _currentSearchQuery),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        itemCount: _groups!.length,
+        itemBuilder: (context, index) {
         final group = _groups![index];
         final requestSubmitted = group.hasPendingJoinRequest;
         return Padding(
@@ -286,6 +278,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
           ),
         );
       },
+      ),
     );
   }
 }

@@ -16,6 +16,7 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/avatar_with_status.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
+import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/status_indicator.dart';
 import '../../../../shared/widgets/user_avatar.dart';
@@ -331,11 +332,19 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
             }
             return DesktopContentRegion(
               width: DesktopContentWidth.wide,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.md,
-                ),
+              child: AppRefreshIndicator(
+                onRefresh: () =>
+                    ref
+                        .read(
+                          groupDetailNotifierProvider(widget.groupId).notifier,
+                        )
+                        .refresh(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -538,6 +547,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     ],
                   ],
                 ),
+              ),
               ),
             );
           },
