@@ -21,8 +21,8 @@ class NotificationRepository {
       data: {
         'platform': platform,
         'token': token,
-        ?if (deviceLabel != null) 'device_label': deviceLabel,
-        ?if (appVersion != null) 'app_version': appVersion,
+        'device_label': deviceLabel,
+        'app_version': appVersion,
       },
     );
     return DeviceRegistration.fromJson(response.data as Map<String, dynamic>);

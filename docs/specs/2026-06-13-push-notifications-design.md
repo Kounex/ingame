@@ -85,7 +85,7 @@ flowchart TD
 |--------|------|-------|
 | `id` | UUID | Primary key |
 | `user_id` | UUID | FK → users |
-| `platform` | VARCHAR(16) | `ios`, `android` |
+| `platform` | VARCHAR(16) | `ios`, `android`, `web` |
 | `token` | TEXT | FCM registration token |
 | `device_label` | VARCHAR(128) | Optional user-visible label |
 | `app_version` | VARCHAR(32) | Optional, for future targeting |
@@ -473,3 +473,4 @@ No schema migrations needed in SP3b — the `NotificationPreference` table and `
 | Date | Section | Change | Reason |
 |------|---------|--------|--------|
 | 2026-06-13 | Initial spec | Split SP3 into SP3a (push notifications) and SP3b (settings/account); wrote dedicated push notification spec | Reduce scope per sub-project; push is higher priority than settings UI |
+| 2026-06-14 | Device Registration | Added `web` as valid platform; web push via FCM service worker + VAPID key | Extend notifications to web app users |

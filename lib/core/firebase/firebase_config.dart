@@ -18,7 +18,7 @@ class FirebaseConfig {
 
   static FirebaseOptions? get webOptions {
     if (!hasWebConfig) return null;
-    return FirebaseOptions(
+    return const FirebaseOptions(
       apiKey: _apiKey,
       authDomain: _authDomain,
       projectId: _projectId,
