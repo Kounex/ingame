@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +6,8 @@ class NotificationService {
   NotificationService._();
 
   static final instance = NotificationService._();
+
+  bool get isSupported => !kIsWeb;
 
   FirebaseMessaging get _messaging => FirebaseMessaging.instance;
 
@@ -38,9 +38,11 @@ class NotificationService {
   }
 
   String get platform {
-    if (Platform.isIOS) return 'ios';
-    if (Platform.isAndroid) return 'android';
-    return 'unknown';
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.iOS => 'ios',
+      TargetPlatform.android => 'android',
+      _ => 'unknown',
+    };
   }
 }
 

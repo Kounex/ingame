@@ -14,6 +14,8 @@ class NotificationNotifier extends AsyncNotifier<void> {
 
   Future<void> bootstrap() async {
     final service = ref.read(notificationServiceProvider);
+    if (!service.isSupported) return;
+
     final repo = ref.read(notificationRepositoryProvider);
 
     final status = await service.requestPermission();
