@@ -7,6 +7,7 @@ from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.db.models.user import User
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.user_repo import UserRepository
+from app.notifications.dispatcher import enqueue_notification
 
 
 async def create_request(db: AsyncSession, group_id: uuid.UUID, user: User):
@@ -56,6 +57,13 @@ async def _create_request_for_group(repo: GroupRepository, group, user: User):
             )
 
     join_request = await repo.create_join_request(group.id, user.id)
+
+    enqueue_notification(
+        event_type="join_request_pending",
+        group_id=group.id,
+        actor_user_id=user.id,
+        payload={},
+    )
 
     return {
         "id": join_request.id,

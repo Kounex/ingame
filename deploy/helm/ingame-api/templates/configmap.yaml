@@ -17,3 +17,6 @@ data:
   INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL: {{ .Values.config.avatarStoragePublicBaseUrl | quote }}
   INGAME_AVATAR_UPLOAD_MAX_FILE_SIZE_BYTES: {{ .Values.config.avatarUploadMaxFileSizeBytes | quote }}
   INGAME_AVATAR_UPLOAD_PRESIGN_EXPIRES_SECONDS: {{ .Values.config.avatarUploadPresignExpiresSeconds | quote }}
+  INGAME_AVATAR_UPLOAD_UNCLAIMED_TTL_HOURS: {{ .Values.config.avatarUploadUnclaimedTtlHours | quote }}
+  INGAME_NOTIFICATIONS_ENABLED: {{ .Values.config.notificationsEnabled | quote }}
+  INGAME_NOTIFICATIONS_DRY_RUN: {{ .Values.config.notificationsDryRun | quote }}

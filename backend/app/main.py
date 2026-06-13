@@ -14,12 +14,28 @@ from app.core.middleware import RequestLoggingMiddleware
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     from app.db.database import engine
+    from app.jobs.avatar_upload_janitor import run_avatar_upload_janitor_loop
+    from app.jobs.stale_token_janitor import run_stale_token_janitor_loop
+    from app.notifications.fcm import initialize_firebase
     from app.redis.client import redis_pool
     from app.ws.manager import manager
 
     await redis_pool.initialize()
+    initialize_firebase()
     pubsub_task = asyncio.create_task(manager.run_pubsub_listener())
+    avatar_upload_janitor_task = asyncio.create_task(run_avatar_upload_janitor_loop())
+    stale_token_janitor_task = asyncio.create_task(run_stale_token_janitor_loop())
     yield
+    stale_token_janitor_task.cancel()
+    try:
+        await stale_token_janitor_task
+    except asyncio.CancelledError:
+        pass
+    avatar_upload_janitor_task.cancel()
+    try:
+        await avatar_upload_janitor_task
+    except asyncio.CancelledError:
+        pass
     pubsub_task.cancel()
     try:
         await pubsub_task

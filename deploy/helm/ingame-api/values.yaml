@@ -52,6 +52,11 @@ config:
   avatarStoragePublicBaseUrl: ""
   avatarUploadMaxFileSizeBytes: "2097152"
   avatarUploadPresignExpiresSeconds: "300"
+  # Avatar uploads that were issued but never committed through PATCH /users/me
+  # are deleted by the in-process janitor after this many hours.
+  avatarUploadUnclaimedTtlHours: "24"
+  notificationsEnabled: "true"
+  notificationsDryRun: "false"
 
 # -- Secret references; actual values come from SealedSecrets / ExternalSecrets.
 # Avatar upload support requires the storage bucket/access credentials below plus
@@ -65,6 +70,7 @@ secrets:
   avatarStorageBucket: "Q0hBTkdFTUU="
   avatarStorageAccessKeyId: "Q0hBTkdFTUU="
   avatarStorageSecretAccessKey: "Q0hBTkdFTUU="
+  firebaseServiceAccountJson: "Q0hBTkdFTUU="
 
 # External PostgreSQL / Redis (when not using subcharts)
 postgresql:

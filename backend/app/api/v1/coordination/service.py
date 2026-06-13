@@ -19,6 +19,7 @@ from app.db.repositories.coordination_repo import CoordinationRepository
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.user_repo import UserRepository
 from app.ws.manager import manager
+from app.notifications.dispatcher import enqueue_notification
 
 _SESSION_STATUSES = {"proposed", "confirmed", "cancelled"}
 AfterCommitHook = Callable[[], Awaitable[None]]
@@ -73,6 +74,12 @@ async def create_scheduled_ready_window(
         activity_type="scheduled_ready_updated",
         message=f"{user.display_name} updated their ready window",
         scheduled_ready_window_id=window.id,
+    )
+    enqueue_notification(
+        event_type="ready_changed",
+        group_id=group_id,
+        actor_user_id=user.id,
+        payload={},
     )
     response = await _window_to_response(window, user_repo)
     activity_response = await _activity_to_response(activity, user_repo)
@@ -242,6 +249,16 @@ async def create_session(
         message=f"{user.display_name} proposed a session",
         session_id=session.id,
     )
+    enqueue_notification(
+        event_type="session_proposed",
+        group_id=group_id,
+        actor_user_id=user.id,
+        payload={
+            "session_title": session.title,
+            "game": session.game,
+            "formatted_time": str(session.starts_at) if session.starts_at else None,
+        },
+    )
     response = (await _sessions_to_response([session], [], user_repo))[0]
     activity_response = await _activity_to_response(activity, user_repo)
     return response, (
@@ -304,6 +321,16 @@ async def update_session(
         activity_type="session_updated",
         message=f"{user.display_name} updated a session",
         session_id=updated.id,
+    )
+    enqueue_notification(
+        event_type="session_updated",
+        group_id=group_id,
+        actor_user_id=user.id,
+        payload={
+            "session_title": updated.title,
+            "game": updated.game,
+            "user_rsvps": {str(r.user_id): r.response for r in rsvps},
+        },
     )
     response = (await _sessions_to_response([updated], rsvps, user_repo))[0]
     activity_response = await _activity_to_response(activity, user_repo)
@@ -389,6 +416,16 @@ async def upsert_rsvp(
         activity_type="session_rsvp_updated",
         message=f"{user.display_name} responded {response} to a session",
         session_id=session.id,
+    )
+    enqueue_notification(
+        event_type="session_rsvp_updated",
+        group_id=group_id,
+        actor_user_id=user.id,
+        payload={
+            "session_title": session.title,
+            "game": session.game,
+            "rsvp_response": response,
+        },
     )
     response_model = await _rsvp_to_response(rsvp, user_repo)
     activity_response = await _activity_to_response(activity, user_repo)

@@ -23,6 +23,10 @@ services:
       INGAME_AVATAR_STORAGE_ACCESS_KEY_ID: ingame
       INGAME_AVATAR_STORAGE_SECRET_ACCESS_KEY: ingame-dev-secret
       INGAME_AVATAR_STORAGE_PUBLIC_BASE_URL: http://localhost:9000/ingame-avatars
+      INGAME_AVATAR_UPLOAD_UNCLAIMED_TTL_HOURS: "24"
+      INGAME_NOTIFICATIONS_ENABLED: "true"
+      INGAME_NOTIFICATIONS_DRY_RUN: "true"
+      INGAME_FIREBASE_SERVICE_ACCOUNT_JSON: ""
     volumes:
       - ./backend:/app
     command: >
