@@ -71,4 +71,11 @@ class ApiEndpoints {
   static String groupJoinRequests(String groupId) =>
       '/groups/$groupId/join-requests';
   static String joinRequest(String id) => '/join-requests/$id';
+
+  // Notifications
+  static const String deviceRegistrations = '/users/me/device-registrations';
+  static String deviceRegistration(String id) =>
+      '/users/me/device-registrations/$id';
+  static const String notificationPreferences =
+      '/users/me/notification-preferences';
 }
