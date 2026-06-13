@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     avatar_storage_public_base_url: str = ""
     avatar_upload_max_file_size_bytes: int = 2 * 1024 * 1024
     avatar_upload_presign_expires_seconds: int = 300
+    avatar_upload_unclaimed_ttl_hours: int = 24
+
+    firebase_service_account_json: str = ""
+    notifications_enabled: bool = True
+    notifications_dry_run: bool = False
 
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default=["http://localhost:3000", "http://localhost:8080"],
