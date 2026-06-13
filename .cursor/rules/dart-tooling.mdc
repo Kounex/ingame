@@ -1,0 +1,15 @@
+---
+description: Prefer Dart MCP server tools over grep/find for semantic code operations
+globs: ["lib/**/*.dart", "test/**/*.dart", "backend/**/*.py"]
+---
+
+# Dart Tooling — Prefer MCP Server
+
+When working with Dart/Flutter code, prefer the Dart MCP server tools over grep/find:
+
+- Use `dart > lsp` for symbol resolution, hover docs, and signature help
+- Use `dart > analyze_files` for diagnostics instead of `dart analyze` via shell
+- Use `dart > pub` / `dart > pub_dev_search` for dependency management
+- Use `dart > rip_grep_packages` to search inside package dependencies
+- Use `dart > read_package_uris` to explore package source code
+- Only fall back to grep/find when searching for patterns the LSP can't express (string literals, comments, TODOs)
