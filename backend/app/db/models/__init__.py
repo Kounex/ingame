@@ -8,6 +8,9 @@ from app.db.models.coordination import (
 )
 from app.db.models.revoked_auth_link import RevokedAuthLink
 from app.db.models.provider_identity import ProviderIdentity
+from app.db.models.avatar_upload_ledger import AvatarUploadLedger
+from app.db.models.device_registration import DeviceRegistration
+from app.db.models.notification_preference import NotificationPreference
 
 __all__ = [
     "User",
@@ -20,4 +23,7 @@ __all__ = [
     "GroupActivityEvent",
     "RevokedAuthLink",
     "ProviderIdentity",
+    "AvatarUploadLedger",
+    "DeviceRegistration",
+    "NotificationPreference",
 ]
