@@ -29,9 +29,9 @@ async def register_device(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if data.platform not in ("ios", "android"):
+    if data.platform not in ("ios", "android", "web"):
         raise ValidationError(
-            "Platform must be 'ios' or 'android'",
+            "Platform must be 'ios', 'android', or 'web'",
             code=ErrorCode.NOTIFICATION_INVALID_PLATFORM,
         )
 
