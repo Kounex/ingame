@@ -14,6 +14,7 @@ from app.redis.status_store import (
     CONNECTION_AWAY,
     CONNECTION_ONLINE,
 )
+from app.notifications.dispatcher import enqueue_notification
 from app.ws.manager import manager
 
 
@@ -118,6 +119,12 @@ async def handle_message(user_id: uuid.UUID, data: dict) -> None:
                 ready=True,
                 ready_since=payload["since"],
                 ready_expires_at=payload["expires_at"],
+            )
+            enqueue_notification(
+                event_type="ready_changed",
+                group_id=uuid.UUID(group_id),
+                actor_user_id=user_id,
+                payload={},
             )
         else:
             await clear_group_ready(group_id, str(user_id))

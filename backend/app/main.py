@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
@@ -9,6 +10,8 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.core.exceptions import AppHTTPException
 from app.core.middleware import RequestLoggingMiddleware
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
