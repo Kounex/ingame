@@ -27,28 +27,32 @@ class NotificationNotifier extends AsyncNotifier<void> {
 
     final repo = ref.read(notificationRepositoryProvider);
 
-    final status = await service.requestPermission();
-    if (status != AuthorizationStatus.authorized &&
-        status != AuthorizationStatus.provisional) {
-      debugPrint('Push notifications not authorized: $status');
-      return;
+    try {
+      final status = await service.requestPermission();
+      if (status != AuthorizationStatus.authorized &&
+          status != AuthorizationStatus.provisional) {
+        debugPrint('Push notifications not authorized: $status');
+        return;
+      }
+
+      final token = await service.getToken();
+      if (token == null) {
+        debugPrint('No FCM token available');
+        return;
+      }
+
+      await _registerToken(repo, service, token);
+
+      service.onTokenRefresh((newToken) async {
+        await _registerToken(repo, service, newToken);
+      });
+
+      service.onForegroundMessage((message) {
+        debugPrint('Foreground push: ${message.notification?.title}');
+      });
+    } catch (e) {
+      debugPrint('Push notification bootstrap failed: $e');
     }
-
-    final token = await service.getToken();
-    if (token == null) {
-      debugPrint('No FCM token available');
-      return;
-    }
-
-    await _registerToken(repo, service, token);
-
-    service.onTokenRefresh((newToken) async {
-      await _registerToken(repo, service, newToken);
-    });
-
-    service.onForegroundMessage((message) {
-      debugPrint('Foreground push: ${message.notification?.title}');
-    });
   }
 
   Future<void> _registerToken(

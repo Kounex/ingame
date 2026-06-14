@@ -12,7 +12,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final firebaseOptions = FirebaseConfig.webOptions;
   if (!kIsWeb || firebaseOptions != null) {
-    await Firebase.initializeApp(options: firebaseOptions);
+    try {
+      await Firebase.initializeApp(options: firebaseOptions);
+    } on FirebaseException catch (e) {
+      if (e.code != 'duplicate-app') rethrow;
+    }
   }
   final prefs = await SharedPreferences.getInstance();
   runApp(
