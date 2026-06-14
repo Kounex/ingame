@@ -63,12 +63,16 @@ async def send_push(
         messaging.send(message)
         return True
     except Exception as exc:
-        error_code = getattr(exc, "code", None)
-        if error_code in ("NOT_FOUND", "UNREGISTERED", "INVALID_ARGUMENT"):
-            logger.info("FCM token invalid (%s), should revoke: %s", error_code, token[:20])
-            return False
+        if is_token_invalid_error(exc):
+            logger.info("FCM token invalid (%s), revoking: %s", getattr(exc, "code", None), token[:20])
+            raise InvalidTokenError(token) from exc
         logger.exception("FCM send failed for token %s", token[:20])
         return False
+
+
+class InvalidTokenError(Exception):
+    def __init__(self, token: str) -> None:
+        self.token = token
 
 
 def is_token_invalid_error(exc: Exception) -> bool:

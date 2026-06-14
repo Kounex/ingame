@@ -40,7 +40,7 @@ services:
       INGAME_JWT_SECRET: ${INGAME_JWT_SECRET}
       INGAME_STEAM_API_KEY: ${INGAME_STEAM_API_KEY:-}
       INGAME_DISCORD_CLIENT_ID: ${INGAME_DISCORD_CLIENT_ID:-}
-      INGAME_APPLE_CLIENT_IDS: ${INGAME_APPLE_CLIENT_IDS:-ingame.kounex.com,com.kounex.ingame.web}
+      INGAME_APPLE_CLIENT_IDS: ${INGAME_APPLE_CLIENT_IDS:-com.kounex.ingame,com.kounex.ingame.web}
       INGAME_DEBUG: "false"
       INGAME_CORS_ALLOW_ORIGINS: https://app.in-game.app
       INGAME_API_PREFIX: /api/v1

@@ -129,7 +129,7 @@ python3 -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --r
 Optional backend auth-provider config:
 
 - `INGAME_DISCORD_CLIENT_ID=<your Discord application client id>`
-- `INGAME_APPLE_CLIENT_IDS=ingame.kounex.com,com.kounex.ingame.web`
+- `INGAME_APPLE_CLIENT_IDS=com.kounex.ingame,com.kounex.ingame.web`
 
 ## Verification
 

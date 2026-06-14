@@ -28,7 +28,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>ingame.kounex.com</string>
+			<string>com.kounex.ingame</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>ingame</string>

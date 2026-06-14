@@ -15,7 +15,7 @@ services:
       INGAME_DATABASE_URL: postgresql+asyncpg://ingame:ingame@postgres:5432/ingame
       INGAME_REDIS_URL: redis://redis:6379
       INGAME_DISCORD_CLIENT_ID: ${INGAME_DISCORD_CLIENT_ID:-}
-      INGAME_APPLE_CLIENT_IDS: ingame.kounex.com,com.kounex.ingame.web
+      INGAME_APPLE_CLIENT_IDS: com.kounex.ingame,com.kounex.ingame.web
       INGAME_DEBUG: "true"
       INGAME_AVATAR_STORAGE_BUCKET: ingame-avatars
       INGAME_AVATAR_STORAGE_ENDPOINT_URL: http://minio:9000

@@ -37,7 +37,7 @@ config:
   debug: "false"
   corsAllowOrigins: "https://app.in-game.app"
   discordClientId: ""
-  appleClientIds: "ingame.kounex.com,com.kounex.ingame.web"
+  appleClientIds: "com.kounex.ingame,com.kounex.ingame.web"
   logLevel: "info"
   apiPrefix: "/api/v1"
   avatarStorageRegion: "auto"

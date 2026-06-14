@@ -11,7 +11,7 @@ from app.db.repositories.notification_preference_repo import NotificationPrefere
 from app.db.repositories.user_repo import UserRepository
 from app.notifications.copy import build_notification_copy
 from app.notifications.evaluator import should_notify
-from app.notifications.fcm import send_push
+from app.notifications.fcm import InvalidTokenError, send_push
 
 logger = logging.getLogger(__name__)
 
@@ -125,16 +125,17 @@ async def dispatch_notification(
 
         devices = await device_repo.list_active_for_user(member_user_id)
         for device in devices:
-            success = await send_push(
-                token=device.token,
-                title=title,
-                body=body,
-                data={
-                    "event_type": event_type,
-                    "group_id": str(group_id),
-                    "deep_link": f"/groups/{group_id}/coordination",
-                },
-            )
-            if not success:
+            try:
+                await send_push(
+                    token=device.token,
+                    title=title,
+                    body=body,
+                    data={
+                        "event_type": event_type,
+                        "group_id": str(group_id),
+                        "deep_link": f"/groups/{group_id}/coordination",
+                    },
+                )
+            except InvalidTokenError:
                 await device_repo.revoke_by_token(member_user_id, device.token)
                 logger.info("Revoked invalid token for user %s", member_user_id)

@@ -28,13 +28,13 @@ def test_settings_accepts_comma_separated_legacy_cors_origins(monkeypatch):
 def test_settings_accepts_comma_separated_apple_client_ids(monkeypatch):
     monkeypatch.setenv(
         "INGAME_APPLE_CLIENT_IDS",
-        "ingame.kounex.com, com.kounex.ingame.web",
+        "com.kounex.ingame, com.kounex.ingame.web",
     )
 
     settings = Settings()
 
     assert settings.apple_client_ids == [
-        "ingame.kounex.com",
+        "com.kounex.ingame",
         "com.kounex.ingame.web",
     ]
 
@@ -59,5 +59,5 @@ def test_settings_uses_legacy_single_apple_client_id_env_name(monkeypatch):
 def test_settings_default_apple_client_ids_include_current_web_service_id():
     settings = Settings()
 
-    assert "ingame.kounex.com" in settings.apple_client_ids
+    assert "com.kounex.ingame" in settings.apple_client_ids
     assert "com.kounex.ingame.web" in settings.apple_client_ids

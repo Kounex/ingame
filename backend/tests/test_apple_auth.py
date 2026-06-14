@@ -19,7 +19,7 @@ async def test_validate_apple_token_accepts_all_configured_audiences():
         ),
         patch(
             "app.auth.apple.settings.apple_client_ids",
-            ["ingame.kounex.com", "com.kounex.ingame.web"],
+            ["com.kounex.ingame", "com.kounex.ingame.web"],
         ),
         patch(
             "app.auth.apple.jose_jwt.decode",
@@ -29,7 +29,7 @@ async def test_validate_apple_token_accepts_all_configured_audiences():
         result = await validate_apple_token("apple.identity.token")
 
     assert result == {"sub": "apple-user-1", "email": "apple@example.com"}
-    assert decode.call_args.kwargs["audience"] == "ingame.kounex.com"
+    assert decode.call_args.kwargs["audience"] == "com.kounex.ingame"
 
 
 @pytest.mark.asyncio
@@ -54,7 +54,7 @@ async def test_validate_apple_token_checks_configured_audiences_individually():
         ),
         patch(
             "app.auth.apple.settings.apple_client_ids",
-            ["ingame.kounex.com", "com.kounex.ingame.web"],
+            ["com.kounex.ingame", "com.kounex.ingame.web"],
         ),
         patch(
             "app.auth.apple.jose_jwt.decode",

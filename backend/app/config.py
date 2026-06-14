@@ -22,8 +22,7 @@ class Settings(BaseSettings):
     apple_key_id: str = ""
     apple_client_ids: Annotated[list[str], NoDecode] = Field(
         default=[
-            "ingame.kounex.com",
-            "com.example.ingame",
+            "com.kounex.ingame",
             "com.kounex.ingame.web",
         ],
         validation_alias=AliasChoices(
