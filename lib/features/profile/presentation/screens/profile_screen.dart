@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/localization/locale_controller.dart';
@@ -141,6 +142,8 @@ class ProfileScreen extends ConsumerWidget {
                         _SocialIdentitiesCard(),
                         SizedBox(height: AppSpacing.xl),
                         _ProfileActions(),
+                        SizedBox(height: AppSpacing.xl),
+                        _AppVersionLabel(),
                       ],
                     ),
                   ),
@@ -418,6 +421,33 @@ class _ProfileActions extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
       ],
+    );
+  }
+}
+
+class _AppVersionLabel extends StatelessWidget {
+  const _AppVersionLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final version = snapshot.data?.version ?? '…';
+        final buildNumber = snapshot.data?.buildNumber ?? '';
+        final label = buildNumber.isNotEmpty ? 'v$version+$buildNumber' : 'v$version';
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textTertiary.withValues(alpha: 0.5),
+              fontSize: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 }

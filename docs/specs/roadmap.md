@@ -170,6 +170,7 @@ SP2 intentionally distinguishes two coordination models:
 - **Account management** -- change password, account deletion (GDPR compliance), export user data
 - **Privacy settings** -- control who can see online status, game library visibility (friends only / public)
 - **App preferences** -- theme selection (if light mode is added), default status on app open
+- **App version label** -- relocate the version label (currently on the profile screen) into the settings page footer
 
 **Technical scope:**
 - `PUT` endpoints for notification preferences (global and per-group)

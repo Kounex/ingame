@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -18,11 +19,13 @@ class WebSocketClient {
   WebSocketClient({
     required this.baseUrl,
     required this.getAccessToken,
+    this.refreshAccessToken,
     WebSocketChannel Function(Uri uri)? createChannel,
   }) : createChannel = createChannel ?? WebSocketChannel.connect;
 
   final String baseUrl;
   final Future<String?> Function() getAccessToken;
+  final Future<String?> Function()? refreshAccessToken;
   final WebSocketChannel Function(Uri uri) createChannel;
   WebSocketChannel? _channel;
   final _eventController = StreamController<dynamic>.broadcast();
@@ -102,10 +105,15 @@ class WebSocketClient {
           }
         },
         onDone: () {
+          final closeCode = _channel?.closeCode;
           _channel = null;
           if (_shouldReconnect) {
             _setConnectionState(WebSocketConnectionState.connecting);
-            _scheduleReconnect();
+            if (_isAuthRejection(closeCode)) {
+              _handleAuthFailure();
+            } else {
+              _scheduleReconnect();
+            }
           }
         },
       );
@@ -138,6 +146,26 @@ class WebSocketClient {
 
   void sendReadyToggle({required String groupId, required bool ready}) {
     send({'type': 'ready_toggle', 'group_id': groupId, 'ready': ready});
+  }
+
+  bool _isAuthRejection(int? closeCode) =>
+      closeCode == 4001 || closeCode == 403 || closeCode == 1008;
+
+  Future<void> _handleAuthFailure() async {
+    final refresh = refreshAccessToken;
+    if (refresh == null) {
+      _scheduleReconnect();
+      return;
+    }
+    try {
+      final newToken = await refresh();
+      if (newToken != null && _shouldReconnect && !_disposed) {
+        _reconnectAttempts = 0;
+        connect();
+        return;
+      }
+    } catch (_) {}
+    _scheduleReconnect();
   }
 
   void _scheduleReconnect() {
@@ -181,6 +209,30 @@ final websocketClientProvider = Provider<WebSocketClient>((ref) {
   final client = WebSocketClient(
     baseUrl: ApiEndpoints.websocketUrl,
     getAccessToken: storage.getAccessToken,
+    refreshAccessToken: () async {
+      final refreshToken = await storage.getRefreshToken();
+      if (refreshToken == null) return null;
+      try {
+        final dio = Dio(BaseOptions(
+          baseUrl: ApiEndpoints.baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ));
+        final response = await dio.post(
+          ApiEndpoints.refreshToken,
+          data: {'refresh_token': refreshToken},
+        );
+        final newAccess = response.data['access_token'] as String;
+        final newRefresh = response.data['refresh_token'] as String;
+        await storage.saveTokens(
+          accessToken: newAccess,
+          refreshToken: newRefresh,
+        );
+        return newAccess;
+      } catch (_) {
+        return null;
+      }
+    },
   );
   ref.onDispose(client.dispose);
   return client;
