@@ -2,8 +2,8 @@ apiVersion: v2
 name: ingame-web
 description: InGame Flutter web runtime and static asset host
 type: application
-version: 0.7.6
-appVersion: "0.7.6"
+version: 0.7.7
+appVersion: "0.7.7"
 keywords:
   - flutter
   - web
