@@ -39,7 +39,9 @@ class AppBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.viewPadding.bottom;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
 
     const radius = BorderRadius.vertical(top: Radius.circular(20));
 
@@ -78,7 +80,11 @@ class AppBottomSheet extends StatelessWidget {
               ),
               Flexible(
                 child: Padding(
-                  padding: padding.add(EdgeInsets.only(bottom: bottomPadding)),
+                  padding: padding.add(EdgeInsets.only(
+                    bottom: keyboardHeight > 0
+                        ? keyboardHeight + AppSpacing.sm
+                        : bottomPadding,
+                  )),
                   child: child,
                 ),
               ),
