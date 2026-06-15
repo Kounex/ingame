@@ -525,6 +525,7 @@ void main() {
           ),
           groupsRepositoryProvider.overrideWithValue(_FakeGroupsRepository()),
           groupsNotifierProvider.overrideWith(_FakeGroupsNotifier.new),
+          myPendingJoinRequestsProvider.overrideWith((_) => []),
           groupCoordinationNotifierProvider(
             'group-1',
           ).overrideWith(_FakeGroupCoordinationNotifier.new),

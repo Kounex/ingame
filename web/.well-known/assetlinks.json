@@ -1,13 +1,11 @@
 [
   {
-    "relation": [
-      "delegate_permission/common.handle_all_urls"
-    ],
+    "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
       "package_name": "com.kounex.ingame",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_RELEASE_SHA256_CERT_FINGERPRINT"
+        "20:AA:48:6F:FE:EF:B5:57:69:7D:9F:1C:07:39:AC:96:11:FF:67:E4:C4:06:C7:01:50:4D:69:D8:B7:C5:91:EE"
       ]
     }
   }
