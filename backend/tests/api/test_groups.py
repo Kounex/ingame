@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from httpx import AsyncClient
 
@@ -742,3 +744,289 @@ async def test_non_owner_can_leave_group(client: AsyncClient):
     )
     remaining_user_ids = {member["user_id"] for member in members_resp.json()}
     assert member_user_id not in remaining_user_ids
+
+
+@pytest.mark.asyncio
+async def test_group_avatar_upload_init_returns_presigned_upload_contract(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client)
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token),
+        json={"name": "Avatar Upload Group"},
+    )
+    group_id = create_resp.json()["id"]
+
+    with patch(
+        "app.api.v1.groups.service.create_presigned_group_avatar_upload",
+        return_value={
+            "upload_url": "https://uploads.test/bucket",
+            "upload_fields": {"key": f"groups/{group_id}/avatars/avatar.webp"},
+            "object_key": f"groups/{group_id}/avatars/avatar.webp",
+            "avatar_url": f"https://cdn.test/groups/{group_id}/avatars/avatar.webp",
+            "expires_in_seconds": 300,
+            "max_file_size_bytes": 2097152,
+            "allowed_content_types": ["image/jpeg", "image/png", "image/webp"],
+        },
+    ) as generate_upload:
+        response = await client.post(
+            f"/api/v1/groups/{group_id}/avatar-upload/init",
+            headers=_auth(token),
+            json={
+                "filename": "avatar.webp",
+                "content_type": "image/webp",
+                "byte_size": 182000,
+            },
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["upload_url"] == "https://uploads.test/bucket"
+    assert data["avatar_url"] == f"https://cdn.test/groups/{group_id}/avatars/avatar.webp"
+    assert data["object_key"] == f"groups/{group_id}/avatars/avatar.webp"
+    generate_upload.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_group_avatar_upload_init_non_admin_rejected(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "avataruploadowner@test.com")
+    group_id, _, member_token, _ = await _create_group_and_get_member(
+        client,
+        token_owner,
+        "avataruploadmember@test.com",
+        group_name="Avatar Perm Group",
+    )
+
+    response = await client.post(
+        f"/api/v1/groups/{group_id}/avatar-upload/init",
+        headers=_auth(member_token),
+        json={
+            "filename": "avatar.webp",
+            "content_type": "image/webp",
+            "byte_size": 182000,
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.admin_or_owner_required"
+
+
+@pytest.mark.asyncio
+async def test_group_avatar_upload_init_rejects_invalid_content_type(
+    client: AsyncClient,
+):
+    token = await _register_and_get_token(client, "avatarctowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token),
+        json={"name": "Avatar CT Group"},
+    )
+    group_id = create_resp.json()["id"]
+
+    response = await client.post(
+        f"/api/v1/groups/{group_id}/avatar-upload/init",
+        headers=_auth(token),
+        json={
+            "filename": "avatar.gif",
+            "content_type": "image/gif",
+            "byte_size": 182000,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "user.avatar_content_type_invalid"
+
+
+@pytest.mark.asyncio
+async def test_group_avatar_upload_init_rejects_oversize_file(client: AsyncClient):
+    token = await _register_and_get_token(client, "avatarsizeowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token),
+        json={"name": "Avatar Size Group"},
+    )
+    group_id = create_resp.json()["id"]
+
+    response = await client.post(
+        f"/api/v1/groups/{group_id}/avatar-upload/init",
+        headers=_auth(token),
+        json={
+            "filename": "avatar.webp",
+            "content_type": "image/webp",
+            "byte_size": 8 * 1024 * 1024,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "user.avatar_file_too_large"
+
+
+@pytest.mark.asyncio
+async def test_update_group_with_avatar_url_triggers_cleanup(client: AsyncClient):
+    token = await _register_and_get_token(client, "avatarcleanupowner@test.com")
+    create_resp = await client.post(
+        "/api/v1/groups",
+        headers=_auth(token),
+        json={"name": "Avatar Cleanup Group"},
+    )
+    group_id = create_resp.json()["id"]
+    old_avatar_url = f"https://cdn.test/ingame-avatars/groups/{group_id}/avatars/old.webp"
+    new_avatar_url = f"https://cdn.test/ingame-avatars/groups/{group_id}/avatars/new.webp"
+
+    with (
+        patch(
+            "app.storage.avatar_uploads.settings.avatar_storage_public_base_url",
+            "https://cdn.test/ingame-avatars",
+        ),
+        patch("app.storage.avatar_uploads.settings.avatar_storage_bucket", "ingame-avatars"),
+        patch(
+            "app.storage.avatar_uploads.delete_avatar_object_by_public_url",
+            create=True,
+        ) as delete_avatar,
+        patch(
+            "app.storage.avatar_uploads.sweep_group_avatar_prefix",
+            create=True,
+        ),
+    ):
+        await client.patch(
+            f"/api/v1/groups/{group_id}",
+            headers=_auth(token),
+            json={"avatar_url": old_avatar_url},
+        )
+        response = await client.patch(
+            f"/api/v1/groups/{group_id}",
+            headers=_auth(token),
+            json={"avatar_url": new_avatar_url},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["avatar_url"] == new_avatar_url
+    delete_avatar.assert_called_once_with(old_avatar_url)
+
+
+async def _create_group_with_admin(
+    client: AsyncClient,
+    owner_email: str,
+    admin_email: str,
+    group_name: str,
+):
+    token_owner = await _register_and_get_token(client, owner_email)
+    group_id, _, admin_token, admin_user_id = await _create_group_and_get_member(
+        client, token_owner, admin_email, group_name=group_name,
+    )
+    await client.patch(
+        f"/api/v1/groups/{group_id}/members/{admin_user_id}/role",
+        headers=_auth(token_owner),
+        json={"role": "admin"},
+    )
+    return group_id, token_owner, admin_token, admin_user_id
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_remove_another_admin(client: AsyncClient):
+    token_owner = await _register_and_get_token(client, "rbac-rm-owner@test.com")
+    group_id, invite_code, admin1_token, admin1_user_id = (
+        await _create_group_and_get_member(
+            client, token_owner, "rbac-rm-admin1@test.com",
+            group_name="RBAC Remove Group",
+        )
+    )
+    await client.patch(
+        f"/api/v1/groups/{group_id}/members/{admin1_user_id}/role",
+        headers=_auth(token_owner),
+        json={"role": "admin"},
+    )
+
+    admin2_token = await _register_and_get_token(client, "rbac-rm-admin2@test.com")
+    await client.post(
+        f"/api/v1/groups/join/{invite_code}",
+        headers=_auth(admin2_token),
+    )
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members", headers=_auth(token_owner),
+    )
+    admin2_user_id = next(
+        m["user_id"] for m in members_resp.json()
+        if m["user_id"] != admin1_user_id and m["role"] == "member"
+    )
+    await client.patch(
+        f"/api/v1/groups/{group_id}/members/{admin2_user_id}/role",
+        headers=_auth(token_owner),
+        json={"role": "admin"},
+    )
+
+    response = await client.delete(
+        f"/api/v1/groups/{group_id}/members/{admin2_user_id}",
+        headers=_auth(admin1_token),
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.owner_required"
+
+
+@pytest.mark.asyncio
+async def test_owner_can_remove_admin(client: AsyncClient):
+    group_id, token_owner, _, admin_user_id = await _create_group_with_admin(
+        client, "rbac-ownrm-owner@test.com", "rbac-ownrm-admin@test.com",
+        group_name="Owner Remove Admin Group",
+    )
+
+    response = await client.delete(
+        f"/api/v1/groups/{group_id}/members/{admin_user_id}",
+        headers=_auth(token_owner),
+    )
+    assert response.status_code == 204
+
+    members_resp = await client.get(
+        f"/api/v1/groups/{group_id}/members", headers=_auth(token_owner),
+    )
+    assert len(members_resp.json()) == 1
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_update_is_discoverable(client: AsyncClient):
+    group_id, _, admin_token, _ = await _create_group_with_admin(
+        client, "rbac-disc-owner@test.com", "rbac-disc-admin@test.com",
+        group_name="RBAC Discoverable Group",
+    )
+
+    response = await client.patch(
+        f"/api/v1/groups/{group_id}",
+        headers=_auth(admin_token),
+        json={"is_discoverable": True},
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.owner_required"
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_update_join_mode(client: AsyncClient):
+    group_id, _, admin_token, _ = await _create_group_with_admin(
+        client, "rbac-jm-owner@test.com", "rbac-jm-admin@test.com",
+        group_name="RBAC Join Mode Group",
+    )
+
+    response = await client.patch(
+        f"/api/v1/groups/{group_id}",
+        headers=_auth(admin_token),
+        json={"join_mode": "approval"},
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "group.owner_required"
+
+
+@pytest.mark.asyncio
+async def test_admin_can_update_name_and_description(client: AsyncClient):
+    group_id, _, admin_token, _ = await _create_group_with_admin(
+        client, "rbac-name-owner@test.com", "rbac-name-admin@test.com",
+        group_name="RBAC Name Group",
+    )
+
+    response = await client.patch(
+        f"/api/v1/groups/{group_id}",
+        headers=_auth(admin_token),
+        json={"name": "Updated by Admin", "description": "Admin edited this"},
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Updated by Admin"
+    assert response.json()["description"] == "Admin edited this"
