@@ -123,16 +123,13 @@ async def update_session(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    explicit = {k: getattr(data, k) for k in data.model_fields_set}
     response, hooks = await service.update_session(
         db,
         group_id,
         session_id,
         current_user,
-        title=data.title,
-        game=data.game,
-        starts_at=data.starts_at,
-        notes=data.notes,
-        status=data.status,
+        **explicit,
     )
     await db.commit()
     await service.publish_after_commit(hooks)

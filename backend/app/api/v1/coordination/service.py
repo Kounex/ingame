@@ -275,12 +275,7 @@ async def update_session(
     group_id: uuid.UUID,
     session_id: uuid.UUID,
     user: User,
-    *,
-    title: str | None = None,
-    game: str | None = None,
-    starts_at: datetime | None = None,
-    notes: str | None = None,
-    status: str | None = None,
+    **kwargs,
 ) -> tuple[SessionResponse, tuple[AfterCommitHook, ...]]:
     group_repo = GroupRepository(db)
     await _ensure_member(group_repo, group_id, user.id)
@@ -292,26 +287,21 @@ async def update_session(
             code=ErrorCode.COORDINATION_SESSION_NOT_FOUND,
         )
     await _ensure_session_editor(group_repo, session, user.id)
+    starts_at = kwargs.get("starts_at")
     if starts_at is not None:
         _ensure_valid_future(
             starts_at,
             code=ErrorCode.COORDINATION_SESSION_TIME_INVALID,
             message="Session start time must be in the future",
         )
+    status = kwargs.get("status")
     if status is not None and status not in _SESSION_STATUSES:
         raise ForbiddenError(
             "Invalid session status",
             code=ErrorCode.COORDINATION_SESSION_STATUS_INVALID,
         )
 
-    updated = await repo.update_session(
-        session_id,
-        title=title,
-        game=game,
-        starts_at=starts_at,
-        notes=notes,
-        status=status,
-    )
+    updated = await repo.update_session(session_id, **kwargs)
     user_repo = UserRepository(db)
     rsvps = await repo.list_rsvps_for_session(updated.id)
     activity = await _record_activity(

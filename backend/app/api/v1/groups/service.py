@@ -106,13 +106,12 @@ async def update_group(
 ):
     repo = GroupRepository(db)
     owner_only_fields = {"is_discoverable", "join_mode"}
-    if any(kwargs.get(f) is not None for f in owner_only_fields):
+    if any(f in kwargs for f in owner_only_fields):
         await _ensure_owner(repo, group_id, user.id)
     else:
         await _ensure_admin_or_owner(repo, group_id, user.id)
 
-    update_data = {k: v for k, v in kwargs.items() if v is not None or k == "avatar_url"}
-    if not update_data:
+    if not kwargs:
         group = await repo.get_by_id(group_id)
         member_count = await repo.get_member_count(group_id)
         return {**_group_to_dict(group), "member_count": member_count}, None, False
@@ -123,18 +122,18 @@ async def update_group(
 
     avatar_url_to_cleanup = None
     should_sweep = False
-    if "avatar_url" in update_data:
+    if "avatar_url" in kwargs:
         avatar_url_to_cleanup = _group_avatar_url_to_cleanup(
             previous_group.avatar_url,
-            update_data["avatar_url"],
+            kwargs["avatar_url"],
         )
         should_sweep = True
 
-    group = await repo.update(group_id, **update_data)
+    group = await repo.update(group_id, **kwargs)
     if group is None:
         raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
 
-    avatar_url = update_data.get("avatar_url")
+    avatar_url = kwargs.get("avatar_url")
     if isinstance(avatar_url, str) and avatar_url:
         await AvatarUploadLedgerRepository(db).mark_committed(
             user_id=user.id,

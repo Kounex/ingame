@@ -84,15 +84,12 @@ async def update_group(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    explicit = {k: getattr(data, k) for k in data.model_fields_set}
     result, avatar_url_to_cleanup, should_sweep = await service.update_group(
         db,
         group_id,
         current_user,
-        name=data.name,
-        description=data.description,
-        is_discoverable=data.is_discoverable,
-        join_mode=data.join_mode,
-        avatar_url=data.avatar_url,
+        **explicit,
     )
     await db.commit()
     if avatar_url_to_cleanup:

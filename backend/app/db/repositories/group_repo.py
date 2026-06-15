@@ -59,8 +59,7 @@ class GroupRepository:
         if group is None:
             return None
         for key, value in kwargs.items():
-            if value is not None:
-                setattr(group, key, value)
+            setattr(group, key, value)
         await self.session.flush()
         await self.session.refresh(group)
         return group

@@ -84,22 +84,21 @@ class GroupCoordinationRepository {
 
   Future<GroupSession> updateSession(
     String groupId,
-    String sessionId, {
-    String? title,
-    String? game,
-    DateTime? startsAt,
-    String? notes,
-    String? status,
-  }) async {
+    String sessionId,
+    Map<String, dynamic> fields,
+  ) async {
+    final data = <String, dynamic>{};
+    for (final entry in fields.entries) {
+      if (entry.key == 'starts_at' && entry.value is DateTime) {
+        data['starts_at'] =
+            (entry.value as DateTime).toUtc().toIso8601String();
+      } else {
+        data[entry.key] = entry.value;
+      }
+    }
     final response = await dio.patch(
       ApiEndpoints.groupSession(groupId, sessionId),
-      data: {
-        'title': title,
-        'game': game,
-        'starts_at': startsAt?.toUtc().toIso8601String(),
-        'notes': notes,
-        'status': status,
-      },
+      data: data,
     );
     return GroupSession.fromJson(response.data as Map<String, dynamic>);
   }

@@ -245,11 +245,13 @@ class _GroupCoordinationScreenState
               } else {
                 await notifier.updateSession(
                   initialSession.id,
-                  title: title,
-                  game: game,
-                  notes: notes,
-                  startsAt: startsAt,
-                  status: status,
+                  {
+                    'title': title,
+                    'game': game,
+                    'notes': notes,
+                    'starts_at': startsAt,
+                    'status': status,
+                  },
                 );
               }
               final haptics = ref.read(appHapticsProvider);
@@ -2063,17 +2065,20 @@ class _SessionEditorSheetState extends State<_SessionEditorSheet> {
           GlassInput(
             controller: _titleController,
             label: l10n.groupCoordinationFieldTitle,
+            optional: true,
           ),
           const SizedBox(height: AppSpacing.md),
           GlassInput(
             controller: _gameController,
             label: l10n.groupCoordinationFieldGame,
+            optional: true,
           ),
           const SizedBox(height: AppSpacing.md),
           GlassInput(
             controller: _notesController,
             label: l10n.groupCoordinationFieldNotes,
             maxLines: 3,
+            optional: true,
           ),
           const SizedBox(height: AppSpacing.md),
           _DateTimeField(

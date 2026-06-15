@@ -149,13 +149,9 @@ class GroupCoordinationNotifier extends AsyncNotifier<GroupCoordinationState> {
   }
 
   Future<void> updateSession(
-    String sessionId, {
-    String? title,
-    String? game,
-    DateTime? startsAt,
-    String? notes,
-    String? status,
-  }) async {
+    String sessionId,
+    Map<String, dynamic> fields,
+  ) async {
     final current = state.value;
     if (current == null) {
       await refresh();
@@ -163,15 +159,7 @@ class GroupCoordinationNotifier extends AsyncNotifier<GroupCoordinationState> {
     }
     final session = await ref
         .read(groupCoordinationRepositoryProvider)
-        .updateSession(
-          _groupId,
-          sessionId,
-          title: title,
-          game: game,
-          startsAt: startsAt,
-          notes: notes,
-          status: status,
-        );
+        .updateSession(_groupId, sessionId, fields);
     final latest = state.value ?? current;
     _setState(
       latest.copyWith(sessions: _upsertSession(latest.sessions, session)),

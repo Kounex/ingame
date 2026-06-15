@@ -85,8 +85,7 @@ class CoordinationRepository:
         if session is None:
             return None
         for key, value in kwargs.items():
-            if value is not None:
-                setattr(session, key, value)
+            setattr(session, key, value)
         await self.session.flush()
         await self.session.refresh(session)
         return session
