@@ -61,6 +61,8 @@ class ApiEndpoints {
       '/groups/$groupId/members/$userId/role';
   static String transferGroupOwnership(String groupId) =>
       '/groups/$groupId/transfer-ownership';
+  static String groupAvatarUploadInit(String groupId) =>
+      '/groups/$groupId/avatar-upload/init';
   static String leaveGroup(String groupId) => '/groups/$groupId/leave';
   static String previewJoinByCode(String code) => '/groups/join/$code';
   static String joinByCode(String code) => '/groups/join/$code';
@@ -68,6 +70,7 @@ class ApiEndpoints {
   static const String discoverGroups = '/groups/discover';
 
   // Join Requests
+  static const String myJoinRequests = '/me/join-requests';
   static String groupJoinRequests(String groupId) =>
       '/groups/$groupId/join-requests';
   static String joinRequest(String id) => '/join-requests/$id';

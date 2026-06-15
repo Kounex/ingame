@@ -15,6 +15,7 @@ import '../../../../shared/widgets/app_switch_row.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/services/app_haptics.dart';
+import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../providers/groups_provider.dart';
 
 class CreateGroupScreen extends ConsumerStatefulWidget {
@@ -33,6 +34,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
   String _joinMode = 'open';
   bool _isLoading = false;
   bool _hasAttemptedSubmit = false;
+  String? _avatarUrl;
 
   @override
   void dispose() {
@@ -57,6 +59,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
                 : _descriptionController.text.trim(),
             isDiscoverable: _isDiscoverable,
             joinMode: _joinMode,
+            avatarUrl: _avatarUrl,
           );
       if (mounted) {
         await ref.read(appHapticsProvider).success();
@@ -105,6 +108,16 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: AppSpacing.md),
+                  Center(
+                    child: EditableAvatarField(
+                      displayName: _nameController.text.trim().isEmpty
+                          ? l10n.createGroupTitle
+                          : _nameController.text.trim(),
+                      onChanged: (url) =>
+                          setState(() => _avatarUrl = url),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   GlassInput(
                     controller: _nameController,
                     label: l10n.createGroupNameLabel,

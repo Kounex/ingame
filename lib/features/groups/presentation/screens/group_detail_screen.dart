@@ -22,6 +22,7 @@ import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../../../shared/widgets/user_avatar.dart';
 import '../../../../shared/services/app_haptics.dart';
 import '../../domain/coordination_model.dart';
 import '../providers/group_coordination_provider.dart';
@@ -132,6 +133,14 @@ class GroupDetailScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          Center(
+                            child: UserAvatar(
+                              imageUrl: detail.group.avatarUrl,
+                              displayName: detail.group.name,
+                              size: 80,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
                           if (detail.group.description != null &&
                               detail.group.description!.isNotEmpty) ...[
                             GlassCard(

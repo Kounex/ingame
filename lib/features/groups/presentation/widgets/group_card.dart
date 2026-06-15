@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../shared/widgets/user_avatar.dart';
 import '../../domain/group_model.dart';
 
 class GroupCard extends StatelessWidget {
@@ -26,6 +27,12 @@ class GroupCard extends StatelessWidget {
       ),
       child: Row(
         children: [
+          UserAvatar(
+            imageUrl: group.avatarUrl,
+            displayName: group.name,
+            size: 44,
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

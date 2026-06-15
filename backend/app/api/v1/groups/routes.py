@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, Query
@@ -12,11 +13,16 @@ from app.api.v1.groups.schemas import (
     UpdateGroupRequest,
     UpdateMemberRoleRequest,
 )
+from app.api.v1.users.schemas import (
+    AvatarUploadInitRequest,
+    AvatarUploadInitResponse,
+)
 from app.auth.dependencies import get_current_user
 from app.db.database import get_db
 from app.db.models.user import User
 
 router = APIRouter(prefix="/groups", tags=["groups"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=list[GroupResponse])
@@ -78,7 +84,7 @@ async def update_group(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.update_group(
+    result, avatar_url_to_cleanup, should_sweep = await service.update_group(
         db,
         group_id,
         current_user,
@@ -88,6 +94,40 @@ async def update_group(
         join_mode=data.join_mode,
         avatar_url=data.avatar_url,
     )
+    await db.commit()
+    if avatar_url_to_cleanup:
+        try:
+            from app.storage.avatar_uploads import delete_avatar_object_by_public_url
+            delete_avatar_object_by_public_url(avatar_url_to_cleanup)
+        except Exception:
+            logger.exception("Group avatar cleanup failed")
+    if should_sweep:
+        try:
+            from app.storage.avatar_uploads import sweep_group_avatar_prefix
+            sweep_group_avatar_prefix(group_id, result.get("avatar_url"))
+        except Exception:
+            logger.exception("Group avatar sweep failed")
+    return result
+
+
+@router.post(
+    "/{group_id}/avatar-upload/init",
+    response_model=AvatarUploadInitResponse,
+)
+async def init_group_avatar_upload(
+    group_id: uuid.UUID,
+    data: AvatarUploadInitRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.init_group_avatar_upload(
+        db,
+        group_id,
+        current_user,
+        filename=data.filename,
+        content_type=data.content_type,
+        byte_size=data.byte_size,
+    )
 
 
 @router.delete("/{group_id}", status_code=204)
@@ -96,7 +136,12 @@ async def delete_group(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await service.delete_group(db, group_id, current_user)
+    deleted_group_id = await service.delete_group(db, group_id, current_user)
+    try:
+        from app.storage.avatar_uploads import sweep_group_avatar_prefix
+        sweep_group_avatar_prefix(deleted_group_id, keep_avatar_url=None)
+    except Exception:
+        logger.exception("Group avatar sweep on delete failed")
 
 
 @router.get("/{group_id}/members", response_model=list[GroupMemberResponse])

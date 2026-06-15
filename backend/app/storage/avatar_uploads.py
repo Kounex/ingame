@@ -96,6 +96,10 @@ def avatar_object_prefix(*, user_id: uuid.UUID) -> str:
     return f"users/{user_id}/avatars/"
 
 
+def group_avatar_object_prefix(*, group_id: uuid.UUID) -> str:
+    return f"groups/{group_id}/avatars/"
+
+
 def delete_avatar_object_by_key(object_key: str | None) -> None:
     if object_key is None or not settings.avatar_storage_bucket:
         return
@@ -217,3 +221,104 @@ def generate_avatar_upload(
         "max_file_size_bytes": settings.avatar_upload_max_file_size_bytes,
         "allowed_content_types": list(ALLOWED_AVATAR_CONTENT_TYPES.keys()),
     }
+
+
+def generate_group_avatar_upload(
+    *,
+    group_id: uuid.UUID,
+    content_type: str,
+) -> dict[str, object]:
+    if (
+        not settings.avatar_storage_bucket
+        or not settings.avatar_storage_public_base_url
+    ):
+        raise ServiceUnavailableError(
+            "Avatar uploads are not configured",
+            code=ErrorCode.USER_AVATAR_UPLOAD_UNAVAILABLE,
+        )
+
+    extension = ALLOWED_AVATAR_CONTENT_TYPES[content_type]
+    object_key = f"{group_avatar_object_prefix(group_id=group_id)}{uuid.uuid4()}.{extension}"
+    try:
+        presigned = _avatar_upload_client().generate_presigned_post(
+            Bucket=settings.avatar_storage_bucket,
+            Key=object_key,
+            Fields={
+                "Content-Type": content_type,
+                "success_action_status": "201",
+            },
+            Conditions=[
+                {"Content-Type": content_type},
+                {"success_action_status": "201"},
+                ["content-length-range", 1, settings.avatar_upload_max_file_size_bytes],
+            ],
+            ExpiresIn=settings.avatar_upload_presign_expires_seconds,
+        )
+    except ServiceUnavailableError:
+        raise
+    except Exception as exc:
+        raise ServiceUnavailableError(
+            "Avatar uploads are temporarily unavailable",
+            code=ErrorCode.USER_AVATAR_UPLOAD_UNAVAILABLE,
+        ) from exc
+
+    public_base_url = settings.avatar_storage_public_base_url.rstrip("/")
+    return {
+        "upload_url": _resolve_upload_url(presigned["url"]),
+        "upload_fields": presigned["fields"],
+        "object_key": object_key,
+        "avatar_url": f"{public_base_url}/{object_key}",
+        "expires_in_seconds": settings.avatar_upload_presign_expires_seconds,
+        "max_file_size_bytes": settings.avatar_upload_max_file_size_bytes,
+        "allowed_content_types": list(ALLOWED_AVATAR_CONTENT_TYPES.keys()),
+    }
+
+
+def sweep_group_avatar_prefix(group_id: uuid.UUID, keep_avatar_url: str | None) -> None:
+    if (
+        not settings.avatar_storage_bucket
+        or not settings.avatar_storage_public_base_url
+    ):
+        return
+
+    keep_object_key = managed_avatar_object_key_from_public_url(keep_avatar_url)
+    client = _avatar_upload_client()
+    prefix = group_avatar_object_prefix(group_id=group_id)
+    stale_keys: list[str] = []
+    continuation_token: str | None = None
+
+    try:
+        while True:
+            request: dict[str, object] = {
+                "Bucket": settings.avatar_storage_bucket,
+                "Prefix": prefix,
+            }
+            if continuation_token:
+                request["ContinuationToken"] = continuation_token
+
+            response = client.list_objects_v2(**request)
+            for item in response.get("Contents", []):
+                key = item.get("Key")
+                if isinstance(key, str) and key != keep_object_key:
+                    stale_keys.append(key)
+
+            if not response.get("IsTruncated"):
+                break
+            continuation_token = response.get("NextContinuationToken")
+            if not continuation_token:
+                break
+
+        if not stale_keys:
+            return
+
+        client.delete_objects(
+            Bucket=settings.avatar_storage_bucket,
+            Delete={"Objects": [{"Key": key} for key in stale_keys]},
+        )
+    except ServiceUnavailableError:
+        raise
+    except Exception as exc:
+        raise ServiceUnavailableError(
+            "Avatar uploads are temporarily unavailable",
+            code=ErrorCode.USER_AVATAR_UPLOAD_UNAVAILABLE,
+        ) from exc

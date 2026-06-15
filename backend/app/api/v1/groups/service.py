@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 import string
 import uuid
@@ -5,10 +6,19 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.error_codes import ErrorCode
-from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.db.models.user import User
+from app.db.repositories.avatar_upload_ledger_repo import AvatarUploadLedgerRepository
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.user_repo import UserRepository
+from app.storage.avatar_uploads import (
+    ALLOWED_AVATAR_CONTENT_TYPES,
+    delete_avatar_object_by_public_url,
+    generate_group_avatar_upload as create_presigned_group_avatar_upload,
+    managed_avatar_object_key_from_public_url,
+    sweep_group_avatar_prefix,
+)
+from app.ws.manager import manager as ws_manager
 
 
 def _generate_invite_code(length: int = 6) -> str:
@@ -95,19 +105,46 @@ async def update_group(
     db: AsyncSession, group_id: uuid.UUID, user: User, **kwargs
 ):
     repo = GroupRepository(db)
-    await _ensure_admin_or_owner(repo, group_id, user.id)
+    owner_only_fields = {"is_discoverable", "join_mode"}
+    if any(kwargs.get(f) is not None for f in owner_only_fields):
+        await _ensure_owner(repo, group_id, user.id)
+    else:
+        await _ensure_admin_or_owner(repo, group_id, user.id)
 
-    update_data = {k: v for k, v in kwargs.items() if v is not None}
+    update_data = {k: v for k, v in kwargs.items() if v is not None or k == "avatar_url"}
     if not update_data:
         group = await repo.get_by_id(group_id)
         member_count = await repo.get_member_count(group_id)
-        return {**_group_to_dict(group), "member_count": member_count}
+        return {**_group_to_dict(group), "member_count": member_count}, None, False
+
+    previous_group = await repo.get_by_id(group_id)
+    if previous_group is None:
+        raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
+
+    avatar_url_to_cleanup = None
+    should_sweep = False
+    if "avatar_url" in update_data:
+        avatar_url_to_cleanup = _group_avatar_url_to_cleanup(
+            previous_group.avatar_url,
+            update_data["avatar_url"],
+        )
+        should_sweep = True
 
     group = await repo.update(group_id, **update_data)
     if group is None:
         raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
+
+    avatar_url = update_data.get("avatar_url")
+    if isinstance(avatar_url, str) and avatar_url:
+        await AvatarUploadLedgerRepository(db).mark_committed(
+            user_id=user.id,
+            avatar_url=avatar_url,
+        )
+
     member_count = await repo.get_member_count(group_id)
-    return {**_group_to_dict(group), "member_count": member_count}
+    result = {**_group_to_dict(group), "member_count": member_count}
+    asyncio.create_task(ws_manager.publish_group_updated(str(group_id), result))
+    return result, avatar_url_to_cleanup, should_sweep
 
 
 async def delete_group(db: AsyncSession, group_id: uuid.UUID, user: User):
@@ -116,6 +153,8 @@ async def delete_group(db: AsyncSession, group_id: uuid.UUID, user: User):
     deleted = await repo.delete(group_id)
     if not deleted:
         raise NotFoundError("Group not found", code=ErrorCode.GROUP_NOT_FOUND)
+    asyncio.create_task(ws_manager.publish_group_deleted(str(group_id)))
+    return group_id
 
 
 async def join_by_invite_code(db: AsyncSession, code: str, user: User):
@@ -142,6 +181,9 @@ async def join_by_invite_code(db: AsyncSession, code: str, user: User):
 
     await repo.add_member(group.id, user.id, role="member")
     member_count = await repo.get_member_count(group.id)
+    asyncio.create_task(ws_manager.publish_member_joined(
+        str(group.id), user.id, user.display_name, user.avatar_url,
+    ))
     return {**_group_to_dict(group), "member_count": member_count}
 
 
@@ -203,9 +245,24 @@ async def remove_member(
             code=code,
         )
 
+    if user.id != target_user_id and target_membership.role == "admin":
+        actor_membership = await repo.get_membership(group_id, user.id)
+        if actor_membership and actor_membership.role != "owner":
+            raise ForbiddenError(
+                "Only the group owner can remove admins",
+                code=ErrorCode.GROUP_OWNER_REQUIRED,
+            )
+
     removed = await repo.remove_member(group_id, target_user_id)
     if not removed:
         raise NotFoundError("Member not found", code=ErrorCode.GROUP_MEMBER_NOT_FOUND)
+
+    if user.id == target_user_id:
+        asyncio.create_task(ws_manager.publish_member_left(str(group_id), target_user_id))
+    else:
+        asyncio.create_task(ws_manager.publish_member_removed(
+            str(group_id), target_user_id, user.id,
+        ))
 
 
 async def leave_group(db: AsyncSession, group_id: uuid.UUID, user: User):
@@ -266,6 +323,9 @@ async def update_member_role(
         )
 
     await repo.update_membership_role(group_id, target_user_id, role)
+    asyncio.create_task(ws_manager.publish_member_role_changed(
+        str(group_id), target_user_id, role,
+    ))
 
 
 async def transfer_ownership(
@@ -298,6 +358,63 @@ async def transfer_ownership(
     transferred = await repo.transfer_ownership(group_id, user.id, target_user_id)
     if transferred is None:
         raise NotFoundError("Group member not found", code=ErrorCode.GROUP_MEMBER_NOT_FOUND)
+    asyncio.create_task(ws_manager.publish_member_role_changed(
+        str(group_id), target_user_id, "owner",
+    ))
+    asyncio.create_task(ws_manager.publish_member_role_changed(
+        str(group_id), user.id, "admin",
+    ))
+
+
+async def init_group_avatar_upload(
+    db: AsyncSession,
+    group_id: uuid.UUID,
+    user: User,
+    *,
+    filename: str,
+    content_type: str,
+    byte_size: int,
+) -> dict[str, object]:
+    from app.config import settings
+
+    repo = GroupRepository(db)
+    await _ensure_admin_or_owner(repo, group_id, user.id)
+
+    if byte_size > settings.avatar_upload_max_file_size_bytes:
+        raise ValidationError(
+            "Avatar image exceeds the maximum allowed file size",
+            code=ErrorCode.USER_AVATAR_FILE_TOO_LARGE,
+        )
+
+    if content_type not in ALLOWED_AVATAR_CONTENT_TYPES:
+        raise ValidationError(
+            "Avatar images must be JPEG, PNG, or WebP",
+            code=ErrorCode.USER_AVATAR_CONTENT_TYPE_INVALID,
+        )
+
+    upload = create_presigned_group_avatar_upload(
+        group_id=group_id, content_type=content_type,
+    )
+    object_key = upload.get("object_key")
+    avatar_url = upload.get("avatar_url")
+    if isinstance(object_key, str) and isinstance(avatar_url, str):
+        await AvatarUploadLedgerRepository(db).create_pending(
+            user_id=user.id,
+            object_key=object_key,
+            avatar_url=avatar_url,
+        )
+    return upload
+
+
+def _group_avatar_url_to_cleanup(
+    previous_avatar_url: str | None,
+    next_avatar_url: str | None,
+) -> str | None:
+    if not previous_avatar_url or previous_avatar_url == next_avatar_url:
+        return None
+    if managed_avatar_object_key_from_public_url(previous_avatar_url) is None:
+        return None
+    return previous_avatar_url
 
 
 async def _ensure_admin_or_owner(

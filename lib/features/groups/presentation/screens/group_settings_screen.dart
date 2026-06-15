@@ -19,6 +19,7 @@ import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/widgets/status_indicator.dart';
+import '../../../../shared/widgets/editable_avatar_field.dart';
 import '../../../../shared/widgets/user_avatar.dart';
 import '../../../../shared/widgets/app_switch_row.dart';
 import '../../../../shared/services/app_haptics.dart';
@@ -44,6 +45,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   String _joinMode = 'open';
   bool _isSaving = false;
   bool _hasChanges = false;
+  String? _avatarUrl;
+  bool _avatarChanged = false;
 
   @override
   void dispose() {
@@ -58,6 +61,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       _descriptionController.text = detail.group.description ?? '';
       _isDiscoverable = detail.group.isDiscoverable;
       _joinMode = detail.group.joinMode;
+      if (!_avatarChanged) _avatarUrl = detail.group.avatarUrl;
     }
   }
 
@@ -76,6 +80,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
             : _descriptionController.text.trim(),
         'is_discoverable': _isDiscoverable,
         'join_mode': _joinMode,
+        if (_avatarChanged) 'avatar_url': _avatarUrl,
       });
       ref.invalidate(groupDetailNotifierProvider(widget.groupId));
       ref.invalidate(groupsNotifierProvider);
@@ -83,6 +88,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       setState(() {
         _isSaving = false;
         _hasChanges = false;
+        _avatarChanged = false;
       });
       final successMessage = context.l10n.groupSettingsUpdated;
       await ref.read(appHapticsProvider).success();
@@ -348,6 +354,21 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Center(
+                      child: EditableAvatarField(
+                        initialAvatarUrl: detail.group.avatarUrl,
+                        displayName: detail.group.name,
+                        groupId: widget.groupId,
+                        onChanged: (url) {
+                          setState(() {
+                            _avatarUrl = url;
+                            _avatarChanged = true;
+                          });
+                          _markChanged();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
                     _SectionLabel(
                       l10n.groupSettingsSectionGroupInfo.toUpperCase(),
                     ),

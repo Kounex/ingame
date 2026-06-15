@@ -23,12 +23,14 @@ class EditableAvatarField extends ConsumerStatefulWidget {
     required this.displayName,
     required this.onChanged,
     this.size = 100,
+    this.groupId,
   });
 
   final String? initialAvatarUrl;
   final String displayName;
   final ValueChanged<String?> onChanged;
   final double size;
+  final String? groupId;
 
   @override
   ConsumerState<EditableAvatarField> createState() =>
@@ -299,11 +301,18 @@ class _EditableAvatarFieldState extends ConsumerState<EditableAvatarField> {
     });
 
     try {
-      final target = await service.prepareUpload(
-        filename: filename,
-        contentType: contentType,
-        byteSize: bytes.length,
-      );
+      final target = widget.groupId != null
+          ? await service.prepareGroupUpload(
+              groupId: widget.groupId!,
+              filename: filename,
+              contentType: contentType,
+              byteSize: bytes.length,
+            )
+          : await service.prepareUpload(
+              filename: filename,
+              contentType: contentType,
+              byteSize: bytes.length,
+            );
 
       await service.uploadBinary(
         target: target,

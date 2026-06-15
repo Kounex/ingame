@@ -63,6 +63,24 @@ class AvatarUploadService {
     return AvatarUploadTarget.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<AvatarUploadTarget> prepareGroupUpload({
+    required String groupId,
+    required String filename,
+    required String contentType,
+    required int byteSize,
+  }) async {
+    final response = await dio.post(
+      ApiEndpoints.groupAvatarUploadInit(groupId),
+      data: {
+        'filename': filename,
+        'content_type': contentType,
+        'byte_size': byteSize,
+      },
+    );
+
+    return AvatarUploadTarget.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<void> uploadBinary({
     required AvatarUploadTarget target,
     required Uint8List bytes,
