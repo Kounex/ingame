@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.join_requests import service
 from app.api.v1.join_requests.schemas import (
     JoinRequestResponse,
+    MyJoinRequestResponse,
     ResolveJoinRequestRequest,
 )
 from app.auth.dependencies import get_current_user
@@ -39,6 +40,17 @@ async def create_join_request_by_invite_code(
     db: AsyncSession = Depends(get_db),
 ):
     return await service.create_request_by_invite_code(db, code, current_user)
+
+
+@router.get(
+    "/me/join-requests",
+    response_model=list[MyJoinRequestResponse],
+)
+async def list_my_pending_requests(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.list_my_pending(db, current_user)
 
 
 @router.get(

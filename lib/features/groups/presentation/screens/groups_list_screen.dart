@@ -14,6 +14,7 @@ import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
+import '../../domain/membership_model.dart';
 import '../providers/groups_provider.dart';
 import '../widgets/group_card.dart';
 
@@ -23,6 +24,7 @@ class GroupsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final groupsAsync = ref.watch(groupsNotifierProvider);
+    final pendingAsync = ref.watch(myPendingJoinRequestsProvider);
 
     return AppBackgroundSurface(
       child: Scaffold(
@@ -54,16 +56,22 @@ class GroupsListScreen extends ConsumerWidget {
               );
             }
 
+            final pendingRequests = pendingAsync.value ?? [];
+
             return DesktopContentRegion(
               width: DesktopContentWidth.reading,
               child: AppRefreshIndicator(
-                onRefresh: () =>
-                    ref.read(groupsNotifierProvider.notifier).load(),
-                child: ListView.builder(
+                onRefresh: () async {
+                  await ref.read(groupsNotifierProvider.notifier).load();
+                  ref.invalidate(myPendingJoinRequestsProvider);
+                },
+                child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  itemCount: groups.length,
-                  itemBuilder: (context, index) =>
-                      GroupCard(group: groups[index]),
+                  children: [
+                    if (pendingRequests.isNotEmpty)
+                      _PendingRequestsSection(requests: pendingRequests),
+                    for (final group in groups) GroupCard(group: group),
+                  ],
                 ),
               ),
             );
@@ -76,6 +84,89 @@ class GroupsListScreen extends ConsumerWidget {
                 child: const Icon(Icons.add, color: AppColors.background),
               )
             : null,
+      ),
+    );
+  }
+}
+
+class _PendingRequestsSection extends StatelessWidget {
+  const _PendingRequestsSection({required this.requests});
+
+  final List<MyJoinRequest> requests;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.md,
+        right: AppSpacing.md,
+        bottom: AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(
+              left: AppSpacing.xs,
+              bottom: AppSpacing.sm,
+            ),
+            child: Text(
+              context.l10n.pendingJoinRequestsTitle,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          for (final request in requests)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: GlassCard(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.hourglass_top_rounded,
+                        size: 18,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            request.groupName,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            context.l10n.pendingJoinRequestWaiting,
+                            style: const TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

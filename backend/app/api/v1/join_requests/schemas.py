@@ -20,5 +20,13 @@ class JoinRequestResponse(BaseModel):
     resolved_at: datetime | None = None
 
 
+class MyJoinRequestResponse(BaseModel):
+    id: uuid.UUID
+    group_id: uuid.UUID
+    group_name: str
+    status: str
+    created_at: datetime
+
+
 class ResolveJoinRequestRequest(BaseModel):
     status: str = Field(pattern="^(approved|denied)$")

@@ -27,6 +27,7 @@ class GroupsRepository {
     String? description,
     bool isDiscoverable = false,
     String joinMode = 'open',
+    String? avatarUrl,
   }) async {
     final response = await dio.post(
       ApiEndpoints.groups,
@@ -35,6 +36,7 @@ class GroupsRepository {
         'description': description,
         'is_discoverable': isDiscoverable,
         'join_mode': joinMode,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
       },
     );
     return Group.fromJson(response.data as Map<String, dynamic>);
@@ -108,6 +110,14 @@ class GroupsRepository {
 
   Future<void> createJoinRequestByInviteCode(String code) async {
     await dio.post(ApiEndpoints.joinRequestByCode(code));
+  }
+
+  Future<List<MyJoinRequest>> listMyJoinRequests() async {
+    final response = await dio.get(ApiEndpoints.myJoinRequests);
+    final list = response.data as List<dynamic>;
+    return list
+        .map((e) => MyJoinRequest.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<JoinRequest>> listJoinRequests(String groupId) async {

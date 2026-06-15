@@ -18,6 +18,14 @@ class EventType(str, Enum):
     SESSION_DELETED = "session_deleted"
     SESSION_RSVP_UPDATED = "session_rsvp_updated"
     ACTIVITY_RECORDED = "activity_recorded"
+    MEMBER_JOINED = "member_joined"
+    MEMBER_LEFT = "member_left"
+    MEMBER_REMOVED = "member_removed"
+    MEMBER_ROLE_CHANGED = "member_role_changed"
+    GROUP_UPDATED = "group_updated"
+    GROUP_DELETED = "group_deleted"
+    JOIN_REQUEST_CREATED = "join_request_created"
+    JOIN_REQUEST_RESOLVED = "join_request_resolved"
 
 
 class BaseEvent(BaseModel):
@@ -104,3 +112,49 @@ class SessionRsvpUpdatedEvent(BaseEvent):
 class ActivityRecordedEvent(BaseEvent):
     type: EventType = EventType.ACTIVITY_RECORDED
     activity: dict
+
+
+class MemberJoinedEvent(BaseEvent):
+    type: EventType = EventType.MEMBER_JOINED
+    user_id: uuid.UUID
+    display_name: str
+    avatar_url: str | None = None
+    role: str = "member"
+
+
+class MemberLeftEvent(BaseEvent):
+    type: EventType = EventType.MEMBER_LEFT
+    user_id: uuid.UUID
+
+
+class MemberRemovedEvent(BaseEvent):
+    type: EventType = EventType.MEMBER_REMOVED
+    user_id: uuid.UUID
+    removed_by: uuid.UUID
+
+
+class MemberRoleChangedEvent(BaseEvent):
+    type: EventType = EventType.MEMBER_ROLE_CHANGED
+    user_id: uuid.UUID
+    role: str
+
+
+class GroupUpdatedEvent(BaseEvent):
+    type: EventType = EventType.GROUP_UPDATED
+    group: dict
+
+
+class GroupDeletedEvent(BaseEvent):
+    type: EventType = EventType.GROUP_DELETED
+
+
+class JoinRequestCreatedEvent(BaseEvent):
+    type: EventType = EventType.JOIN_REQUEST_CREATED
+    request: dict
+
+
+class JoinRequestResolvedEvent(BaseEvent):
+    type: EventType = EventType.JOIN_REQUEST_RESOLVED
+    request_id: uuid.UUID
+    status: str
+    user_id: uuid.UUID

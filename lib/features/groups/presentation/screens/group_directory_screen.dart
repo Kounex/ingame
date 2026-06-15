@@ -12,6 +12,7 @@ import '../../../../core/theme/glass_components.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_background.dart';
+import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
@@ -19,6 +20,7 @@ import '../../../../shared/widgets/error_display.dart';
 import '../../../../shared/widgets/app_refresh_indicator.dart';
 import '../../../../shared/widgets/loading_indicator.dart';
 import '../../../../shared/services/app_haptics.dart';
+import '../../../../shared/widgets/user_avatar.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/group_model.dart';
 import '../providers/groups_provider.dart';
@@ -124,6 +126,21 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
     }
   }
 
+  void _showJoinByCode() {
+    showAppBottomSheet(
+      context: context,
+      builder: (_) => _JoinByCodeSheet(
+        onSubmit: (code) {
+          Navigator.of(context, rootNavigator: true).pop();
+          context.goNamed(
+            RouteNames.joinGroup,
+            pathParameters: {'code': code},
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBackgroundSurface(
@@ -132,6 +149,13 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
         appBar: GlassAppBar(
           title: context.l10n.groupDirectoryTitle,
           contentWidth: DesktopContentWidth.reading,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.qr_code, color: AppColors.textPrimary),
+              tooltip: context.l10n.joinByCodeTitle,
+              onPressed: _showJoinByCode,
+            ),
+          ],
         ),
         body: DesktopContentRegion(
           width: DesktopContentWidth.reading,
@@ -210,6 +234,12 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
               children: [
                 Row(
                   children: [
+                    UserAvatar(
+                      imageUrl: group.avatarUrl,
+                      displayName: group.name,
+                      size: 40,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
                         group.name,
@@ -278,6 +308,69 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
           ),
         );
       },
+      ),
+    );
+  }
+}
+
+class _JoinByCodeSheet extends StatefulWidget {
+  const _JoinByCodeSheet({required this.onSubmit});
+
+  final ValueChanged<String> onSubmit;
+
+  @override
+  State<_JoinByCodeSheet> createState() => _JoinByCodeSheetState();
+}
+
+class _JoinByCodeSheetState extends State<_JoinByCodeSheet> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final code = _controller.text.trim();
+    if (code.isEmpty) return;
+    widget.onSubmit(code);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBottomSheet(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.joinByCodeTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: GlassInput(
+                  controller: _controller,
+                  hint: context.l10n.joinByCodeHint,
+                  textInputAction: TextInputAction.go,
+                  onFieldSubmitted: (_) => _submit(),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              GlassButton(
+                onPressed: _submit,
+                child: Text(context.l10n.joinByCodeAction),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

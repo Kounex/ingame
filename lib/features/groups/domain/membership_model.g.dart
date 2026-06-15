@@ -65,3 +65,23 @@ Map<String, dynamic> _$JoinRequestToJson(_JoinRequest instance) =>
       'resolved_by': instance.resolvedBy,
       'resolved_at': instance.resolvedAt?.toIso8601String(),
     };
+
+_MyJoinRequest _$MyJoinRequestFromJson(Map<String, dynamic> json) =>
+    _MyJoinRequest(
+      id: json['id'] as String,
+      groupId: json['group_id'] as String,
+      groupName: json['group_name'] as String,
+      status: json['status'] as String,
+      createdAt: json['created_at'] == null
+          ? null
+          : DateTime.parse(json['created_at'] as String),
+    );
+
+Map<String, dynamic> _$MyJoinRequestToJson(_MyJoinRequest instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'group_id': instance.groupId,
+      'group_name': instance.groupName,
+      'status': instance.status,
+      'created_at': instance.createdAt?.toIso8601String(),
+    };

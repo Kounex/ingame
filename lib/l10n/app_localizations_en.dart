@@ -350,6 +350,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupsListTitle => 'My Groups';
 
   @override
+  String get pendingJoinRequestsTitle => 'Pending Requests';
+
+  @override
+  String get pendingJoinRequestWaiting => 'Waiting for approval';
+
+  @override
+  String get joinByCodeTitle => 'Join by Code';
+
+  @override
+  String get joinByCodeHint => 'Enter invite code';
+
+  @override
+  String get joinByCodeAction => 'Go';
+
+  @override
   String get groupsEmptyTitle => 'No groups yet';
 
   @override

@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +9,7 @@ from app.db.models.user import User
 from app.db.repositories.group_repo import GroupRepository
 from app.db.repositories.user_repo import UserRepository
 from app.notifications.dispatcher import enqueue_notification
+from app.ws.manager import manager as ws_manager
 
 
 async def create_request(db: AsyncSession, group_id: uuid.UUID, user: User):
@@ -65,7 +67,7 @@ async def _create_request_for_group(repo: GroupRepository, group, user: User):
         payload={},
     )
 
-    return {
+    result = {
         "id": join_request.id,
         "user": {
             "id": user.id,
@@ -78,6 +80,36 @@ async def _create_request_for_group(repo: GroupRepository, group, user: User):
         "resolved_by": join_request.resolved_by,
         "resolved_at": join_request.resolved_at,
     }
+    asyncio.create_task(ws_manager.publish_join_request_created(
+        str(group.id),
+        {
+            "id": str(join_request.id),
+            "user": {
+                "id": str(user.id),
+                "display_name": user.display_name,
+                "avatar_url": user.avatar_url,
+            },
+            "group_id": str(join_request.group_id),
+            "status": join_request.status,
+        },
+    ))
+    return result
+
+
+async def list_my_pending(db: AsyncSession, user: User):
+    repo = GroupRepository(db)
+    requests = await repo.list_pending_requests_for_user(user.id)
+    results = []
+    for req in requests:
+        group = await repo.get_by_id(req.group_id)
+        results.append({
+            "id": req.id,
+            "group_id": req.group_id,
+            "group_name": group.name if group else "Unknown",
+            "status": req.status,
+            "created_at": req.created_at,
+        })
+    return results
 
 
 async def list_pending_for_group(
@@ -154,6 +186,21 @@ async def resolve_request(
         await repo.add_member(join_request.group_id, join_request.user_id, role="member")
 
     requester = await user_repo.get_by_id(resolved.user_id)
+
+    asyncio.create_task(ws_manager.publish_join_request_resolved(
+        str(join_request.group_id),
+        request_id,
+        status,
+        join_request.user_id,
+    ))
+    if status == "approved" and requester:
+        asyncio.create_task(ws_manager.publish_member_joined(
+            str(join_request.group_id),
+            join_request.user_id,
+            requester.display_name,
+            requester.avatar_url,
+        ))
+
     return {
         "id": resolved.id,
         "user": {

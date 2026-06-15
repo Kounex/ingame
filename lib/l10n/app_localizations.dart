@@ -761,6 +761,36 @@ abstract class AppLocalizations {
   /// **'My Groups'**
   String get groupsListTitle;
 
+  /// No description provided for @pendingJoinRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Requests'**
+  String get pendingJoinRequestsTitle;
+
+  /// No description provided for @pendingJoinRequestWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get pendingJoinRequestWaiting;
+
+  /// No description provided for @joinByCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join by Code'**
+  String get joinByCodeTitle;
+
+  /// No description provided for @joinByCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter invite code'**
+  String get joinByCodeHint;
+
+  /// No description provided for @joinByCodeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Go'**
+  String get joinByCodeAction;
+
   /// No description provided for @groupsEmptyTitle.
   ///
   /// In en, this message translates to:

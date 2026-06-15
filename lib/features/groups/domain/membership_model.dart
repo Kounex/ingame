@@ -45,3 +45,17 @@ abstract class JoinRequest with _$JoinRequest {
   factory JoinRequest.fromJson(Map<String, dynamic> json) =>
       _$JoinRequestFromJson(json);
 }
+
+@freezed
+abstract class MyJoinRequest with _$MyJoinRequest {
+  const factory MyJoinRequest({
+    required String id,
+    required String groupId,
+    required String groupName,
+    required String status,
+    DateTime? createdAt,
+  }) = _MyJoinRequest;
+
+  factory MyJoinRequest.fromJson(Map<String, dynamic> json) =>
+      _$MyJoinRequestFromJson(json);
+}

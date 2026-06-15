@@ -197,6 +197,86 @@ class ConnectionManager:
         event = ActivityRecordedEvent(group_id=uuid.UUID(group_id), activity=activity)
         await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
 
+    async def publish_member_joined(
+        self,
+        group_id: str,
+        user_id: uuid.UUID,
+        display_name: str,
+        avatar_url: str | None = None,
+        role: str = "member",
+    ) -> None:
+        from app.ws.events import MemberJoinedEvent
+
+        event = MemberJoinedEvent(
+            group_id=uuid.UUID(group_id),
+            user_id=user_id,
+            display_name=display_name,
+            avatar_url=avatar_url,
+            role=role,
+        )
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_member_left(self, group_id: str, user_id: uuid.UUID) -> None:
+        from app.ws.events import MemberLeftEvent
+
+        event = MemberLeftEvent(group_id=uuid.UUID(group_id), user_id=user_id)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_member_removed(
+        self, group_id: str, user_id: uuid.UUID, removed_by: uuid.UUID
+    ) -> None:
+        from app.ws.events import MemberRemovedEvent
+
+        event = MemberRemovedEvent(
+            group_id=uuid.UUID(group_id),
+            user_id=user_id,
+            removed_by=removed_by,
+        )
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_member_role_changed(
+        self, group_id: str, user_id: uuid.UUID, role: str
+    ) -> None:
+        from app.ws.events import MemberRoleChangedEvent
+
+        event = MemberRoleChangedEvent(
+            group_id=uuid.UUID(group_id),
+            user_id=user_id,
+            role=role,
+        )
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_group_updated(self, group_id: str, group: dict) -> None:
+        from app.ws.events import GroupUpdatedEvent
+
+        event = GroupUpdatedEvent(group_id=uuid.UUID(group_id), group=group)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_group_deleted(self, group_id: str) -> None:
+        from app.ws.events import GroupDeletedEvent
+
+        event = GroupDeletedEvent(group_id=uuid.UUID(group_id))
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_join_request_created(self, group_id: str, request: dict) -> None:
+        from app.ws.events import JoinRequestCreatedEvent
+
+        event = JoinRequestCreatedEvent(group_id=uuid.UUID(group_id), request=request)
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
+    async def publish_join_request_resolved(
+        self, group_id: str, request_id: uuid.UUID, status: str, user_id: uuid.UUID
+    ) -> None:
+        from app.ws.events import JoinRequestResolvedEvent
+
+        event = JoinRequestResolvedEvent(
+            group_id=uuid.UUID(group_id),
+            request_id=request_id,
+            status=status,
+            user_id=user_id,
+        )
+        await publish_event(f"group:{group_id}:events", event.model_dump(mode="json"))
+
     async def sweep_all_groups(self, group_ids: list[str]) -> None:
         for group_id in group_ids:
             expired_user_ids = await sweep_expired_ready(group_id)

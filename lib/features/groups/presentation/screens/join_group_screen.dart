@@ -15,6 +15,7 @@ import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/desktop_content_region.dart';
 import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/services/app_haptics.dart';
+import '../../../../shared/widgets/user_avatar.dart';
 import '../../data/groups_repository.dart';
 import '../../domain/group_model.dart';
 import '../providers/groups_provider.dart';
@@ -32,7 +33,6 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   Group? _groupPreview;
   bool _isLoadingPreview = true;
   bool _isJoining = false;
-  bool _requestSubmitted = false;
   AppFailure? _error;
 
   @override
@@ -65,18 +65,10 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Column(
                     children: [
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.group_add_outlined,
-                          size: 36,
-                          color: AppColors.primary,
-                        ),
+                      UserAvatar(
+                        imageUrl: _groupPreview?.avatarUrl,
+                        displayName: _groupPreview?.name ?? '?',
+                        size: 72,
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
@@ -197,7 +189,6 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                   child: GlassButton(
                     onPressed:
                         _isJoining ||
-                            _requestSubmitted ||
                             (_groupPreview?.hasPendingJoinRequest ?? false)
                         ? null
                         : _joinGroup,
@@ -227,13 +218,11 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
         await repo.createJoinRequestByInviteCode(widget.inviteCode);
         if (!mounted) return;
 
+        ref.invalidate(myPendingJoinRequestsProvider);
         await ref.read(appHapticsProvider).success();
         if (!mounted) return;
         AppToast.info(context, context.l10n.groupDirectoryJoinRequestSent);
-        setState(() {
-          _isJoining = false;
-          _requestSubmitted = true;
-        });
+        context.goNamed(RouteNames.home);
       } else {
         final group = await ref
             .read(groupsNotifierProvider.notifier)
@@ -276,7 +265,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   }
 
   String _buttonLabel(BuildContext context) {
-    if (_requestSubmitted || (_groupPreview?.hasPendingJoinRequest ?? false)) {
+    if (_groupPreview?.hasPendingJoinRequest ?? false) {
       return context.l10n.joinGroupRequestSentButton;
     }
     if (_groupPreview?.joinMode == 'approval') {

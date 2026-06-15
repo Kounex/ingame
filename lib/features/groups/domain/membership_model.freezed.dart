@@ -857,4 +857,279 @@ $JoinRequestUserCopyWith<$Res> get user {
 }
 }
 
+
+/// @nodoc
+mixin _$MyJoinRequest {
+
+ String get id; String get groupId; String get groupName; String get status; DateTime? get createdAt;
+/// Create a copy of MyJoinRequest
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MyJoinRequestCopyWith<MyJoinRequest> get copyWith => _$MyJoinRequestCopyWithImpl<MyJoinRequest>(this as MyJoinRequest, _$identity);
+
+  /// Serializes this MyJoinRequest to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MyJoinRequest&&(identical(other.id, id) || other.id == id)&&(identical(other.groupId, groupId) || other.groupId == groupId)&&(identical(other.groupName, groupName) || other.groupName == groupName)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,groupId,groupName,status,createdAt);
+
+@override
+String toString() {
+  return 'MyJoinRequest(id: $id, groupId: $groupId, groupName: $groupName, status: $status, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MyJoinRequestCopyWith<$Res>  {
+  factory $MyJoinRequestCopyWith(MyJoinRequest value, $Res Function(MyJoinRequest) _then) = _$MyJoinRequestCopyWithImpl;
+@useResult
+$Res call({
+ String id, String groupId, String groupName, String status, DateTime? createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$MyJoinRequestCopyWithImpl<$Res>
+    implements $MyJoinRequestCopyWith<$Res> {
+  _$MyJoinRequestCopyWithImpl(this._self, this._then);
+
+  final MyJoinRequest _self;
+  final $Res Function(MyJoinRequest) _then;
+
+/// Create a copy of MyJoinRequest
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? groupId = null,Object? groupName = null,Object? status = null,Object? createdAt = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,groupId: null == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
+as String,groupName: null == groupName ? _self.groupName : groupName // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [MyJoinRequest].
+extension MyJoinRequestPatterns on MyJoinRequest {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _MyJoinRequest value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _MyJoinRequest() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _MyJoinRequest value)  $default,){
+final _that = this;
+switch (_that) {
+case _MyJoinRequest():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _MyJoinRequest value)?  $default,){
+final _that = this;
+switch (_that) {
+case _MyJoinRequest() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String groupId,  String groupName,  String status,  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _MyJoinRequest() when $default != null:
+return $default(_that.id,_that.groupId,_that.groupName,_that.status,_that.createdAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String groupId,  String groupName,  String status,  DateTime? createdAt)  $default,) {final _that = this;
+switch (_that) {
+case _MyJoinRequest():
+return $default(_that.id,_that.groupId,_that.groupName,_that.status,_that.createdAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String groupId,  String groupName,  String status,  DateTime? createdAt)?  $default,) {final _that = this;
+switch (_that) {
+case _MyJoinRequest() when $default != null:
+return $default(_that.id,_that.groupId,_that.groupName,_that.status,_that.createdAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _MyJoinRequest implements MyJoinRequest {
+  const _MyJoinRequest({required this.id, required this.groupId, required this.groupName, required this.status, this.createdAt});
+  factory _MyJoinRequest.fromJson(Map<String, dynamic> json) => _$MyJoinRequestFromJson(json);
+
+@override final  String id;
+@override final  String groupId;
+@override final  String groupName;
+@override final  String status;
+@override final  DateTime? createdAt;
+
+/// Create a copy of MyJoinRequest
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$MyJoinRequestCopyWith<_MyJoinRequest> get copyWith => __$MyJoinRequestCopyWithImpl<_MyJoinRequest>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$MyJoinRequestToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MyJoinRequest&&(identical(other.id, id) || other.id == id)&&(identical(other.groupId, groupId) || other.groupId == groupId)&&(identical(other.groupName, groupName) || other.groupName == groupName)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,groupId,groupName,status,createdAt);
+
+@override
+String toString() {
+  return 'MyJoinRequest(id: $id, groupId: $groupId, groupName: $groupName, status: $status, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$MyJoinRequestCopyWith<$Res> implements $MyJoinRequestCopyWith<$Res> {
+  factory _$MyJoinRequestCopyWith(_MyJoinRequest value, $Res Function(_MyJoinRequest) _then) = __$MyJoinRequestCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String groupId, String groupName, String status, DateTime? createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$MyJoinRequestCopyWithImpl<$Res>
+    implements _$MyJoinRequestCopyWith<$Res> {
+  __$MyJoinRequestCopyWithImpl(this._self, this._then);
+
+  final _MyJoinRequest _self;
+  final $Res Function(_MyJoinRequest) _then;
+
+/// Create a copy of MyJoinRequest
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? groupId = null,Object? groupName = null,Object? status = null,Object? createdAt = freezed,}) {
+  return _then(_MyJoinRequest(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,groupId: null == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
+as String,groupName: null == groupName ? _self.groupName : groupName // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
 // dart format on
