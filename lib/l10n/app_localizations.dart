@@ -389,6 +389,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonClose;
 
+  /// No description provided for @commonOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'optional'**
+  String get commonOptional;
+
   /// No description provided for @commonViewDetails.
   ///
   /// In en, this message translates to:
@@ -1618,6 +1624,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Members'**
   String get groupDetailSectionMembers;
+
+  /// No description provided for @groupDetailCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String groupDetailCreatedAt(String date);
+
+  /// No description provided for @groupRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get groupRoleOwner;
+
+  /// No description provided for @groupRoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get groupRoleAdmin;
+
+  /// No description provided for @groupRoleMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Member'**
+  String get groupRoleMember;
+
+  /// No description provided for @groupCardReadyNow.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ready'**
+  String groupCardReadyNow(int count);
+
+  /// No description provided for @groupCardUpcomingMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'in {minutes}m'**
+  String groupCardUpcomingMinutes(int minutes);
+
+  /// No description provided for @groupCardUpcomingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'in {hours}h'**
+  String groupCardUpcomingHours(int hours);
+
+  /// No description provided for @groupCardTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get groupCardTomorrow;
+
+  /// No description provided for @groupCardSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Session'**
+  String get groupCardSession;
 
   /// No description provided for @groupDetailLeaveTitle.
   ///

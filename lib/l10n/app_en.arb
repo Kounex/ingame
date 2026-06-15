@@ -73,6 +73,7 @@
   "commonDeny": "Deny",
   "commonShare": "Share",
   "commonClose": "Close",
+  "commonOptional": "optional",
   "commonViewDetails": "View details",
   "navigationGroups": "Groups",
   "navigationHome": "Home",
@@ -455,6 +456,41 @@
   "groupDetailMenuLeave": "Leave Group",
   "groupDetailSectionAbout": "About",
   "groupDetailSectionMembers": "Members",
+  "groupDetailCreatedAt": "Created {date}",
+  "@groupDetailCreatedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "groupRoleOwner": "Owner",
+  "groupRoleAdmin": "Admin",
+  "groupRoleMember": "Member",
+  "groupCardReadyNow": "{count} ready",
+  "@groupCardReadyNow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCardUpcomingMinutes": "in {minutes}m",
+  "@groupCardUpcomingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCardUpcomingHours": "in {hours}h",
+  "@groupCardUpcomingHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCardTomorrow": "Tomorrow",
+  "groupCardSession": "Session",
   "groupDetailLeaveTitle": "Leave Group",
   "groupDetailLeaveMessage": "Are you sure you want to leave this group?",
   "groupDetailOwnerLeaveMessage": "Transfer ownership or delete the group before leaving it yourself.",

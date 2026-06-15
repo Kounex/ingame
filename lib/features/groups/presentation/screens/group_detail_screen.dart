@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/networking/api_error.dart';
 import '../../../../core/networking/websocket_client.dart';
@@ -133,75 +134,7 @@ class GroupDetailScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Center(
-                            child: UserAvatar(
-                              imageUrl: detail.group.avatarUrl,
-                              displayName: detail.group.name,
-                              size: 80,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          if (detail.group.description != null &&
-                              detail.group.description!.isNotEmpty) ...[
-                            GlassCard(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.groupDetailSectionAbout,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
-                                    detail.group.description!,
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                          ],
-                          GlassCard(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Row(
-                              children: [
-                                _InfoChip(
-                                  icon: Icons.people,
-                                  label: l10n.joinGroupMembers(
-                                    detail.members.length,
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.md),
-                                _InfoChip(
-                                  icon: detail.group.isDiscoverable
-                                      ? Icons.public
-                                      : Icons.lock,
-                                  label: detail.group.isDiscoverable
-                                      ? l10n.groupVisibilityPublic
-                                      : l10n.groupVisibilityPrivate,
-                                ),
-                                if (detail.group.isDiscoverable) ...[
-                                  const SizedBox(width: AppSpacing.md),
-                                  _InfoChip(
-                                    icon: detail.group.joinMode == 'open'
-                                        ? Icons.open_in_new
-                                        : Icons.approval,
-                                    label: detail.group.joinMode == 'open'
-                                        ? l10n.groupJoinModeOpenLabel
-                                        : l10n.groupJoinModeApprovalLabel,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
+                          _GroupHeroCard(detail: detail),
                           const SizedBox(height: AppSpacing.lg),
                           _ReadyToggleCard(groupId: groupId),
                           const SizedBox(height: AppSpacing.lg),
@@ -531,17 +464,17 @@ class _CoordinationHubCard extends ConsumerWidget {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
-                _InfoChip(
+                AppChip.inline(
                   icon: Icons.calendar_month_outlined,
                   label: l10n.groupCoordinationWindowsCount(upcomingWindowCount),
                 ),
-                _InfoChip(
+                AppChip.inline(
                   icon: Icons.sports_esports_outlined,
                   label: l10n.groupCoordinationSessionsCount(
                     coordination.sessions.length,
                   ),
                 ),
-                _InfoChip(
+                AppChip.inline(
                   icon: Icons.bolt_outlined,
                   label: l10n.groupCoordinationActivityCount(
                     coordination.activity.length,
@@ -603,14 +536,115 @@ class _CoordinationHubCard extends ConsumerWidget {
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label});
+class _GroupHeroCard extends StatelessWidget {
+  const _GroupHeroCard({required this.detail});
 
-  final IconData icon;
-  final String label;
+  final GroupDetailState detail;
 
   @override
   Widget build(BuildContext context) {
-    return AppChip.inline(label: label, icon: icon);
+    final l10n = context.l10n;
+    final group = detail.group;
+    final roleLabel = switch (detail.currentUserRole) {
+      'owner' => l10n.groupRoleOwner,
+      'admin' => l10n.groupRoleAdmin,
+      _ => l10n.groupRoleMember,
+    };
+
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          UserAvatar(
+            imageUrl: group.avatarUrl,
+            displayName: group.name,
+            size: 72,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (group.description != null &&
+                    group.description!.isNotEmpty) ...[
+                  Text(
+                    group.description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm + 2),
+                ],
+                _MetaRow(
+                  icon: Icons.people_outline,
+                  text: l10n.joinGroupMembers(detail.members.length),
+                ),
+                const SizedBox(height: 6),
+                _MetaRow(
+                  icon: group.isDiscoverable ? Icons.public : Icons.lock_outline,
+                  text: group.isDiscoverable
+                      ? '${l10n.groupVisibilityPublic} · ${group.joinMode == 'open' ? l10n.groupJoinModeOpenLabel : l10n.groupJoinModeApprovalLabel}'
+                      : l10n.groupVisibilityPrivate,
+                ),
+                const SizedBox(height: 6),
+                _MetaRow(
+                  icon: Icons.shield_outlined,
+                  text: roleLabel,
+                  highlight: detail.isOwner || detail.isAdmin,
+                ),
+                if (group.createdAt != null) ...[
+                  const SizedBox(height: 6),
+                  _MetaRow(
+                    icon: Icons.calendar_today_outlined,
+                    text: l10n.groupDetailCreatedAt(
+                      DateFormat.yMMMd(Intl.getCurrentLocale())
+                          .format(group.createdAt!.toLocal()),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.icon,
+    required this.text,
+    this.highlight = false,
+  });
+
+  final IconData icon;
+  final String text;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = highlight
+        ? AppColors.primary.withValues(alpha: 0.85)
+        : AppColors.textTertiary;
+
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(color: color, fontSize: 12.5, height: 1),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 }

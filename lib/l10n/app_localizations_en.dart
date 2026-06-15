@@ -162,6 +162,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClose => 'Close';
 
   @override
+  String get commonOptional => 'optional';
+
+  @override
   String get commonViewDetails => 'View details';
 
   @override
@@ -823,6 +826,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupDetailSectionMembers => 'Members';
+
+  @override
+  String groupDetailCreatedAt(String date) {
+    return 'Created $date';
+  }
+
+  @override
+  String get groupRoleOwner => 'Owner';
+
+  @override
+  String get groupRoleAdmin => 'Admin';
+
+  @override
+  String get groupRoleMember => 'Member';
+
+  @override
+  String groupCardReadyNow(int count) {
+    return '$count ready';
+  }
+
+  @override
+  String groupCardUpcomingMinutes(int minutes) {
+    return 'in ${minutes}m';
+  }
+
+  @override
+  String groupCardUpcomingHours(int hours) {
+    return 'in ${hours}h';
+  }
+
+  @override
+  String get groupCardTomorrow => 'Tomorrow';
+
+  @override
+  String get groupCardSession => 'Session';
 
   @override
   String get groupDetailLeaveTitle => 'Leave Group';

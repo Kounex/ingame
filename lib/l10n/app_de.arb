@@ -73,6 +73,7 @@
   "commonDeny": "Ablehnen",
   "commonShare": "Teilen",
   "commonClose": "Schließen",
+  "commonOptional": "optional",
   "commonViewDetails": "Details ansehen",
   "navigationGroups": "Gruppen",
   "navigationHome": "Start",
@@ -455,6 +456,41 @@
   "groupDetailMenuLeave": "Gruppe verlassen",
   "groupDetailSectionAbout": "Ueber die Gruppe",
   "groupDetailSectionMembers": "Mitglieder",
+  "groupDetailCreatedAt": "Erstellt am {date}",
+  "@groupDetailCreatedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "groupRoleOwner": "Besitzer",
+  "groupRoleAdmin": "Admin",
+  "groupRoleMember": "Mitglied",
+  "groupCardReadyNow": "{count} bereit",
+  "@groupCardReadyNow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCardUpcomingMinutes": "in {minutes} Min.",
+  "@groupCardUpcomingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCardUpcomingHours": "in {hours} Std.",
+  "@groupCardUpcomingHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "groupCardTomorrow": "Morgen",
+  "groupCardSession": "Session",
   "groupDetailLeaveTitle": "Gruppe verlassen",
   "groupDetailLeaveMessage": "Moechtest du diese Gruppe wirklich verlassen?",
   "groupDetailOwnerLeaveMessage": "Übertrage zuerst den Besitz oder lösche die Gruppe, bevor du sie selbst verlässt.",
