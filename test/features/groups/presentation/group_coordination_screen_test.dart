@@ -42,15 +42,11 @@ class _FakeCoordinationNotifier extends GroupCoordinationNotifier {
 
   @override
   Future<void> updateSession(
-    String sessionId, {
-    String? title,
-    String? game,
-    DateTime? startsAt,
-    String? notes,
-    String? status,
-  }) async {
+    String sessionId,
+    Map<String, dynamic> fields,
+  ) async {
     updatedSessionId = sessionId;
-    updatedStatus = status;
+    updatedStatus = fields['status'] as String?;
   }
 
   @override

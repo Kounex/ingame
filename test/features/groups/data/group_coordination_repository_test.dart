@@ -102,8 +102,7 @@ void main() {
     await repository.updateSession(
       'group-1',
       'session-1',
-      notes: 'Voice chat in Discord',
-      status: 'confirmed',
+      {'notes': 'Voice chat in Discord', 'status': 'confirmed'},
     );
   });
 
