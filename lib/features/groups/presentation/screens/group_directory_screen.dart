@@ -151,7 +151,7 @@ class _GroupDirectoryScreenState extends ConsumerState<GroupDirectoryScreen> {
           contentWidth: DesktopContentWidth.reading,
           actions: [
             IconButton(
-              icon: const Icon(Icons.qr_code, color: AppColors.textPrimary),
+              icon: const Icon(Icons.pin_outlined, color: AppColors.textPrimary),
               tooltip: context.l10n.joinByCodeTitle,
               onPressed: _showJoinByCode,
             ),
