@@ -78,10 +78,11 @@ Group roles use three levels:
 | Open/share invite UI | Yes | Yes | Yes |
 | Leave group | Yes, unless ownership transfer/delete is required first | Yes | Yes |
 | Edit name / description / avatar | Yes | Yes | No |
-| Change discoverability / join mode | Yes | Yes | No |
+| Change discoverability / join mode | Yes | No | No |
 | View pending join requests | Yes | Yes | No |
 | Approve / deny join requests | Yes | Yes | No |
-| Remove non-owner members | Yes | Yes | No |
+| Remove members (member-role only) | Yes | Yes | No |
+| Remove admins | Yes | No | No |
 | Promote member to admin | Yes | No | No |
 | Demote admin to member | Yes | No | No |
 | Transfer ownership | Yes | No | No |
@@ -98,7 +99,8 @@ Group roles use three levels:
 - `PATCH /api/v1/groups/{group_id}/members/{user_id}/role` -- owner-only role change between `admin` and `member`; cannot target the current owner
 - `POST /api/v1/groups/{group_id}/transfer-ownership` -- owner-only ownership transfer to an existing non-owner member
 - `DELETE /api/v1/groups/{group_id}/leave` -- self-leave route; returns `403 group.owner_cannot_leave` while the caller is still the owner
-- `DELETE /api/v1/groups/{group_id}/members/{user_id}` -- remove-member route for owner/admin moderation of non-owner members
+- `DELETE /api/v1/groups/{group_id}/members/{user_id}` -- remove-member route; admins can remove members, only owner can remove admins
+- `POST /api/v1/groups/{group_id}/avatar-upload/init` -- presigned S3 POST for group avatar; admin or owner required
 
 ## API Response Shapes
 
@@ -206,3 +208,6 @@ Resolving a request refreshes the group detail.
 | 2026-06-06 | Join-request contract hardening | Documented that open groups reject join requests and that request resolution is single-use and cannot approve an already-member user | Keeps backend join-request behavior aligned with the maintained group contract and prevents stale-request state from mutating after approval |
 | 2026-06-06 | Invite-scoped private requests | Clarified that private approval groups can only receive join requests through invite-code flows while discoverable approval groups may use raw group-id requests | Closes the private-group loophole where leaked UUIDs could create approval requests without an invite |
 | 2026-06-06 | Pending-request preview state | Added `has_pending_join_request` to the maintained group response contract and documented that discover/invite preview surfaces render approval CTA state from backend truth | Prevents refresh/revisit regressions where `Request to Join` came back after a successful request because the UI only remembered local widget state |
+| 2026-06-13 | Group avatar uploads | Added `POST /groups/{id}/avatar-upload/init` presigned upload endpoint to RBAC endpoint contract; group avatar follows the same ledger-based upload pattern as user avatars | Groups needed managed avatar uploads with the same cleanup lifecycle as user avatars |
+| 2026-06-13 | RBAC tightening | Changed `is_discoverable` and `join_mode` to owner-only; split remove-member into member-removal (admin+owner) and admin-removal (owner-only) | Governance settings and admin removal are sensitive actions that should not be delegable to admins |
+| 2026-06-13 | Real-time group events | Added WebSocket publish hooks for group CRUD, member join/leave/remove/role-change, and join-request lifecycle | Groups and join requests now push real-time updates to connected clients |

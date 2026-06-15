@@ -56,6 +56,7 @@ class _FakeGroupsRepository extends GroupsRepository {
     String? description,
     bool isDiscoverable = false,
     String joinMode = 'open',
+    String? avatarUrl,
   }) async {
     final group = Group(
       id: 'group-created',

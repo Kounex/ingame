@@ -36,7 +36,7 @@ class GroupsRepository {
         'description': description,
         'is_discoverable': isDiscoverable,
         'join_mode': joinMode,
-        if (avatarUrl != null) 'avatar_url': avatarUrl,
+        'avatar_url': avatarUrl,
       },
     );
     return Group.fromJson(response.data as Map<String, dynamic>);
