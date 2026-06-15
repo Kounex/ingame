@@ -53,6 +53,7 @@ KNOWN_ROUTE_PREFIXES = {
     "/api/v1/health",
     "/api/v1/auth/",
     "/api/v1/users/",
+    "/api/v1/me/",
     "/api/v1/groups/",
     "/api/v1/join-requests/",
 }
@@ -73,6 +74,7 @@ MODEL_SECTION_HEADERS = {
 MODULE_KEYWORDS = {
     "auth": ("/api/v1/auth/", "auth flow", "auth failure contract"),
     "users": ("/api/v1/users/", "user profile", "profile editing"),
+    "me": ("/api/v1/me/", "join request", "join requests"),
     "groups": ("/api/v1/groups/", "group detail", "discoverable groups"),
     "join-requests": ("/api/v1/join-requests/", "join request", "join requests"),
 }
