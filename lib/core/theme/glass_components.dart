@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:cue/cue.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/utils/extensions.dart';
 import '../../shared/widgets/tappable.dart';
 import 'app_theme.dart';
 
@@ -263,6 +264,7 @@ class GlassInput extends StatelessWidget {
     this.errorText,
     this.label,
     this.hint,
+    this.optional = false,
     this.obscureText = false,
     this.prefixIcon,
     this.suffixIcon,
@@ -278,6 +280,7 @@ class GlassInput extends StatelessWidget {
   final String? errorText;
   final String? label;
   final String? hint;
+  final bool optional;
   final bool obscureText;
   final IconData? prefixIcon;
   final Widget? suffixIcon;
@@ -289,6 +292,8 @@ class GlassInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final optionalSuffix = optional ? ' (${context.l10n.commonOptional})' : '';
+
     return TextFormField(
       controller: controller,
       validator: validator,
@@ -302,7 +307,7 @@ class GlassInput extends StatelessWidget {
       style: const TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         isDense: true,
-        labelText: label,
+        labelText: label != null ? '$label$optionalSuffix' : null,
         hintText: hint,
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, color: AppColors.textTertiary)

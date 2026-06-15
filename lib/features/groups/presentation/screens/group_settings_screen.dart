@@ -389,6 +389,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                             label: l10n.createGroupDescriptionLabel,
                             prefixIcon: Icons.notes_outlined,
                             maxLines: 3,
+                            optional: true,
                             onChanged: (_) => _markChanged(),
                           ),
                         ],

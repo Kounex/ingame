@@ -582,6 +582,7 @@ class _ProfileSetupPage extends StatelessWidget {
                     hint: context.l10n.onboardingBioHint,
                     prefixIcon: Icons.info_outline,
                     maxLines: 3,
+                    optional: true,
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   TimezoneSelector(

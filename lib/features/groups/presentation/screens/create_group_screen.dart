@@ -139,6 +139,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen>
                     label: l10n.createGroupDescriptionLabel,
                     hint: l10n.createGroupDescriptionHint,
                     prefixIcon: Icons.description_outlined,
+                    optional: true,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   GlassCard(
