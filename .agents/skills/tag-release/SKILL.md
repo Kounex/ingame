@@ -162,3 +162,16 @@ Use the generated release notes as the baseline changelog since the previous Git
 - Release notes should prioritize user-facing changes first, then operational/deployment changes.
 - The added summary should explain the release in plain language, not just restate commit subjects.
 - If the snapshot shows mostly internal cleanup, say so directly and keep the release notes short.
+
+## Automatic dependency-refresh releases
+
+Patch releases that only carry dependency updates are automated (since
+2026-10-26). Dependabot targets `dev`; `.github/workflows/dependabot-refresh.yml`
+test-builds each PR and, for a patch or same-tag base-image digest bump whose
+checks all pass, merges it and dispatches `refresh-release.yml`. That workflow
+runs steps 5, 10 and 11 above plus `release-images.yml` and a GitHub release:
+bump the pubspec patch and build number, `prepare-release --owner kounex --write`,
+commit `chore: prepare release vX.Y.Z (dependency refresh)` on `dev`,
+fast-forward `main`, tag. It only does this when every commit on `dev` since
+`main` came from Dependabot, so an in-progress `dev` is never released early.
+Minor/major dependency PRs stay open for a normal release.

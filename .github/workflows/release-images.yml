@@ -1,6 +1,7 @@
 name: Release Images
 
 on:
+  workflow_dispatch:  # refresh-release.yml starts it on a vX.Y.Z tag ref (GITHUB_TOKEN tag pushes trigger nothing)
   push:
     tags:
       - "v*.*.*"

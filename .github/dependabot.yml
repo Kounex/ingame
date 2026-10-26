@@ -1,0 +1,29 @@
+# Base images + backend Python packages, against `dev` (main only moves by
+# fast-forward from dev). Patch/digest bumps merge into dev and release
+# themselves (dependabot-refresh.yml -> refresh-release.yml, same steps as
+# .agents/skills/tag-release). Flutter/pub packages stay with normal development.
+# See Kounex/it-env templates/container-image/.
+version: 2
+updates:
+  - package-ecosystem: docker
+    directories: ["/", "/backend"]
+    target-branch: dev
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: "/backend"
+    target-branch: dev
+    schedule:
+      interval: weekly
+    groups:
+      patches:
+        update-types: ["patch"]
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: dev
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
