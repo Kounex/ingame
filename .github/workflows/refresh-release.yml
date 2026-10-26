@@ -30,7 +30,8 @@ jobs:
         env:
           FORCE: ${{ inputs.force }}
         run: |
-          last=origin/main
+          # Last release = newest vX.Y.Z tag; covers unreleased work on dev *and* main.
+          last=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*')
           authors=$(git log --format='%an' "$last..HEAD")
           if [ -z "$authors" ]; then
             echo "Nothing since $last."; echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
