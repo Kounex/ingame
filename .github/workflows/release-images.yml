@@ -55,6 +55,8 @@ jobs:
           context: backend
           file: backend/Dockerfile
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-api:sha-${{ github.sha }}
             ghcr.io/${{ steps.meta.outputs.owner }}/ingame-api:${{ steps.meta.outputs.version }}
@@ -65,6 +67,8 @@ jobs:
           context: .
           file: Dockerfile.web
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
           build-args: |
             INGAME_API_BASE_URL=${{ vars.INGAME_API_BASE_URL }}
             INGAME_WEB_APP_BASE_URL=${{ vars.INGAME_WEB_APP_BASE_URL }}
@@ -88,6 +92,8 @@ jobs:
           context: .
           file: Dockerfile.marketing
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
           build-args: |
             INGAME_MARKETING_SITE_URL=https://in-game.app
             INGAME_WEB_APP_BASE_URL=https://app.in-game.app
