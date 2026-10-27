@@ -93,6 +93,33 @@ async def test_login_nonexistent_user(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_register_and_login_with_password_over_72_bytes(client: AsyncClient):
+    # bcrypt 5 raises on > 72 bytes; the schema allows up to 128 characters.
+    password = "ä" * 40 + "x" * 60  # 140 bytes in UTF-8
+    response = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "long@example.com",
+            "password": password,
+            "display_name": "Long Password",
+        },
+    )
+    assert response.status_code == 201
+
+    response = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "long@example.com", "password": password},
+    )
+    assert response.status_code == 200
+
+    response = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "long@example.com", "password": "wrong" + password},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_refresh_success(client: AsyncClient):
     reg_response = await client.post(
         "/api/v1/auth/register",
