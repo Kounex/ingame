@@ -11,7 +11,7 @@ alembic>=1.14.0
 httpx>=0.28.1
 websockets>=17.4
 python-multipart>=0.0.32
-boto3>=1.43.22
+boto3>=1.43.125
 firebase-admin>=6.6.0
 
 # Dev / Test
