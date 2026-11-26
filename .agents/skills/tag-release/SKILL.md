@@ -173,5 +173,6 @@ runs steps 5, 10 and 11 above plus `release-images.yml` and a GitHub release:
 bump the pubspec patch and build number, `prepare-release --owner kounex --write`,
 commit `chore: prepare release vX.Y.Z (dependency refresh)` on `dev`,
 fast-forward `main`, tag. It only does this when every commit on `dev` since
-`main` came from Dependabot, so an in-progress `dev` is never released early.
+the last release tag came from Dependabot or touches only CI or docs
+(`.github/`, `docs/`, any `*.md`), so an in-progress `dev` is never released early.
 Minor/major dependency PRs stay open for a normal release.
